@@ -12,38 +12,73 @@ go get github.com/rulebricks/go-sdk
 
 ## Configuration
 
-Before you can start using the SDK, you need to configure it with your Rulebricks API key:
+Before you can start using the SDK, you need to configure it with your Rulebricks API key. You can do this by creating a client with the `NewClient` function and passing in your API key as a request option:
 
 ```go
-client := rulebricks.NewClient("YOUR_API_KEY")
+import (
+    "github.com/rulebricks/go-sdk/client"
+    "github.com/rulebricks/go-sdk/option"
+)
+
+opts := option.WithAPIKey("YOUR_API_KEY")
+client := client.NewClient(opts)
 ```
 
 ## Basic Usage
 
-Here's a simple example of how to create a rule:
+To solve a rule with the SDK, you can use the `Solve` function of the client. Here's an example of how to solve a rule identified by its unique slug:
 
 ```go
-rule, err := client.Rules.Create(rulebricks.Rule{
-    Name:       "My Rule",
-    Condition:  "if data.temperature > 100 { return true }",
-    Action:     "fmt.Println('Alert! High temperature detected.')",
+response, err := client.Rules.Solve(context.Background(), "rule-slug", map[string]interface{}{
+    "data": "your-data-here",
 })
 if err != nil {
     // Handle error
 }
+// Use the response
+```
+
+For bulk operations, you can use the `BulkSolve` function to execute a rule against multiple data payloads:
+
+```go
+responses, err := client.Rules.BulkSolve(context.Background(), "rule-slug", []map[string]interface{}{
+    {"data": "first-payload"},
+    {"data": "second-payload"},
+    // Add more payloads as needed
+})
+if err != nil {
+    // Handle error
+}
+// Use the responses
+```
+
+To execute multiple rules in parallel, use the `ParallelSolve` function:
+
+```go
+responses, err := client.Rules.ParallelSolve(context.Background(), map[string]interface{}{
+    "first-rule-slug":  {"data": "first-payload"},
+    "second-rule-slug": {"data": "second-payload"},
+    // Add more rules and payloads as needed
+})
+if err != nil {
+    // Handle error
+}
+// Use the responses
 ```
 
 ## Asynchronous Usage
 
-The SDK supports asynchronous operations using Go routines:
+The SDK supports asynchronous operations using Go routines. You can use the `Solve`, `BulkSolve`, and `ParallelSolve` functions within a goroutine for concurrent rule solving:
 
 ```go
 go func() {
-    rule, err := client.Rules.Create(rulebricks.Rule{...})
+    response, err := client.Rules.Solve(context.Background(), "rule-slug", map[string]interface{}{
+        "data": "your-data-here",
+    })
     if err != nil {
         // Handle error
     }
-    // Use the created rule
+    // Use the response
 }()
 ```
 
@@ -52,7 +87,7 @@ go func() {
 The SDK returns errors that can be handled in a typical Go error handling pattern:
 
 ```go
-rule, err := client.Rules.Create(...)
+response, err := client.Rules.Solve(...)
 if err != nil {
     // Handle the error
 }
