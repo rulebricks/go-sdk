@@ -18,6 +18,7 @@ Before you can start using the SDK, you need to configure it with your Rulebrick
 import (
     "github.com/rulebricks/go-sdk/client"
     "github.com/rulebricks/go-sdk/option"
+    "net/http"
 )
 
 opts := option.WithAPIKey("YOUR_API_KEY")
