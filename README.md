@@ -53,13 +53,14 @@ if err != nil {
 // Use the responses
 ```
 
-To execute multiple rules in parallel, use the `ParallelSolve` function:
+To execute multiple rules in parallel, use the `ParallelSolve` function, along with the special parallel solve format:
 
 ```go
 responses, err := client.Rules.ParallelSolve(context.Background(), map[string]interface{}{
-    "first-rule-slug":  {"data": "first-payload"},
-    "second-rule-slug": {"data": "second-payload"},
-    // Add more rules and payloads as needed
+    "eligibility":  {"$rule": "tJOCd8XX", "customer_id": "anc39as3", "purchase_history": []string{"t-shirt", "mug"}, "account_age_days": 4, "last_purchase_days_ago": 3, "email_subscription": false},
+    "offers": {"$rule": "Ovms3XX", "customer_id": "anc39as3", "last_purchase_days_ago": 3, "selected_plan": "premium"},
+    // Note the non top-level keyword $rule is used to identify the rule to be executed
+    // alongside the data payload that should be passed to that particular rule
 })
 if err != nil {
     // Handle error
