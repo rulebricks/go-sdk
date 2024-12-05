@@ -31,6 +31,30 @@ func (b *BadRequestError) Unwrap() error {
 	return b.APIError
 }
 
+// Forbidden - Plan limit reached
+type ForbiddenError struct {
+	*core.APIError
+	Body *ForbiddenErrorBody
+}
+
+func (f *ForbiddenError) UnmarshalJSON(data []byte) error {
+	var body *ForbiddenErrorBody
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	f.StatusCode = 403
+	f.Body = body
+	return nil
+}
+
+func (f *ForbiddenError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(f.Body)
+}
+
+func (f *ForbiddenError) Unwrap() error {
+	return f.APIError
+}
+
 // Internal server error. Issue in executing the rule due to server-side problems.
 type InternalServerError struct {
 	*core.APIError
@@ -53,4 +77,28 @@ func (i *InternalServerError) MarshalJSON() ([]byte, error) {
 
 func (i *InternalServerError) Unwrap() error {
 	return i.APIError
+}
+
+// Rule not found
+type NotFoundError struct {
+	*core.APIError
+	Body interface{}
+}
+
+func (n *NotFoundError) UnmarshalJSON(data []byte) error {
+	var body interface{}
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	n.StatusCode = 404
+	n.Body = body
+	return nil
+}
+
+func (n *NotFoundError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(n.Body)
+}
+
+func (n *NotFoundError) Unwrap() error {
+	return n.APIError
 }

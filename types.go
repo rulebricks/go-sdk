@@ -8,83 +8,154 @@ import (
 	core "sdk/core"
 )
 
-type ListResponseItemRequestSchemaItem struct {
-	// The key for the request field.
-	Key *string `json:"key,omitempty"`
-	// Whether the field is visible in the rule editor.
-	Show *bool `json:"show,omitempty"`
-	// The name of the request field.
-	Name *string `json:"name,omitempty"`
-	// The description of the request field.
-	Description *string `json:"description,omitempty"`
-	// The data type of the request field.
-	Type *string `json:"type,omitempty"`
-	// The default value of the request field.
-	DefaultValue *string `json:"defaultValue,omitempty"`
-	// The computed default value of the request field.
-	DefaultComputedValue *string `json:"defaultComputedValue,omitempty"`
-	// The transformation applied to the request field.
-	Transform *string `json:"transform,omitempty"`
+type BadRequestErrorBody struct {
+	// Error message describing the issue with the request.
+	Error *string `json:"error,omitempty"`
 
 	_rawJSON json.RawMessage
 }
 
-func (l *ListResponseItemRequestSchemaItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListResponseItemRequestSchemaItem
+func (b *BadRequestErrorBody) UnmarshalJSON(data []byte) error {
+	type unmarshaler BadRequestErrorBody
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*l = ListResponseItemRequestSchemaItem(value)
-	l._rawJSON = json.RawMessage(data)
+	*b = BadRequestErrorBody(value)
+	b._rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (l *ListResponseItemRequestSchemaItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
+func (b *BadRequestErrorBody) String() string {
+	if len(b._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(b._rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(l); err == nil {
+	if value, err := core.StringifyJSON(b); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", l)
+	return fmt.Sprintf("%#v", b)
 }
 
-type ListResponseItemResponseSchemaItem struct {
-	// The key for the response field.
-	Key *string `json:"key,omitempty"`
-	// Whether the field is visible in the rule editor.
-	Show *bool `json:"show,omitempty"`
-	// The name of the response field.
-	Name *string `json:"name,omitempty"`
-	// The description of the response field.
-	Description *string `json:"description,omitempty"`
-	// The data type of the response field.
-	Type *string `json:"type,omitempty"`
-	// The default value of the response field.
-	DefaultValue *string `json:"defaultValue,omitempty"`
-	// The computed default value of the response field.
-	DefaultComputedValue *string `json:"defaultComputedValue,omitempty"`
-	// The transformation applied to the response field.
-	Transform *string `json:"transform,omitempty"`
+type ForbiddenErrorBody struct {
+	Error *string `json:"error,omitempty"`
 
 	_rawJSON json.RawMessage
 }
 
-func (l *ListResponseItemResponseSchemaItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListResponseItemResponseSchemaItem
+func (f *ForbiddenErrorBody) UnmarshalJSON(data []byte) error {
+	type unmarshaler ForbiddenErrorBody
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*l = ListResponseItemResponseSchemaItem(value)
+	*f = ForbiddenErrorBody(value)
+	f._rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *ForbiddenErrorBody) String() string {
+	if len(f._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(f._rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := core.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type InternalServerErrorBody struct {
+	// Error message describing the internal server error.
+	Error *string `json:"error,omitempty"`
+
+	_rawJSON json.RawMessage
+}
+
+func (i *InternalServerErrorBody) UnmarshalJSON(data []byte) error {
+	type unmarshaler InternalServerErrorBody
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = InternalServerErrorBody(value)
+	i._rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *InternalServerErrorBody) String() string {
+	if len(i._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(i._rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := core.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+type NotFoundErrorBody struct {
+	// Error message indicating the value was not found.
+	Error *string `json:"error,omitempty"`
+
+	_rawJSON json.RawMessage
+}
+
+func (n *NotFoundErrorBody) UnmarshalJSON(data []byte) error {
+	type unmarshaler NotFoundErrorBody
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NotFoundErrorBody(value)
+	n._rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NotFoundErrorBody) String() string {
+	if len(n._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(n._rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := core.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+type ListResponseItem struct {
+	// The unique identifier for the rule.
+	Id *string `json:"id,omitempty"`
+	// The name of the rule.
+	Name *string `json:"name,omitempty"`
+	// The description of the rule.
+	Description *string `json:"description,omitempty"`
+	// Whether the rule is published.
+	Published *bool `json:"published,omitempty"`
+	// The unique slug for the rule used in API requests.
+	Slug *string `json:"slug,omitempty"`
+	// The date this rule was last updated.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+
+	_rawJSON json.RawMessage
+}
+
+func (l *ListResponseItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListResponseItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = ListResponseItem(value)
 	l._rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (l *ListResponseItemResponseSchemaItem) String() string {
+func (l *ListResponseItem) String() string {
 	if len(l._rawJSON) > 0 {
 		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
 			return value
