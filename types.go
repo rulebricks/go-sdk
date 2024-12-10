@@ -98,7 +98,7 @@ func (i *InternalServerErrorBody) String() string {
 }
 
 type NotFoundErrorBody struct {
-	// Error message indicating the value was not found.
+	// Error message indicating the folder was not found.
 	Error *string `json:"error,omitempty"`
 
 	_rawJSON json.RawMessage
