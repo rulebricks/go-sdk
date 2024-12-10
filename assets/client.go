@@ -254,8 +254,43 @@ func (c *Client) ImportRule(
 	return response, nil
 }
 
+// List all rules in the organization.
+func (c *Client) ListRules(
+	ctx context.Context,
+	opts ...option.RequestOption,
+) ([]*sdk.ListRulesResponseItem, error) {
+	options := core.NewRequestOptions(opts...)
+
+	baseURL := ""
+	if c.baseURL != "" {
+		baseURL = c.baseURL
+	}
+	if options.BaseURL != "" {
+		baseURL = options.BaseURL
+	}
+	endpointURL := baseURL + "/" + "api/v1/admin/rules/list"
+
+	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
+
+	var response []*sdk.ListRulesResponseItem
+	if err := c.caller.Call(
+		ctx,
+		&core.CallParams{
+			URL:         endpointURL,
+			Method:      http.MethodGet,
+			MaxAttempts: options.MaxAttempts,
+			Headers:     headers,
+			Client:      options.HTTPClient,
+			Response:    &response,
+		},
+	); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
 // List all flows in the organization.
-func (c *Client) List(
+func (c *Client) ListFlows(
 	ctx context.Context,
 	opts ...option.RequestOption,
 ) error {

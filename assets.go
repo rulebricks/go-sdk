@@ -96,6 +96,46 @@ func (i *ImportRuleResponse) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
+type ListRulesResponseItem struct {
+	// The unique identifier for the rule.
+	Id *string `json:"id,omitempty"`
+	// The name of the rule.
+	Name *string `json:"name,omitempty"`
+	// The description of the rule.
+	Description *string `json:"description,omitempty"`
+	// Whether the rule is published.
+	Published *bool `json:"published,omitempty"`
+	// The unique slug for the rule used in API requests.
+	Slug *string `json:"slug,omitempty"`
+	// The date this rule was last updated.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+
+	_rawJSON json.RawMessage
+}
+
+func (l *ListRulesResponseItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListRulesResponseItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = ListRulesResponseItem(value)
+	l._rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *ListRulesResponseItem) String() string {
+	if len(l._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := core.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
 type UsageResponse struct {
 	// The current plan of the organization.
 	Plan *string `json:"plan,omitempty"`

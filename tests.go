@@ -9,7 +9,7 @@ import (
 	time "time"
 )
 
-type CreateTestRequest struct {
+type CreateFlowTestRequest struct {
 	// The name of the test.
 	Name string `json:"name"`
 	// The request object for the test.
@@ -20,7 +20,18 @@ type CreateTestRequest struct {
 	Critical bool `json:"critical"`
 }
 
-type CreateTestResponse struct {
+type CreateRuleTestRequest struct {
+	// The name of the test.
+	Name string `json:"name"`
+	// The request object for the test.
+	Request map[string]interface{} `json:"request,omitempty"`
+	// The expected response object for the test.
+	Response map[string]interface{} `json:"response,omitempty"`
+	// Indicates whether the test is critical.
+	Critical bool `json:"critical"`
+}
+
+type CreateFlowTestResponse struct {
 	// Unique identifier for the test.
 	Id string `json:"id"`
 	// The name of the test.
@@ -43,18 +54,18 @@ type CreateTestResponse struct {
 	_rawJSON json.RawMessage
 }
 
-func (c *CreateTestResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler CreateTestResponse
+func (c *CreateFlowTestResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateFlowTestResponse
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CreateTestResponse(value)
+	*c = CreateFlowTestResponse(value)
 	c._rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (c *CreateTestResponse) String() string {
+func (c *CreateFlowTestResponse) String() string {
 	if len(c._rawJSON) > 0 {
 		if value, err := core.StringifyJSON(c._rawJSON); err == nil {
 			return value
@@ -66,7 +77,7 @@ func (c *CreateTestResponse) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-type DeleteTestResponse struct {
+type CreateRuleTestResponse struct {
 	// Unique identifier for the test.
 	Id string `json:"id"`
 	// The name of the test.
@@ -89,18 +100,64 @@ type DeleteTestResponse struct {
 	_rawJSON json.RawMessage
 }
 
-func (d *DeleteTestResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteTestResponse
+func (c *CreateRuleTestResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateRuleTestResponse
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*d = DeleteTestResponse(value)
+	*c = CreateRuleTestResponse(value)
+	c._rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateRuleTestResponse) String() string {
+	if len(c._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(c._rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := core.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type DeleteFlowTestResponse struct {
+	// Unique identifier for the test.
+	Id string `json:"id"`
+	// The name of the test.
+	Name string `json:"name"`
+	// The request object for the test.
+	Request map[string]interface{} `json:"request,omitempty"`
+	// The expected response object for the test.
+	Response map[string]interface{} `json:"response,omitempty"`
+	// Indicates whether the test is critical.
+	Critical bool `json:"critical"`
+	// Indicates if the test resulted in an error.
+	Error bool `json:"error"`
+	// Indicates if the test was successful.
+	Success bool `json:"success"`
+	// The state of the test after execution.
+	TestState map[string]interface{} `json:"testState,omitempty"`
+	// The timestamp when the test was last executed.
+	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
+
+	_rawJSON json.RawMessage
+}
+
+func (d *DeleteFlowTestResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteFlowTestResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeleteFlowTestResponse(value)
 	d._rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (d *DeleteTestResponse) String() string {
+func (d *DeleteFlowTestResponse) String() string {
 	if len(d._rawJSON) > 0 {
 		if value, err := core.StringifyJSON(d._rawJSON); err == nil {
 			return value
@@ -112,7 +169,7 @@ func (d *DeleteTestResponse) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-type ListTestsResponseItem struct {
+type DeleteRuleTestResponse struct {
 	// Unique identifier for the test.
 	Id string `json:"id"`
 	// The name of the test.
@@ -135,18 +192,110 @@ type ListTestsResponseItem struct {
 	_rawJSON json.RawMessage
 }
 
-func (l *ListTestsResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListTestsResponseItem
+func (d *DeleteRuleTestResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteRuleTestResponse
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*l = ListTestsResponseItem(value)
+	*d = DeleteRuleTestResponse(value)
+	d._rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeleteRuleTestResponse) String() string {
+	if len(d._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(d._rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := core.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type ListFlowTestsResponseItem struct {
+	// Unique identifier for the test.
+	Id string `json:"id"`
+	// The name of the test.
+	Name string `json:"name"`
+	// The request object for the test.
+	Request map[string]interface{} `json:"request,omitempty"`
+	// The expected response object for the test.
+	Response map[string]interface{} `json:"response,omitempty"`
+	// Indicates whether the test is critical.
+	Critical bool `json:"critical"`
+	// Indicates if the test resulted in an error.
+	Error bool `json:"error"`
+	// Indicates if the test was successful.
+	Success bool `json:"success"`
+	// The state of the test after execution.
+	TestState map[string]interface{} `json:"testState,omitempty"`
+	// The timestamp when the test was last executed.
+	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
+
+	_rawJSON json.RawMessage
+}
+
+func (l *ListFlowTestsResponseItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListFlowTestsResponseItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = ListFlowTestsResponseItem(value)
 	l._rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (l *ListTestsResponseItem) String() string {
+func (l *ListFlowTestsResponseItem) String() string {
+	if len(l._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := core.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+type ListRuleTestsResponseItem struct {
+	// Unique identifier for the test.
+	Id string `json:"id"`
+	// The name of the test.
+	Name string `json:"name"`
+	// The request object for the test.
+	Request map[string]interface{} `json:"request,omitempty"`
+	// The expected response object for the test.
+	Response map[string]interface{} `json:"response,omitempty"`
+	// Indicates whether the test is critical.
+	Critical bool `json:"critical"`
+	// Indicates if the test resulted in an error.
+	Error bool `json:"error"`
+	// Indicates if the test was successful.
+	Success bool `json:"success"`
+	// The state of the test after execution.
+	TestState map[string]interface{} `json:"testState,omitempty"`
+	// The timestamp when the test was last executed.
+	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
+
+	_rawJSON json.RawMessage
+}
+
+func (l *ListRuleTestsResponseItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListRuleTestsResponseItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = ListRuleTestsResponseItem(value)
+	l._rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *ListRuleTestsResponseItem) String() string {
 	if len(l._rawJSON) > 0 {
 		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
 			return value
