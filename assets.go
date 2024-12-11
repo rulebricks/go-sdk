@@ -192,9 +192,9 @@ type ListRulesResponseItem struct {
 	// The folder containing this rule
 	Folder *ListRulesResponseItemFolder `json:"folder,omitempty"`
 	// The published request schema for the rule.
-	RequestSchema map[string]interface{} `json:"request_schema,omitempty"`
+	RequestSchema []interface{} `json:"request_schema,omitempty"`
 	// The published response schema for the rule.
-	ResponseSchema map[string]interface{} `json:"response_schema,omitempty"`
+	ResponseSchema []interface{} `json:"response_schema,omitempty"`
 
 	_rawJSON json.RawMessage
 }
