@@ -1,6 +1,6 @@
-# Rulebricks Go SDK
+![Banner](banner.png)
 
-This SDK allows you to easily integrate Rulebricks' powerful rule engine into your Go applications.
+![License](https://img.shields.io/github/license/rulebricks/go-sdk)
 
 ## Installation
 

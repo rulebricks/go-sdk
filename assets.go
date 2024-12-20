@@ -25,20 +25,8 @@ type ExportRuleRequest struct {
 }
 
 type ImportRuleRequest struct {
-	Id             string                 `json:"id"`
-	CreatedAt      time.Time              `json:"createdAt"`
-	Slug           string                 `json:"slug"`
-	UpdatedAt      time.Time              `json:"updatedAt"`
-	TestRequest    map[string]interface{} `json:"testRequest,omitempty"`
-	Name           string                 `json:"name"`
-	Description    string                 `json:"description"`
-	RequestSchema  []interface{}          `json:"requestSchema,omitempty"`
-	ResponseSchema []interface{}          `json:"responseSchema,omitempty"`
-	SampleRequest  map[string]interface{} `json:"sampleRequest,omitempty"`
-	SampleResponse map[string]interface{} `json:"sampleResponse,omitempty"`
-	Conditions     []interface{}          `json:"conditions,omitempty"`
-	Published      bool                   `json:"published"`
-	History        []interface{}          `json:"history,omitempty"`
+	// The rule data to import.
+	Rule map[string]interface{} `json:"rule,omitempty"`
 }
 
 type ListRulesRequest struct {
@@ -111,35 +99,44 @@ func (d *DeleteRuleResponse) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-type ImportRuleResponse struct {
+type ListFlowsResponseItem struct {
+	// The unique identifier for the flow.
+	Id *string `json:"id,omitempty"`
+	// The name of the flow.
 	Name *string `json:"name,omitempty"`
-	Id   *string `json:"id,omitempty"`
+	// The description of the flow.
+	Description *string `json:"description,omitempty"`
+	// Whether the flow is published.
+	Published *bool `json:"published,omitempty"`
+	// The unique slug for the flow used in API requests.
 	Slug *string `json:"slug,omitempty"`
+	// The date this flow was last updated.
+	UpdatedAt *string `json:"updated_at,omitempty"`
 
 	_rawJSON json.RawMessage
 }
 
-func (i *ImportRuleResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler ImportRuleResponse
+func (l *ListFlowsResponseItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListFlowsResponseItem
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*i = ImportRuleResponse(value)
-	i._rawJSON = json.RawMessage(data)
+	*l = ListFlowsResponseItem(value)
+	l._rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (i *ImportRuleResponse) String() string {
-	if len(i._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(i._rawJSON); err == nil {
+func (l *ListFlowsResponseItem) String() string {
+	if len(l._rawJSON) > 0 {
+		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(i); err == nil {
+	if value, err := core.StringifyJSON(l); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", i)
+	return fmt.Sprintf("%#v", l)
 }
 
 type ListFoldersResponseItem struct {

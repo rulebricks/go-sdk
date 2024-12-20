@@ -188,7 +188,7 @@ func (c *Client) ImportRule(
 	ctx context.Context,
 	request *sdk.ImportRuleRequest,
 	opts ...option.RequestOption,
-) (*sdk.ImportRuleResponse, error) {
+) (map[string]interface{}, error) {
 	options := core.NewRequestOptions(opts...)
 
 	baseURL := ""
@@ -235,7 +235,7 @@ func (c *Client) ImportRule(
 		return apiError
 	}
 
-	var response *sdk.ImportRuleResponse
+	var response map[string]interface{}
 	if err := c.caller.Call(
 		ctx,
 		&core.CallParams{
@@ -329,7 +329,7 @@ func (c *Client) ListRules(
 func (c *Client) ListFlows(
 	ctx context.Context,
 	opts ...option.RequestOption,
-) error {
+) ([]*sdk.ListFlowsResponseItem, error) {
 	options := core.NewRequestOptions(opts...)
 
 	baseURL := ""
@@ -343,19 +343,41 @@ func (c *Client) ListFlows(
 
 	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
 
+	errorDecoder := func(statusCode int, body io.Reader) error {
+		raw, err := io.ReadAll(body)
+		if err != nil {
+			return err
+		}
+		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
+		decoder := json.NewDecoder(bytes.NewReader(raw))
+		switch statusCode {
+		case 500:
+			value := new(sdk.InternalServerError)
+			value.APIError = apiError
+			if err := decoder.Decode(value); err != nil {
+				return apiError
+			}
+			return value
+		}
+		return apiError
+	}
+
+	var response []*sdk.ListFlowsResponseItem
 	if err := c.caller.Call(
 		ctx,
 		&core.CallParams{
-			URL:         endpointURL,
-			Method:      http.MethodGet,
-			MaxAttempts: options.MaxAttempts,
-			Headers:     headers,
-			Client:      options.HTTPClient,
+			URL:          endpointURL,
+			Method:       http.MethodGet,
+			MaxAttempts:  options.MaxAttempts,
+			Headers:      headers,
+			Client:       options.HTTPClient,
+			Response:     &response,
+			ErrorDecoder: errorDecoder,
 		},
 	); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return response, nil
 }
 
 // Get the rule execution usage of your organization.
