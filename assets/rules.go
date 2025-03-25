@@ -7,7 +7,12 @@ type DeleteRuleRequest struct {
 	Id string `json:"id" url:"-"`
 }
 
-type RulesExportRequest struct {
+type RulesListRequest struct {
+	// Filter rules by folder name or folder ID
+	Folder *string `json:"-" url:"folder,omitempty"`
+}
+
+type RulesPullRequest struct {
 	// The ID of the rule to export.
 	Id string `json:"-" url:"id"`
 }
@@ -15,9 +20,4 @@ type RulesExportRequest struct {
 type ImportRuleRequest struct {
 	// The rule data to import.
 	Rule map[string]interface{} `json:"rule,omitempty" url:"-"`
-}
-
-type RulesListRequest struct {
-	// Filter rules by folder name or folder ID
-	Folder *string `json:"-" url:"folder,omitempty"`
 }

@@ -90,9 +90,9 @@ func (c *Client) Delete(
 }
 
 // Export a specific rule by its ID.
-func (c *Client) Export(
+func (c *Client) Pull(
 	ctx context.Context,
-	request *assets.RulesExportRequest,
+	request *assets.RulesPullRequest,
 	opts ...option.RequestOption,
 ) (sdk.RuleExport, error) {
 	options := core.NewRequestOptions(opts...)
@@ -152,7 +152,7 @@ func (c *Client) Export(
 }
 
 // Import a rule into the user's account.
-func (c *Client) Import(
+func (c *Client) Push(
 	ctx context.Context,
 	request *assets.ImportRuleRequest,
 	opts ...option.RequestOption,
