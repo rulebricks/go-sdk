@@ -4,15 +4,15 @@ package client
 
 import (
 	http "net/http"
-	assets "sdk/assets"
+	assetsclient "sdk/assets/client"
 	core "sdk/core"
 	decisions "sdk/decisions"
 	flows "sdk/flows"
 	internal "sdk/internal"
 	option "sdk/option"
 	rules "sdk/rules"
-	tests "sdk/tests"
-	users "sdk/users"
+	testsclient "sdk/tests/client"
+	usersclient "sdk/users/client"
 	values "sdk/values"
 )
 
@@ -24,10 +24,10 @@ type Client struct {
 	Rules     *rules.Client
 	Flows     *flows.Client
 	Decisions *decisions.Client
-	Assets    *assets.Client
-	Users     *users.Client
-	Tests     *tests.Client
+	Users     *usersclient.Client
+	Assets    *assetsclient.Client
 	Values    *values.Client
+	Tests     *testsclient.Client
 }
 
 func NewClient(opts ...option.RequestOption) *Client {
@@ -44,9 +44,9 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Rules:     rules.NewClient(opts...),
 		Flows:     flows.NewClient(opts...),
 		Decisions: decisions.NewClient(opts...),
-		Assets:    assets.NewClient(opts...),
-		Users:     users.NewClient(opts...),
-		Tests:     tests.NewClient(opts...),
+		Users:     usersclient.NewClient(opts...),
+		Assets:    assetsclient.NewClient(opts...),
 		Values:    values.NewClient(opts...),
+		Tests:     testsclient.NewClient(opts...),
 	}
 }

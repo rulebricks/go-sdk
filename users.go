@@ -8,13 +8,6 @@ import (
 	internal "sdk/internal"
 )
 
-type CreateUserGroupRequest struct {
-	// Unique name of the user group.
-	Name string `json:"name" url:"-"`
-	// Description of the user group.
-	Description *string `json:"description,omitempty" url:"-"`
-}
-
 type UserInviteRequest struct {
 	// Email of the user to invite.
 	Email string `json:"email" url:"-"`
@@ -23,82 +16,6 @@ type UserInviteRequest struct {
 	// List of access group names or IDs to assign to the user. All specified groups must exist in your organization.
 	AccessGroups []string `json:"accessGroups,omitempty" url:"-"`
 }
-
-type UserGroup struct {
-	// Unique identifier of the user group.
-	Id *string `json:"id,omitempty" url:"id,omitempty"`
-	// Name of the user group.
-	Name *string `json:"name,omitempty" url:"name,omitempty"`
-	// Description of the user group.
-	Description *string `json:"description,omitempty" url:"description,omitempty"`
-	// List of member emails in the user group.
-	Members []string `json:"members,omitempty" url:"members,omitempty"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (u *UserGroup) GetId() *string {
-	if u == nil {
-		return nil
-	}
-	return u.Id
-}
-
-func (u *UserGroup) GetName() *string {
-	if u == nil {
-		return nil
-	}
-	return u.Name
-}
-
-func (u *UserGroup) GetDescription() *string {
-	if u == nil {
-		return nil
-	}
-	return u.Description
-}
-
-func (u *UserGroup) GetMembers() []string {
-	if u == nil {
-		return nil
-	}
-	return u.Members
-}
-
-func (u *UserGroup) GetExtraProperties() map[string]interface{} {
-	return u.extraProperties
-}
-
-func (u *UserGroup) UnmarshalJSON(data []byte) error {
-	type unmarshaler UserGroup
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*u = UserGroup(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *u)
-	if err != nil {
-		return err
-	}
-	u.extraProperties = extraProperties
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u *UserGroup) String() string {
-	if len(u.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
-}
-
-type UserGroupListResponse = []*UserGroup
 
 type UserInviteResponse struct {
 	// Success message indicating whether a new user was invited or an existing user's permissions were updated.

@@ -43,10 +43,10 @@ func (c *Client) Solve(
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
 		c.baseURL,
-		"",
+		"https://rulebricks.com/api/v1",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/api/v1/solve/%v",
+		baseURL+"/solve/%v",
 		slug,
 	)
 	headers := internal.MergeHeaders(
@@ -100,10 +100,10 @@ func (c *Client) BulkSolve(
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
 		c.baseURL,
-		"",
+		"https://rulebricks.com/api/v1",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/api/v1/bulk-solve/%v",
+		baseURL+"/bulk-solve/%v",
 		slug,
 	)
 	headers := internal.MergeHeaders(
@@ -155,9 +155,9 @@ func (c *Client) ParallelSolve(
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
 		c.baseURL,
-		"",
+		"https://rulebricks.com/api/v1",
 	)
-	endpointURL := baseURL + "/api/v1/parallel-solve"
+	endpointURL := baseURL + "/parallel-solve"
 	headers := internal.MergeHeaders(
 		c.header.Clone(),
 		options.ToHeader(),

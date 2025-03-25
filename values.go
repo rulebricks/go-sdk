@@ -9,13 +9,13 @@ import (
 	time "time"
 )
 
-type DeleteRequest struct {
+type ValuesDeleteRequest struct {
 	// ID of the dynamic value to delete
 	Id string `json:"-" url:"id"`
 }
 
-type ListRequest struct {
-	// Name of a specific dynamic value to retrieve data for
+type ValuesListRequest struct {
+	// Query all dynamic values containing a specific name
 	Name *string `json:"-" url:"name,omitempty"`
 }
 

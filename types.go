@@ -6,7 +6,82 @@ import (
 	json "encoding/json"
 	fmt "fmt"
 	internal "sdk/internal"
+	time "time"
 )
+
+type CreateTestRequest struct {
+	// The name of the test.
+	Name string `json:"name" url:"name"`
+	// The request object for the test.
+	Request map[string]interface{} `json:"request,omitempty" url:"request,omitempty"`
+	// The expected response object for the test.
+	Response map[string]interface{} `json:"response,omitempty" url:"response,omitempty"`
+	// Indicates whether the test is critical.
+	Critical bool `json:"critical" url:"critical"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateTestRequest) GetName() string {
+	if c == nil {
+		return ""
+	}
+	return c.Name
+}
+
+func (c *CreateTestRequest) GetRequest() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Request
+}
+
+func (c *CreateTestRequest) GetResponse() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Response
+}
+
+func (c *CreateTestRequest) GetCritical() bool {
+	if c == nil {
+		return false
+	}
+	return c.Critical
+}
+
+func (c *CreateTestRequest) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CreateTestRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateTestRequest
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateTestRequest(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateTestRequest) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
 
 // Dynamic request payload for rule execution. Structure depends on rule configuration.
 type DynamicRequestPayload = map[string]interface{}
@@ -59,6 +134,190 @@ func (e *Error) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", e)
+}
+
+type FlowBase struct {
+	// The unique identifier for the flow.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// The name of the flow.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// The description of the flow.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The unique slug for the flow used in API requests.
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FlowBase) GetId() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Id
+}
+
+func (f *FlowBase) GetName() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Name
+}
+
+func (f *FlowBase) GetDescription() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Description
+}
+
+func (f *FlowBase) GetSlug() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Slug
+}
+
+func (f *FlowBase) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FlowBase) UnmarshalJSON(data []byte) error {
+	type unmarshaler FlowBase
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FlowBase(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FlowBase) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FlowDetail struct {
+	// The unique identifier for the flow.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// The name of the flow.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// The description of the flow.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The unique slug for the flow used in API requests.
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+	// Whether the flow is published.
+	Published *bool `json:"published,omitempty" url:"published,omitempty"`
+	// The date this flow was last updated.
+	UpdatedAt *time.Time `json:"updated_at,omitempty" url:"updated_at,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FlowDetail) GetId() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Id
+}
+
+func (f *FlowDetail) GetName() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Name
+}
+
+func (f *FlowDetail) GetDescription() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Description
+}
+
+func (f *FlowDetail) GetSlug() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Slug
+}
+
+func (f *FlowDetail) GetPublished() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.Published
+}
+
+func (f *FlowDetail) GetUpdatedAt() *time.Time {
+	if f == nil {
+		return nil
+	}
+	return f.UpdatedAt
+}
+
+func (f *FlowDetail) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FlowDetail) UnmarshalJSON(data []byte) error {
+	type embed FlowDetail
+	var unmarshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updated_at,omitempty"`
+	}{
+		embed: embed(*f),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*f = FlowDetail(unmarshaler.embed)
+	f.UpdatedAt = unmarshaler.UpdatedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FlowDetail) MarshalJSON() ([]byte, error) {
+	type embed FlowDetail
+	var marshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updated_at,omitempty"`
+	}{
+		embed:     embed(*f),
+		UpdatedAt: internal.NewOptionalDateTime(f.UpdatedAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (f *FlowDetail) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
 }
 
 // Error response when flow execution fails
@@ -127,6 +386,596 @@ func (f *FlowExecutionError) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
+type FlowListResponse = []*FlowDetail
+
+type Folder struct {
+	// Unique identifier for the folder.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// Name of the folder.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Description of the folder.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// Timestamp of when the folder was last updated.
+	UpdatedAt *time.Time `json:"updatedAt,omitempty" url:"updatedAt,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *Folder) GetId() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Id
+}
+
+func (f *Folder) GetName() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Name
+}
+
+func (f *Folder) GetDescription() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Description
+}
+
+func (f *Folder) GetUpdatedAt() *time.Time {
+	if f == nil {
+		return nil
+	}
+	return f.UpdatedAt
+}
+
+func (f *Folder) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *Folder) UnmarshalJSON(data []byte) error {
+	type embed Folder
+	var unmarshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updatedAt,omitempty"`
+	}{
+		embed: embed(*f),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*f = Folder(unmarshaler.embed)
+	f.UpdatedAt = unmarshaler.UpdatedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *Folder) MarshalJSON() ([]byte, error) {
+	type embed Folder
+	var marshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updatedAt,omitempty"`
+	}{
+		embed:     embed(*f),
+		UpdatedAt: internal.NewOptionalDateTime(f.UpdatedAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (f *Folder) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FolderListResponse = []*Folder
+
+type RuleBase struct {
+	// The unique identifier for the rule.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// The name of the rule.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// The description of the rule.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The unique slug for the rule used in API requests.
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RuleBase) GetId() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Id
+}
+
+func (r *RuleBase) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RuleBase) GetDescription() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Description
+}
+
+func (r *RuleBase) GetSlug() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Slug
+}
+
+func (r *RuleBase) GetExtraProperties() map[string]interface{} {
+	return r.extraProperties
+}
+
+func (r *RuleBase) UnmarshalJSON(data []byte) error {
+	type unmarshaler RuleBase
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RuleBase(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleBase) String() string {
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+type RuleDetail struct {
+	// The unique identifier for the rule.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// The name of the rule.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// The description of the rule.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The unique slug for the rule used in API requests.
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+	// The date this rule was created.
+	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
+	Folder    *Folder    `json:"folder,omitempty" url:"folder,omitempty"`
+	// The published request schema for the rule.
+	RequestSchema []*SchemaField `json:"request_schema,omitempty" url:"request_schema,omitempty"`
+	// The published response schema for the rule.
+	ResponseSchema []*SchemaField `json:"response_schema,omitempty" url:"response_schema,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RuleDetail) GetId() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Id
+}
+
+func (r *RuleDetail) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RuleDetail) GetDescription() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Description
+}
+
+func (r *RuleDetail) GetSlug() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Slug
+}
+
+func (r *RuleDetail) GetCreatedAt() *time.Time {
+	if r == nil {
+		return nil
+	}
+	return r.CreatedAt
+}
+
+func (r *RuleDetail) GetFolder() *Folder {
+	if r == nil {
+		return nil
+	}
+	return r.Folder
+}
+
+func (r *RuleDetail) GetRequestSchema() []*SchemaField {
+	if r == nil {
+		return nil
+	}
+	return r.RequestSchema
+}
+
+func (r *RuleDetail) GetResponseSchema() []*SchemaField {
+	if r == nil {
+		return nil
+	}
+	return r.ResponseSchema
+}
+
+func (r *RuleDetail) GetExtraProperties() map[string]interface{} {
+	return r.extraProperties
+}
+
+func (r *RuleDetail) UnmarshalJSON(data []byte) error {
+	type embed RuleDetail
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at,omitempty"`
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RuleDetail(unmarshaler.embed)
+	r.CreatedAt = unmarshaler.CreatedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleDetail) MarshalJSON() ([]byte, error) {
+	type embed RuleDetail
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at,omitempty"`
+	}{
+		embed:     embed(*r),
+		CreatedAt: internal.NewOptionalDateTime(r.CreatedAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (r *RuleDetail) String() string {
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// The exported rule object containing all rule definition data.
+type RuleExport = map[string]interface{}
+
+type RuleListResponse = []*RuleDetail
+
+type SchemaField struct {
+	// The unique key for this field.
+	Key *string `json:"key,omitempty" url:"key,omitempty"`
+	// Whether this field is visible in the UI.
+	Show *bool `json:"show,omitempty" url:"show,omitempty"`
+	// Display name for this field.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Description of this field.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// Data type of this field.
+	Type *SchemaFieldType `json:"type,omitempty" url:"type,omitempty"`
+	// Default value for this field.
+	DefaultValue *SchemaFieldDefaultValue `json:"defaultValue,omitempty" url:"defaultValue,omitempty"`
+	// Computed default value for this field.
+	DefaultComputedValue *string `json:"defaultComputedValue,omitempty" url:"defaultComputedValue,omitempty"`
+	// Transformation expression to apply to this field.
+	Transform *string `json:"transform,omitempty" url:"transform,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchemaField) GetKey() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Key
+}
+
+func (s *SchemaField) GetShow() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.Show
+}
+
+func (s *SchemaField) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *SchemaField) GetDescription() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Description
+}
+
+func (s *SchemaField) GetType() *SchemaFieldType {
+	if s == nil {
+		return nil
+	}
+	return s.Type
+}
+
+func (s *SchemaField) GetDefaultValue() *SchemaFieldDefaultValue {
+	if s == nil {
+		return nil
+	}
+	return s.DefaultValue
+}
+
+func (s *SchemaField) GetDefaultComputedValue() *string {
+	if s == nil {
+		return nil
+	}
+	return s.DefaultComputedValue
+}
+
+func (s *SchemaField) GetTransform() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Transform
+}
+
+func (s *SchemaField) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SchemaField) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchemaField
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchemaField(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchemaField) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// Default value for this field.
+type SchemaFieldDefaultValue struct {
+	String           string
+	Double           float64
+	Boolean          bool
+	StringUnknownMap map[string]interface{}
+	UnknownList      []interface{}
+
+	typ string
+}
+
+func NewSchemaFieldDefaultValueFromString(value string) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "String", String: value}
+}
+
+func NewSchemaFieldDefaultValueFromDouble(value float64) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "Double", Double: value}
+}
+
+func NewSchemaFieldDefaultValueFromBoolean(value bool) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "Boolean", Boolean: value}
+}
+
+func NewSchemaFieldDefaultValueFromStringUnknownMap(value map[string]interface{}) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "StringUnknownMap", StringUnknownMap: value}
+}
+
+func NewSchemaFieldDefaultValueFromUnknownList(value []interface{}) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "UnknownList", UnknownList: value}
+}
+
+func (s *SchemaFieldDefaultValue) GetString() string {
+	if s == nil {
+		return ""
+	}
+	return s.String
+}
+
+func (s *SchemaFieldDefaultValue) GetDouble() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.Double
+}
+
+func (s *SchemaFieldDefaultValue) GetBoolean() bool {
+	if s == nil {
+		return false
+	}
+	return s.Boolean
+}
+
+func (s *SchemaFieldDefaultValue) GetStringUnknownMap() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.StringUnknownMap
+}
+
+func (s *SchemaFieldDefaultValue) GetUnknownList() []interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.UnknownList
+}
+
+func (s *SchemaFieldDefaultValue) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		s.typ = "String"
+		s.String = valueString
+		return nil
+	}
+	var valueDouble float64
+	if err := json.Unmarshal(data, &valueDouble); err == nil {
+		s.typ = "Double"
+		s.Double = valueDouble
+		return nil
+	}
+	var valueBoolean bool
+	if err := json.Unmarshal(data, &valueBoolean); err == nil {
+		s.typ = "Boolean"
+		s.Boolean = valueBoolean
+		return nil
+	}
+	var valueStringUnknownMap map[string]interface{}
+	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
+		s.typ = "StringUnknownMap"
+		s.StringUnknownMap = valueStringUnknownMap
+		return nil
+	}
+	var valueUnknownList []interface{}
+	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
+		s.typ = "UnknownList"
+		s.UnknownList = valueUnknownList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
+}
+
+func (s SchemaFieldDefaultValue) MarshalJSON() ([]byte, error) {
+	if s.typ == "String" || s.String != "" {
+		return json.Marshal(s.String)
+	}
+	if s.typ == "Double" || s.Double != 0 {
+		return json.Marshal(s.Double)
+	}
+	if s.typ == "Boolean" || s.Boolean != false {
+		return json.Marshal(s.Boolean)
+	}
+	if s.typ == "StringUnknownMap" || s.StringUnknownMap != nil {
+		return json.Marshal(s.StringUnknownMap)
+	}
+	if s.typ == "UnknownList" || s.UnknownList != nil {
+		return json.Marshal(s.UnknownList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type SchemaFieldDefaultValueVisitor interface {
+	VisitString(string) error
+	VisitDouble(float64) error
+	VisitBoolean(bool) error
+	VisitStringUnknownMap(map[string]interface{}) error
+	VisitUnknownList([]interface{}) error
+}
+
+func (s *SchemaFieldDefaultValue) Accept(visitor SchemaFieldDefaultValueVisitor) error {
+	if s.typ == "String" || s.String != "" {
+		return visitor.VisitString(s.String)
+	}
+	if s.typ == "Double" || s.Double != 0 {
+		return visitor.VisitDouble(s.Double)
+	}
+	if s.typ == "Boolean" || s.Boolean != false {
+		return visitor.VisitBoolean(s.Boolean)
+	}
+	if s.typ == "StringUnknownMap" || s.StringUnknownMap != nil {
+		return visitor.VisitStringUnknownMap(s.StringUnknownMap)
+	}
+	if s.typ == "UnknownList" || s.UnknownList != nil {
+		return visitor.VisitUnknownList(s.UnknownList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+// Data type of this field.
+type SchemaFieldType string
+
+const (
+	SchemaFieldTypeString  SchemaFieldType = "string"
+	SchemaFieldTypeNumber  SchemaFieldType = "number"
+	SchemaFieldTypeBoolean SchemaFieldType = "boolean"
+	SchemaFieldTypeObject  SchemaFieldType = "object"
+	SchemaFieldTypeArray   SchemaFieldType = "array"
+)
+
+func NewSchemaFieldTypeFromString(s string) (SchemaFieldType, error) {
+	switch s {
+	case "string":
+		return SchemaFieldTypeString, nil
+	case "number":
+		return SchemaFieldTypeNumber, nil
+	case "boolean":
+		return SchemaFieldTypeBoolean, nil
+	case "object":
+		return SchemaFieldTypeObject, nil
+	case "array":
+		return SchemaFieldTypeArray, nil
+	}
+	var t SchemaFieldType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchemaFieldType) Ptr() *SchemaFieldType {
+	return &s
+}
+
 type SuccessMessage struct {
 	// Success message
 	Message *string `json:"message,omitempty" url:"message,omitempty"`
@@ -173,6 +1022,437 @@ func (s *SuccessMessage) String() string {
 	}
 	return fmt.Sprintf("%#v", s)
 }
+
+type Test struct {
+	// Unique identifier for the test.
+	Id string `json:"id" url:"id"`
+	// The name of the test.
+	Name string `json:"name" url:"name"`
+	// The request object for the test.
+	Request map[string]interface{} `json:"request,omitempty" url:"request,omitempty"`
+	// The expected response object for the test.
+	Response map[string]interface{} `json:"response,omitempty" url:"response,omitempty"`
+	// Indicates whether the test is critical.
+	Critical bool `json:"critical" url:"critical"`
+	// Indicates if the test resulted in an error.
+	Error bool `json:"error" url:"error"`
+	// Indicates if the test was successful.
+	Success bool `json:"success" url:"success"`
+	// The state of the test after execution.
+	TestState *TestTestState `json:"testState,omitempty" url:"testState,omitempty"`
+	// The timestamp when the test was last executed.
+	LastExecuted *time.Time `json:"lastExecuted,omitempty" url:"lastExecuted,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *Test) GetId() string {
+	if t == nil {
+		return ""
+	}
+	return t.Id
+}
+
+func (t *Test) GetName() string {
+	if t == nil {
+		return ""
+	}
+	return t.Name
+}
+
+func (t *Test) GetRequest() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Request
+}
+
+func (t *Test) GetResponse() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Response
+}
+
+func (t *Test) GetCritical() bool {
+	if t == nil {
+		return false
+	}
+	return t.Critical
+}
+
+func (t *Test) GetError() bool {
+	if t == nil {
+		return false
+	}
+	return t.Error
+}
+
+func (t *Test) GetSuccess() bool {
+	if t == nil {
+		return false
+	}
+	return t.Success
+}
+
+func (t *Test) GetTestState() *TestTestState {
+	if t == nil {
+		return nil
+	}
+	return t.TestState
+}
+
+func (t *Test) GetLastExecuted() *time.Time {
+	if t == nil {
+		return nil
+	}
+	return t.LastExecuted
+}
+
+func (t *Test) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *Test) UnmarshalJSON(data []byte) error {
+	type embed Test
+	var unmarshaler = struct {
+		embed
+		LastExecuted *internal.DateTime `json:"lastExecuted,omitempty"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = Test(unmarshaler.embed)
+	t.LastExecuted = unmarshaler.LastExecuted.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *Test) MarshalJSON() ([]byte, error) {
+	type embed Test
+	var marshaler = struct {
+		embed
+		LastExecuted *internal.DateTime `json:"lastExecuted,omitempty"`
+	}{
+		embed:        embed(*t),
+		LastExecuted: internal.NewOptionalDateTime(t.LastExecuted),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *Test) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TestListResponse = []*Test
+
+// The state of the test after execution.
+type TestTestState struct {
+	// Execution time in seconds
+	Duration *float64 `json:"duration,omitempty" url:"duration,omitempty"`
+	// Actual response returned
+	Response   map[string]interface{}                         `json:"response,omitempty" url:"response,omitempty"`
+	Conditions []map[string]*TestTestStateConditionsItemValue `json:"conditions,omitempty" url:"conditions,omitempty"`
+	// HTTP status code returned
+	HttpStatus  *int  `json:"httpStatus,omitempty" url:"httpStatus,omitempty"`
+	SuccessIdxs []int `json:"successIdxs,omitempty" url:"successIdxs,omitempty"`
+	// Error message or flag indicating if evaluation error occurred
+	EvaluationError *TestTestStateEvaluationError `json:"evaluationError,omitempty" url:"evaluationError,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TestTestState) GetDuration() *float64 {
+	if t == nil {
+		return nil
+	}
+	return t.Duration
+}
+
+func (t *TestTestState) GetResponse() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Response
+}
+
+func (t *TestTestState) GetConditions() []map[string]*TestTestStateConditionsItemValue {
+	if t == nil {
+		return nil
+	}
+	return t.Conditions
+}
+
+func (t *TestTestState) GetHttpStatus() *int {
+	if t == nil {
+		return nil
+	}
+	return t.HttpStatus
+}
+
+func (t *TestTestState) GetSuccessIdxs() []int {
+	if t == nil {
+		return nil
+	}
+	return t.SuccessIdxs
+}
+
+func (t *TestTestState) GetEvaluationError() *TestTestStateEvaluationError {
+	if t == nil {
+		return nil
+	}
+	return t.EvaluationError
+}
+
+func (t *TestTestState) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TestTestState) UnmarshalJSON(data []byte) error {
+	type unmarshaler TestTestState
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TestTestState(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TestTestState) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TestTestStateConditionsItemValue struct {
+	Result *bool   `json:"result,omitempty" url:"result,omitempty"`
+	Err    *string `json:"err,omitempty" url:"err,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TestTestStateConditionsItemValue) GetResult() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.Result
+}
+
+func (t *TestTestStateConditionsItemValue) GetErr() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Err
+}
+
+func (t *TestTestStateConditionsItemValue) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TestTestStateConditionsItemValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler TestTestStateConditionsItemValue
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TestTestStateConditionsItemValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TestTestStateConditionsItemValue) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+// Error message or flag indicating if evaluation error occurred
+type TestTestStateEvaluationError struct {
+	Boolean bool
+	String  string
+
+	typ string
+}
+
+func NewTestTestStateEvaluationErrorFromBoolean(value bool) *TestTestStateEvaluationError {
+	return &TestTestStateEvaluationError{typ: "Boolean", Boolean: value}
+}
+
+func NewTestTestStateEvaluationErrorFromString(value string) *TestTestStateEvaluationError {
+	return &TestTestStateEvaluationError{typ: "String", String: value}
+}
+
+func (t *TestTestStateEvaluationError) GetBoolean() bool {
+	if t == nil {
+		return false
+	}
+	return t.Boolean
+}
+
+func (t *TestTestStateEvaluationError) GetString() string {
+	if t == nil {
+		return ""
+	}
+	return t.String
+}
+
+func (t *TestTestStateEvaluationError) UnmarshalJSON(data []byte) error {
+	var valueBoolean bool
+	if err := json.Unmarshal(data, &valueBoolean); err == nil {
+		t.typ = "Boolean"
+		t.Boolean = valueBoolean
+		return nil
+	}
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		t.typ = "String"
+		t.String = valueString
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
+}
+
+func (t TestTestStateEvaluationError) MarshalJSON() ([]byte, error) {
+	if t.typ == "Boolean" || t.Boolean != false {
+		return json.Marshal(t.Boolean)
+	}
+	if t.typ == "String" || t.String != "" {
+		return json.Marshal(t.String)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
+type TestTestStateEvaluationErrorVisitor interface {
+	VisitBoolean(bool) error
+	VisitString(string) error
+}
+
+func (t *TestTestStateEvaluationError) Accept(visitor TestTestStateEvaluationErrorVisitor) error {
+	if t.typ == "Boolean" || t.Boolean != false {
+		return visitor.VisitBoolean(t.Boolean)
+	}
+	if t.typ == "String" || t.String != "" {
+		return visitor.VisitString(t.String)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
+type UserGroup struct {
+	// Unique identifier of the user group.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// Name of the user group.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Description of the user group.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// List of member emails in the user group.
+	Members []string `json:"members,omitempty" url:"members,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UserGroup) GetId() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Id
+}
+
+func (u *UserGroup) GetName() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Name
+}
+
+func (u *UserGroup) GetDescription() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Description
+}
+
+func (u *UserGroup) GetMembers() []string {
+	if u == nil {
+		return nil
+	}
+	return u.Members
+}
+
+func (u *UserGroup) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UserGroup) UnmarshalJSON(data []byte) error {
+	type unmarshaler UserGroup
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UserGroup(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UserGroup) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UserGroupListResponse = []*UserGroup
 
 // System limits for dynamic values
 type ValueLimits struct {

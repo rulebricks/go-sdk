@@ -34,16 +34,16 @@ func NewClient(opts ...option.RequestOption) *Client {
 // Retrieve logs for a specific user and rule, with optional date range and pagination.
 func (c *Client) Query(
 	ctx context.Context,
-	request *sdk.QueryRequest,
+	request *sdk.DecisionsQueryRequest,
 	opts ...option.RequestOption,
 ) (*sdk.DecisionLogResponse, error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
 		c.baseURL,
-		"",
+		"https://rulebricks.com/api/v1",
 	)
-	endpointURL := baseURL + "/api/v1/decisions/query"
+	endpointURL := baseURL + "/decisions/query"
 	queryParams, err := internal.QueryValues(request)
 	if err != nil {
 		return nil, err

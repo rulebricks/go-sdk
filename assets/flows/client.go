@@ -31,35 +31,23 @@ func NewClient(opts ...option.RequestOption) *Client {
 	}
 }
 
-// Execute a flow by its slug.
-func (c *Client) Execute(
+// List all flows in the organization.
+func (c *Client) List(
 	ctx context.Context,
-	// The unique identifier for the resource.
-	slug string,
-	request sdk.DynamicRequestPayload,
 	opts ...option.RequestOption,
-) (sdk.DynamicResponsePayload, error) {
+) (sdk.FlowListResponse, error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
 		c.baseURL,
 		"https://rulebricks.com/api/v1",
 	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/flows/%v",
-		slug,
-	)
+	endpointURL := baseURL + "/admin/flows/list"
 	headers := internal.MergeHeaders(
 		c.header.Clone(),
 		options.ToHeader(),
 	)
-	headers.Set("Content-Type", "application/json")
 	errorCodes := internal.ErrorCodes{
-		400: func(apiError *core.APIError) error {
-			return &sdk.BadRequestError{
-				APIError: apiError,
-			}
-		},
 		500: func(apiError *core.APIError) error {
 			return &sdk.InternalServerError{
 				APIError: apiError,
@@ -67,18 +55,17 @@ func (c *Client) Execute(
 		},
 	}
 
-	var response sdk.DynamicResponsePayload
+	var response sdk.FlowListResponse
 	if err := c.caller.Call(
 		ctx,
 		&internal.CallParams{
 			URL:             endpointURL,
-			Method:          http.MethodPost,
+			Method:          http.MethodGet,
 			Headers:         headers,
 			MaxAttempts:     options.MaxAttempts,
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
-			Request:         request,
 			Response:        &response,
 			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
