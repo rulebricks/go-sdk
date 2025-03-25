@@ -5,49 +5,334 @@ package api
 import (
 	json "encoding/json"
 	fmt "fmt"
-	core "sdk/core"
+	internal "sdk/internal"
 	time "time"
 )
 
-type QueryRequest struct {
+type QueryDecisionsRequest struct {
 	// The slug of the rule to query logs for.
-	Slug string `json:"-"`
+	Slug string `json:"-" url:"slug"`
 	// Start date for the query range (ISO8601 format).
-	From *time.Time `json:"-"`
+	From *time.Time `json:"-" url:"from,omitempty"`
 	// End date for the query range (ISO8601 format).
-	To *time.Time `json:"-"`
+	To *time.Time `json:"-" url:"to,omitempty"`
 	// Cursor for pagination.
-	Cursor *string `json:"-"`
+	Cursor *string `json:"-" url:"cursor,omitempty"`
 	// Number of results to return per page.
-	Limit *int `json:"-"`
+	Limit *int `json:"-" url:"limit,omitempty"`
 }
 
-type QueryResponse struct {
-	Data   []map[string]interface{} `json:"data,omitempty"`
-	Cursor *string                  `json:"cursor,omitempty"`
+type DecisionLog struct {
+	Request  *DecisionLogRequest  `json:"request,omitempty" url:"request,omitempty"`
+	Response *DecisionLogResponse `json:"response,omitempty" url:"response,omitempty"`
+	Decision *DecisionLogDecision `json:"decision,omitempty" url:"decision,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (q *QueryResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler QueryResponse
+func (d *DecisionLog) GetRequest() *DecisionLogRequest {
+	if d == nil {
+		return nil
+	}
+	return d.Request
+}
+
+func (d *DecisionLog) GetResponse() *DecisionLogResponse {
+	if d == nil {
+		return nil
+	}
+	return d.Response
+}
+
+func (d *DecisionLog) GetDecision() *DecisionLogDecision {
+	if d == nil {
+		return nil
+	}
+	return d.Decision
+}
+
+func (d *DecisionLog) GetExtraProperties() map[string]interface{} {
+	return d.extraProperties
+}
+
+func (d *DecisionLog) UnmarshalJSON(data []byte) error {
+	type unmarshaler DecisionLog
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*q = QueryResponse(value)
-	q._rawJSON = json.RawMessage(data)
+	*d = DecisionLog(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (q *QueryResponse) String() string {
-	if len(q._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(q._rawJSON); err == nil {
+func (d *DecisionLog) String() string {
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(q); err == nil {
+	if value, err := internal.StringifyJSON(d); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", q)
+	return fmt.Sprintf("%#v", d)
+}
+
+type DecisionLogDecision struct {
+	Conditions  []map[string]*DecisionLogDecisionConditionsItemValue `json:"conditions,omitempty" url:"conditions,omitempty"`
+	SuccessIdxs []int                                                `json:"successIdxs,omitempty" url:"successIdxs,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DecisionLogDecision) GetConditions() []map[string]*DecisionLogDecisionConditionsItemValue {
+	if d == nil {
+		return nil
+	}
+	return d.Conditions
+}
+
+func (d *DecisionLogDecision) GetSuccessIdxs() []int {
+	if d == nil {
+		return nil
+	}
+	return d.SuccessIdxs
+}
+
+func (d *DecisionLogDecision) GetExtraProperties() map[string]interface{} {
+	return d.extraProperties
+}
+
+func (d *DecisionLogDecision) UnmarshalJSON(data []byte) error {
+	type unmarshaler DecisionLogDecision
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DecisionLogDecision(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DecisionLogDecision) String() string {
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type DecisionLogDecisionConditionsItemValue struct {
+	Result *bool   `json:"result,omitempty" url:"result,omitempty"`
+	Err    *string `json:"err,omitempty" url:"err,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DecisionLogDecisionConditionsItemValue) GetResult() *bool {
+	if d == nil {
+		return nil
+	}
+	return d.Result
+}
+
+func (d *DecisionLogDecisionConditionsItemValue) GetErr() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Err
+}
+
+func (d *DecisionLogDecisionConditionsItemValue) GetExtraProperties() map[string]interface{} {
+	return d.extraProperties
+}
+
+func (d *DecisionLogDecisionConditionsItemValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler DecisionLogDecisionConditionsItemValue
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DecisionLogDecisionConditionsItemValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DecisionLogDecisionConditionsItemValue) String() string {
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type DecisionLogRequest struct {
+	// IP address of the requester
+	Ip *string `json:"ip,omitempty" url:"ip,omitempty"`
+	// HTTP method used
+	Method *string `json:"method,omitempty" url:"method,omitempty"`
+	// Name of the rule executed
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// API endpoint called
+	Endpoint *string             `json:"endpoint,omitempty" url:"endpoint,omitempty"`
+	Params   map[string][]string `json:"params,omitempty" url:"params,omitempty"`
+	Data     interface{}         `json:"data,omitempty" url:"data,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DecisionLogRequest) GetIp() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Ip
+}
+
+func (d *DecisionLogRequest) GetMethod() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Method
+}
+
+func (d *DecisionLogRequest) GetName() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Name
+}
+
+func (d *DecisionLogRequest) GetEndpoint() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Endpoint
+}
+
+func (d *DecisionLogRequest) GetParams() map[string][]string {
+	if d == nil {
+		return nil
+	}
+	return d.Params
+}
+
+func (d *DecisionLogRequest) GetData() interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.Data
+}
+
+func (d *DecisionLogRequest) GetExtraProperties() map[string]interface{} {
+	return d.extraProperties
+}
+
+func (d *DecisionLogRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler DecisionLogRequest
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DecisionLogRequest(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DecisionLogRequest) String() string {
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type DecisionLogResponse struct {
+	Data []*DecisionLog `json:"data,omitempty" url:"data,omitempty"`
+	// Pagination cursor for next page
+	Cursor *string `json:"cursor,omitempty" url:"cursor,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DecisionLogResponse) GetData() []*DecisionLog {
+	if d == nil {
+		return nil
+	}
+	return d.Data
+}
+
+func (d *DecisionLogResponse) GetCursor() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Cursor
+}
+
+func (d *DecisionLogResponse) GetExtraProperties() map[string]interface{} {
+	return d.extraProperties
+}
+
+func (d *DecisionLogResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler DecisionLogResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DecisionLogResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DecisionLogResponse) String() string {
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
 }

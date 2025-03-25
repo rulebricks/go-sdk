@@ -5,124 +5,246 @@ package api
 import (
 	json "encoding/json"
 	fmt "fmt"
-	core "sdk/core"
+	internal "sdk/internal"
 )
 
-type BadRequestErrorBody struct {
-	// Error message describing the issue with the request.
-	Error *string `json:"error,omitempty"`
+// Dynamic request payload for rule execution. Structure depends on rule configuration.
+type DynamicRequestPayload = map[string]interface{}
 
-	_rawJSON json.RawMessage
+// Dynamic response payload from rule execution. Structure depends on rule configuration.
+type DynamicResponsePayload = map[string]interface{}
+
+type Error struct {
+	// Error message
+	Error *string `json:"error,omitempty" url:"error,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (b *BadRequestErrorBody) UnmarshalJSON(data []byte) error {
-	type unmarshaler BadRequestErrorBody
+func (e *Error) GetError() *string {
+	if e == nil {
+		return nil
+	}
+	return e.Error
+}
+
+func (e *Error) GetExtraProperties() map[string]interface{} {
+	return e.extraProperties
+}
+
+func (e *Error) UnmarshalJSON(data []byte) error {
+	type unmarshaler Error
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*b = BadRequestErrorBody(value)
-	b._rawJSON = json.RawMessage(data)
+	*e = Error(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *e)
+	if err != nil {
+		return err
+	}
+	e.extraProperties = extraProperties
+	e.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (b *BadRequestErrorBody) String() string {
-	if len(b._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(b._rawJSON); err == nil {
+func (e *Error) String() string {
+	if len(e.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(b); err == nil {
+	if value, err := internal.StringifyJSON(e); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", b)
+	return fmt.Sprintf("%#v", e)
 }
 
-type ForbiddenErrorBody struct {
-	Error *string `json:"error,omitempty"`
+// Error response when flow execution fails
+type FlowExecutionError struct {
+	// Error message describing what went wrong during flow execution
+	Error *string `json:"error,omitempty" url:"error,omitempty"`
+	// Identifier of the node where the error occurred (if applicable)
+	Node *string `json:"node,omitempty" url:"node,omitempty"`
+	// Additional error details
+	Details map[string]interface{} `json:"details,omitempty" url:"details,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (f *ForbiddenErrorBody) UnmarshalJSON(data []byte) error {
-	type unmarshaler ForbiddenErrorBody
+func (f *FlowExecutionError) GetError() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Error
+}
+
+func (f *FlowExecutionError) GetNode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Node
+}
+
+func (f *FlowExecutionError) GetDetails() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.Details
+}
+
+func (f *FlowExecutionError) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FlowExecutionError) UnmarshalJSON(data []byte) error {
+	type unmarshaler FlowExecutionError
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*f = ForbiddenErrorBody(value)
-	f._rawJSON = json.RawMessage(data)
+	*f = FlowExecutionError(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (f *ForbiddenErrorBody) String() string {
-	if len(f._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(f._rawJSON); err == nil {
+func (f *FlowExecutionError) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(f); err == nil {
+	if value, err := internal.StringifyJSON(f); err == nil {
 		return value
 	}
 	return fmt.Sprintf("%#v", f)
 }
 
-type InternalServerErrorBody struct {
-	// Error message describing the internal server error.
-	Error *string `json:"error,omitempty"`
+type SuccessMessage struct {
+	// Success message
+	Message *string `json:"message,omitempty" url:"message,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (i *InternalServerErrorBody) UnmarshalJSON(data []byte) error {
-	type unmarshaler InternalServerErrorBody
+func (s *SuccessMessage) GetMessage() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Message
+}
+
+func (s *SuccessMessage) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SuccessMessage) UnmarshalJSON(data []byte) error {
+	type unmarshaler SuccessMessage
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*i = InternalServerErrorBody(value)
-	i._rawJSON = json.RawMessage(data)
+	*s = SuccessMessage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (i *InternalServerErrorBody) String() string {
-	if len(i._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(i._rawJSON); err == nil {
+func (s *SuccessMessage) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(i); err == nil {
+	if value, err := internal.StringifyJSON(s); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", i)
+	return fmt.Sprintf("%#v", s)
 }
 
-type NotFoundErrorBody struct {
-	// Error message indicating the folder was not found.
-	Error *string `json:"error,omitempty"`
+// System limits for dynamic values
+type ValueLimits struct {
+	// Maximum number of value keys per user
+	MaxKeys *int `json:"MAX_KEYS,omitempty" url:"MAX_KEYS,omitempty"`
+	// Maximum length of a single value in characters
+	MaxValueLength *int `json:"MAX_VALUE_LENGTH,omitempty" url:"MAX_VALUE_LENGTH,omitempty"`
+	// Maximum total size of all values in bytes
+	MaxTotalSize *int `json:"MAX_TOTAL_SIZE,omitempty" url:"MAX_TOTAL_SIZE,omitempty"`
+	// Maximum length of a key name
+	MaxKeyLength *int `json:"MAX_KEY_LENGTH,omitempty" url:"MAX_KEY_LENGTH,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (n *NotFoundErrorBody) UnmarshalJSON(data []byte) error {
-	type unmarshaler NotFoundErrorBody
+func (v *ValueLimits) GetMaxKeys() *int {
+	if v == nil {
+		return nil
+	}
+	return v.MaxKeys
+}
+
+func (v *ValueLimits) GetMaxValueLength() *int {
+	if v == nil {
+		return nil
+	}
+	return v.MaxValueLength
+}
+
+func (v *ValueLimits) GetMaxTotalSize() *int {
+	if v == nil {
+		return nil
+	}
+	return v.MaxTotalSize
+}
+
+func (v *ValueLimits) GetMaxKeyLength() *int {
+	if v == nil {
+		return nil
+	}
+	return v.MaxKeyLength
+}
+
+func (v *ValueLimits) GetExtraProperties() map[string]interface{} {
+	return v.extraProperties
+}
+
+func (v *ValueLimits) UnmarshalJSON(data []byte) error {
+	type unmarshaler ValueLimits
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*n = NotFoundErrorBody(value)
-	n._rawJSON = json.RawMessage(data)
+	*v = ValueLimits(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *v)
+	if err != nil {
+		return err
+	}
+	v.extraProperties = extraProperties
+	v.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (n *NotFoundErrorBody) String() string {
-	if len(n._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(n._rawJSON); err == nil {
+func (v *ValueLimits) String() string {
+	if len(v.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(n); err == nil {
+	if value, err := internal.StringifyJSON(v); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", n)
+	return fmt.Sprintf("%#v", v)
 }

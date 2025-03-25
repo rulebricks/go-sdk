@@ -5,485 +5,840 @@ package api
 import (
 	json "encoding/json"
 	fmt "fmt"
-	core "sdk/core"
+	internal "sdk/internal"
+	time "time"
 )
 
 type DeleteDynamicValueRequest struct {
 	// ID of the dynamic value to delete
-	Id string `json:"-"`
+	Id string `json:"-" url:"id"`
 }
 
 type ListDynamicValuesRequest struct {
 	// Name of a specific dynamic value to retrieve data for
-	Name *string `json:"-"`
+	Name *string `json:"-" url:"name,omitempty"`
 }
 
-type DeleteDynamicValueResponse struct {
-	// Confirmation message of successful deletion.
-	Message *string `json:"message,omitempty"`
+type BooleanValue struct {
+	// Unique identifier for the dynamic value.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// Name of the dynamic value.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Rules that use this dynamic value.
+	Usages []*RuleUsage `json:"usages,omitempty" url:"usages,omitempty"`
+	// Access groups assigned to this value.
+	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+	// The boolean value
+	Value *bool `json:"value,omitempty" url:"value,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (d *DeleteDynamicValueResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteDynamicValueResponse
+func (b *BooleanValue) GetId() *string {
+	if b == nil {
+		return nil
+	}
+	return b.Id
+}
+
+func (b *BooleanValue) GetName() *string {
+	if b == nil {
+		return nil
+	}
+	return b.Name
+}
+
+func (b *BooleanValue) GetUsages() []*RuleUsage {
+	if b == nil {
+		return nil
+	}
+	return b.Usages
+}
+
+func (b *BooleanValue) GetAccessGroups() []string {
+	if b == nil {
+		return nil
+	}
+	return b.AccessGroups
+}
+
+func (b *BooleanValue) GetValue() *bool {
+	if b == nil {
+		return nil
+	}
+	return b.Value
+}
+
+func (b *BooleanValue) GetExtraProperties() map[string]interface{} {
+	return b.extraProperties
+}
+
+func (b *BooleanValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler BooleanValue
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*d = DeleteDynamicValueResponse(value)
-	d._rawJSON = json.RawMessage(data)
+	*b = BooleanValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	b.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (d *DeleteDynamicValueResponse) String() string {
-	if len(d._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(d._rawJSON); err == nil {
+func (b *BooleanValue) String() string {
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(d); err == nil {
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+type DynamicValue struct {
+	Type    string
+	String  *StringValue
+	Number  *NumberValue
+	Boolean *BooleanValue
+	List    *ListValue
+}
+
+func NewDynamicValueFromString(value *StringValue) *DynamicValue {
+	return &DynamicValue{Type: "string", String: value}
+}
+
+func NewDynamicValueFromNumber(value *NumberValue) *DynamicValue {
+	return &DynamicValue{Type: "number", Number: value}
+}
+
+func NewDynamicValueFromBoolean(value *BooleanValue) *DynamicValue {
+	return &DynamicValue{Type: "boolean", Boolean: value}
+}
+
+func NewDynamicValueFromList(value *ListValue) *DynamicValue {
+	return &DynamicValue{Type: "list", List: value}
+}
+
+func (d *DynamicValue) GetType() string {
+	if d == nil {
+		return ""
+	}
+	return d.Type
+}
+
+func (d *DynamicValue) GetString() *StringValue {
+	if d == nil {
+		return nil
+	}
+	return d.String
+}
+
+func (d *DynamicValue) GetNumber() *NumberValue {
+	if d == nil {
+		return nil
+	}
+	return d.Number
+}
+
+func (d *DynamicValue) GetBoolean() *BooleanValue {
+	if d == nil {
+		return nil
+	}
+	return d.Boolean
+}
+
+func (d *DynamicValue) GetList() *ListValue {
+	if d == nil {
+		return nil
+	}
+	return d.List
+}
+
+func (d *DynamicValue) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	d.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant type", d)
+	}
+	switch unmarshaler.Type {
+	case "string":
+		value := new(StringValue)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		d.String = value
+	case "number":
+		value := new(NumberValue)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		d.Number = value
+	case "boolean":
+		value := new(BooleanValue)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		d.Boolean = value
+	case "list":
+		value := new(ListValue)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		d.List = value
+	}
+	return nil
+}
+
+func (d DynamicValue) MarshalJSON() ([]byte, error) {
+	if err := d.validate(); err != nil {
+		return nil, err
+	}
+	switch d.Type {
+	default:
+		return nil, fmt.Errorf("invalid type %s in %T", d.Type, d)
+	case "string":
+		return internal.MarshalJSONWithExtraProperty(d.String, "type", "string")
+	case "number":
+		return internal.MarshalJSONWithExtraProperty(d.Number, "type", "number")
+	case "boolean":
+		return internal.MarshalJSONWithExtraProperty(d.Boolean, "type", "boolean")
+	case "list":
+		return internal.MarshalJSONWithExtraProperty(d.List, "type", "list")
+	}
+}
+
+type DynamicValueVisitor interface {
+	VisitString(*StringValue) error
+	VisitNumber(*NumberValue) error
+	VisitBoolean(*BooleanValue) error
+	VisitList(*ListValue) error
+}
+
+func (d *DynamicValue) Accept(visitor DynamicValueVisitor) error {
+	switch d.Type {
+	default:
+		return fmt.Errorf("invalid type %s in %T", d.Type, d)
+	case "string":
+		return visitor.VisitString(d.String)
+	case "number":
+		return visitor.VisitNumber(d.Number)
+	case "boolean":
+		return visitor.VisitBoolean(d.Boolean)
+	case "list":
+		return visitor.VisitList(d.List)
+	}
+}
+
+func (d *DynamicValue) validate() error {
+	if d == nil {
+		return fmt.Errorf("type %T is nil", d)
+	}
+	var fields []string
+	if d.String != nil {
+		fields = append(fields, "string")
+	}
+	if d.Number != nil {
+		fields = append(fields, "number")
+	}
+	if d.Boolean != nil {
+		fields = append(fields, "boolean")
+	}
+	if d.List != nil {
+		fields = append(fields, "list")
+	}
+	if len(fields) == 0 {
+		if d.Type != "" {
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", d, d.Type)
+		}
+		return fmt.Errorf("type %T is empty", d)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", d, fields)
+	}
+	if d.Type != "" {
+		field := fields[0]
+		if d.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				d,
+				d.Type,
+				d,
+			)
+		}
+	}
+	return nil
+}
+
+type DynamicValueBase struct {
+	// Unique identifier for the dynamic value.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// Name of the dynamic value.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Rules that use this dynamic value.
+	Usages []*RuleUsage `json:"usages,omitempty" url:"usages,omitempty"`
+	// Access groups assigned to this value.
+	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DynamicValueBase) GetId() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Id
+}
+
+func (d *DynamicValueBase) GetName() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Name
+}
+
+func (d *DynamicValueBase) GetUsages() []*RuleUsage {
+	if d == nil {
+		return nil
+	}
+	return d.Usages
+}
+
+func (d *DynamicValueBase) GetAccessGroups() []string {
+	if d == nil {
+		return nil
+	}
+	return d.AccessGroups
+}
+
+func (d *DynamicValueBase) GetExtraProperties() map[string]interface{} {
+	return d.extraProperties
+}
+
+func (d *DynamicValueBase) UnmarshalJSON(data []byte) error {
+	type unmarshaler DynamicValueBase
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DynamicValueBase(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DynamicValueBase) String() string {
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
 		return value
 	}
 	return fmt.Sprintf("%#v", d)
 }
 
-type ListDynamicValuesResponseItem struct {
-	// Unique identifier for the dynamic value.
-	Id *string `json:"id,omitempty"`
-	// Name of the dynamic value.
-	Name *string `json:"name,omitempty"`
-	// Data type of the dynamic value.
-	Type *ListDynamicValuesResponseItemType `json:"type,omitempty"`
-	// Value of the dynamic value.
-	Value  *ListDynamicValuesResponseItemValue        `json:"value,omitempty"`
-	Usages []*ListDynamicValuesResponseItemUsagesItem `json:"usages,omitempty"`
+type DynamicValueListResponse = []*DynamicValue
 
-	_rawJSON json.RawMessage
+type ListValue struct {
+	// Unique identifier for the dynamic value.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// Name of the dynamic value.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Rules that use this dynamic value.
+	Usages []*RuleUsage `json:"usages,omitempty" url:"usages,omitempty"`
+	// Access groups assigned to this value.
+	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+	// The list value
+	Value []string `json:"value,omitempty" url:"value,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (l *ListDynamicValuesResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListDynamicValuesResponseItem
+func (l *ListValue) GetId() *string {
+	if l == nil {
+		return nil
+	}
+	return l.Id
+}
+
+func (l *ListValue) GetName() *string {
+	if l == nil {
+		return nil
+	}
+	return l.Name
+}
+
+func (l *ListValue) GetUsages() []*RuleUsage {
+	if l == nil {
+		return nil
+	}
+	return l.Usages
+}
+
+func (l *ListValue) GetAccessGroups() []string {
+	if l == nil {
+		return nil
+	}
+	return l.AccessGroups
+}
+
+func (l *ListValue) GetValue() []string {
+	if l == nil {
+		return nil
+	}
+	return l.Value
+}
+
+func (l *ListValue) GetExtraProperties() map[string]interface{} {
+	return l.extraProperties
+}
+
+func (l *ListValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler ListValue
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*l = ListDynamicValuesResponseItem(value)
-	l._rawJSON = json.RawMessage(data)
+	*l = ListValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (l *ListDynamicValuesResponseItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
+func (l *ListValue) String() string {
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(l); err == nil {
+	if value, err := internal.StringifyJSON(l); err == nil {
 		return value
 	}
 	return fmt.Sprintf("%#v", l)
 }
 
-// Data type of the dynamic value.
-type ListDynamicValuesResponseItemType string
+type NumberValue struct {
+	// Unique identifier for the dynamic value.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// Name of the dynamic value.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Rules that use this dynamic value.
+	Usages []*RuleUsage `json:"usages,omitempty" url:"usages,omitempty"`
+	// Access groups assigned to this value.
+	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+	// The numeric value
+	Value *float64 `json:"value,omitempty" url:"value,omitempty"`
 
-const (
-	ListDynamicValuesResponseItemTypeString  ListDynamicValuesResponseItemType = "string"
-	ListDynamicValuesResponseItemTypeNumber  ListDynamicValuesResponseItemType = "number"
-	ListDynamicValuesResponseItemTypeBoolean ListDynamicValuesResponseItemType = "boolean"
-	ListDynamicValuesResponseItemTypeList    ListDynamicValuesResponseItemType = "list"
-)
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
 
-func NewListDynamicValuesResponseItemTypeFromString(s string) (ListDynamicValuesResponseItemType, error) {
-	switch s {
-	case "string":
-		return ListDynamicValuesResponseItemTypeString, nil
-	case "number":
-		return ListDynamicValuesResponseItemTypeNumber, nil
-	case "boolean":
-		return ListDynamicValuesResponseItemTypeBoolean, nil
-	case "list":
-		return ListDynamicValuesResponseItemTypeList, nil
+func (n *NumberValue) GetId() *string {
+	if n == nil {
+		return nil
 	}
-	var t ListDynamicValuesResponseItemType
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
+	return n.Id
 }
 
-func (l ListDynamicValuesResponseItemType) Ptr() *ListDynamicValuesResponseItemType {
-	return &l
+func (n *NumberValue) GetName() *string {
+	if n == nil {
+		return nil
+	}
+	return n.Name
 }
 
-type ListDynamicValuesResponseItemUsagesItem struct {
+func (n *NumberValue) GetUsages() []*RuleUsage {
+	if n == nil {
+		return nil
+	}
+	return n.Usages
+}
+
+func (n *NumberValue) GetAccessGroups() []string {
+	if n == nil {
+		return nil
+	}
+	return n.AccessGroups
+}
+
+func (n *NumberValue) GetValue() *float64 {
+	if n == nil {
+		return nil
+	}
+	return n.Value
+}
+
+func (n *NumberValue) GetExtraProperties() map[string]interface{} {
+	return n.extraProperties
+}
+
+func (n *NumberValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler NumberValue
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NumberValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NumberValue) String() string {
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+type RuleUsage struct {
 	// The unique identifier for the rule.
-	Id *string `json:"id,omitempty"`
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
 	// The name of the rule.
-	Name *string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// The description of the rule.
-	Description *string `json:"description,omitempty"`
-	// Whether the rule is published.
-	Published *bool `json:"published,omitempty"`
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// The unique slug for the rule used in API requests.
-	Slug *string `json:"slug,omitempty"`
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+	// Whether the rule is published.
+	Published *bool `json:"published,omitempty" url:"published,omitempty"`
 	// The date this rule was last updated.
-	UpdatedAt *string `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty" url:"updated_at,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (l *ListDynamicValuesResponseItemUsagesItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListDynamicValuesResponseItemUsagesItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
+func (r *RuleUsage) GetId() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Id
+}
+
+func (r *RuleUsage) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RuleUsage) GetDescription() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Description
+}
+
+func (r *RuleUsage) GetSlug() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Slug
+}
+
+func (r *RuleUsage) GetPublished() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.Published
+}
+
+func (r *RuleUsage) GetUpdatedAt() *time.Time {
+	if r == nil {
+		return nil
+	}
+	return r.UpdatedAt
+}
+
+func (r *RuleUsage) GetExtraProperties() map[string]interface{} {
+	return r.extraProperties
+}
+
+func (r *RuleUsage) UnmarshalJSON(data []byte) error {
+	type embed RuleUsage
+	var unmarshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updated_at,omitempty"`
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
 		return err
 	}
-	*l = ListDynamicValuesResponseItemUsagesItem(value)
-	l._rawJSON = json.RawMessage(data)
+	*r = RuleUsage(unmarshaler.embed)
+	r.UpdatedAt = unmarshaler.UpdatedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (l *ListDynamicValuesResponseItemUsagesItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
+func (r *RuleUsage) MarshalJSON() ([]byte, error) {
+	type embed RuleUsage
+	var marshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updated_at,omitempty"`
+	}{
+		embed:     embed(*r),
+		UpdatedAt: internal.NewOptionalDateTime(r.UpdatedAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (r *RuleUsage) String() string {
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(l); err == nil {
+	if value, err := internal.StringifyJSON(r); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", l)
+	return fmt.Sprintf("%#v", r)
 }
 
-// Value of the dynamic value.
-type ListDynamicValuesResponseItemValue struct {
-	typeName    string
-	String      string
-	Double      float64
-	Boolean     bool
-	UnknownList []interface{}
-}
-
-func NewListDynamicValuesResponseItemValueFromString(value string) *ListDynamicValuesResponseItemValue {
-	return &ListDynamicValuesResponseItemValue{typeName: "string", String: value}
-}
-
-func NewListDynamicValuesResponseItemValueFromDouble(value float64) *ListDynamicValuesResponseItemValue {
-	return &ListDynamicValuesResponseItemValue{typeName: "double", Double: value}
-}
-
-func NewListDynamicValuesResponseItemValueFromBoolean(value bool) *ListDynamicValuesResponseItemValue {
-	return &ListDynamicValuesResponseItemValue{typeName: "boolean", Boolean: value}
-}
-
-func NewListDynamicValuesResponseItemValueFromUnknownList(value []interface{}) *ListDynamicValuesResponseItemValue {
-	return &ListDynamicValuesResponseItemValue{typeName: "unknownList", UnknownList: value}
-}
-
-func (l *ListDynamicValuesResponseItemValue) UnmarshalJSON(data []byte) error {
-	var valueString string
-	if err := json.Unmarshal(data, &valueString); err == nil {
-		l.typeName = "string"
-		l.String = valueString
-		return nil
-	}
-	var valueDouble float64
-	if err := json.Unmarshal(data, &valueDouble); err == nil {
-		l.typeName = "double"
-		l.Double = valueDouble
-		return nil
-	}
-	var valueBoolean bool
-	if err := json.Unmarshal(data, &valueBoolean); err == nil {
-		l.typeName = "boolean"
-		l.Boolean = valueBoolean
-		return nil
-	}
-	var valueUnknownList []interface{}
-	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
-		l.typeName = "unknownList"
-		l.UnknownList = valueUnknownList
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, l)
-}
-
-func (l ListDynamicValuesResponseItemValue) MarshalJSON() ([]byte, error) {
-	switch l.typeName {
-	default:
-		return nil, fmt.Errorf("invalid type %s in %T", l.typeName, l)
-	case "string":
-		return json.Marshal(l.String)
-	case "double":
-		return json.Marshal(l.Double)
-	case "boolean":
-		return json.Marshal(l.Boolean)
-	case "unknownList":
-		return json.Marshal(l.UnknownList)
-	}
-}
-
-type ListDynamicValuesResponseItemValueVisitor interface {
-	VisitString(string) error
-	VisitDouble(float64) error
-	VisitBoolean(bool) error
-	VisitUnknownList([]interface{}) error
-}
-
-func (l *ListDynamicValuesResponseItemValue) Accept(visitor ListDynamicValuesResponseItemValueVisitor) error {
-	switch l.typeName {
-	default:
-		return fmt.Errorf("invalid type %s in %T", l.typeName, l)
-	case "string":
-		return visitor.VisitString(l.String)
-	case "double":
-		return visitor.VisitDouble(l.Double)
-	case "boolean":
-		return visitor.VisitBoolean(l.Boolean)
-	case "unknownList":
-		return visitor.VisitUnknownList(l.UnknownList)
-	}
-}
-
-type UpdateRequestValue struct {
-	typeName    string
-	String      string
-	Double      float64
-	Boolean     bool
-	UnknownList []interface{}
-}
-
-func NewUpdateRequestValueFromString(value string) *UpdateRequestValue {
-	return &UpdateRequestValue{typeName: "string", String: value}
-}
-
-func NewUpdateRequestValueFromDouble(value float64) *UpdateRequestValue {
-	return &UpdateRequestValue{typeName: "double", Double: value}
-}
-
-func NewUpdateRequestValueFromBoolean(value bool) *UpdateRequestValue {
-	return &UpdateRequestValue{typeName: "boolean", Boolean: value}
-}
-
-func NewUpdateRequestValueFromUnknownList(value []interface{}) *UpdateRequestValue {
-	return &UpdateRequestValue{typeName: "unknownList", UnknownList: value}
-}
-
-func (u *UpdateRequestValue) UnmarshalJSON(data []byte) error {
-	var valueString string
-	if err := json.Unmarshal(data, &valueString); err == nil {
-		u.typeName = "string"
-		u.String = valueString
-		return nil
-	}
-	var valueDouble float64
-	if err := json.Unmarshal(data, &valueDouble); err == nil {
-		u.typeName = "double"
-		u.Double = valueDouble
-		return nil
-	}
-	var valueBoolean bool
-	if err := json.Unmarshal(data, &valueBoolean); err == nil {
-		u.typeName = "boolean"
-		u.Boolean = valueBoolean
-		return nil
-	}
-	var valueUnknownList []interface{}
-	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
-		u.typeName = "unknownList"
-		u.UnknownList = valueUnknownList
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
-}
-
-func (u UpdateRequestValue) MarshalJSON() ([]byte, error) {
-	switch u.typeName {
-	default:
-		return nil, fmt.Errorf("invalid type %s in %T", u.typeName, u)
-	case "string":
-		return json.Marshal(u.String)
-	case "double":
-		return json.Marshal(u.Double)
-	case "boolean":
-		return json.Marshal(u.Boolean)
-	case "unknownList":
-		return json.Marshal(u.UnknownList)
-	}
-}
-
-type UpdateRequestValueVisitor interface {
-	VisitString(string) error
-	VisitDouble(float64) error
-	VisitBoolean(bool) error
-	VisitUnknownList([]interface{}) error
-}
-
-func (u *UpdateRequestValue) Accept(visitor UpdateRequestValueVisitor) error {
-	switch u.typeName {
-	default:
-		return fmt.Errorf("invalid type %s in %T", u.typeName, u)
-	case "string":
-		return visitor.VisitString(u.String)
-	case "double":
-		return visitor.VisitDouble(u.Double)
-	case "boolean":
-		return visitor.VisitBoolean(u.Boolean)
-	case "unknownList":
-		return visitor.VisitUnknownList(u.UnknownList)
-	}
-}
-
-type UpdateResponseItem struct {
+type StringValue struct {
 	// Unique identifier for the dynamic value.
-	Id *string `json:"id,omitempty"`
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
 	// Name of the dynamic value.
-	Name *string `json:"name,omitempty"`
-	// Data type of the dynamic value.
-	Type *UpdateResponseItemType `json:"type,omitempty"`
-	// Value of the dynamic value.
-	Value *UpdateResponseItemValue `json:"value,omitempty"`
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Rules that use this dynamic value.
+	Usages []*RuleUsage `json:"usages,omitempty" url:"usages,omitempty"`
+	// Access groups assigned to this value.
+	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+	// The string value
+	Value *string `json:"value,omitempty" url:"value,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (u *UpdateResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler UpdateResponseItem
+func (s *StringValue) GetId() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Id
+}
+
+func (s *StringValue) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *StringValue) GetUsages() []*RuleUsage {
+	if s == nil {
+		return nil
+	}
+	return s.Usages
+}
+
+func (s *StringValue) GetAccessGroups() []string {
+	if s == nil {
+		return nil
+	}
+	return s.AccessGroups
+}
+
+func (s *StringValue) GetValue() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Value
+}
+
+func (s *StringValue) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *StringValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler StringValue
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*u = UpdateResponseItem(value)
-	u._rawJSON = json.RawMessage(data)
+	*s = StringValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (u *UpdateResponseItem) String() string {
-	if len(u._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(u._rawJSON); err == nil {
+func (s *StringValue) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(u); err == nil {
+	if value, err := internal.StringifyJSON(s); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", u)
+	return fmt.Sprintf("%#v", s)
 }
 
-// Data type of the dynamic value.
-type UpdateResponseItemType string
+type UpdateValuesRequestValuesValue struct {
+	String     string
+	Double     float64
+	Boolean    bool
+	StringList []string
 
-const (
-	UpdateResponseItemTypeString  UpdateResponseItemType = "string"
-	UpdateResponseItemTypeNumber  UpdateResponseItemType = "number"
-	UpdateResponseItemTypeBoolean UpdateResponseItemType = "boolean"
-	UpdateResponseItemTypeList    UpdateResponseItemType = "list"
-)
+	typ string
+}
 
-func NewUpdateResponseItemTypeFromString(s string) (UpdateResponseItemType, error) {
-	switch s {
-	case "string":
-		return UpdateResponseItemTypeString, nil
-	case "number":
-		return UpdateResponseItemTypeNumber, nil
-	case "boolean":
-		return UpdateResponseItemTypeBoolean, nil
-	case "list":
-		return UpdateResponseItemTypeList, nil
+func NewUpdateValuesRequestValuesValueFromString(value string) *UpdateValuesRequestValuesValue {
+	return &UpdateValuesRequestValuesValue{typ: "String", String: value}
+}
+
+func NewUpdateValuesRequestValuesValueFromDouble(value float64) *UpdateValuesRequestValuesValue {
+	return &UpdateValuesRequestValuesValue{typ: "Double", Double: value}
+}
+
+func NewUpdateValuesRequestValuesValueFromBoolean(value bool) *UpdateValuesRequestValuesValue {
+	return &UpdateValuesRequestValuesValue{typ: "Boolean", Boolean: value}
+}
+
+func NewUpdateValuesRequestValuesValueFromStringList(value []string) *UpdateValuesRequestValuesValue {
+	return &UpdateValuesRequestValuesValue{typ: "StringList", StringList: value}
+}
+
+func (u *UpdateValuesRequestValuesValue) GetString() string {
+	if u == nil {
+		return ""
 	}
-	var t UpdateResponseItemType
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
+	return u.String
 }
 
-func (u UpdateResponseItemType) Ptr() *UpdateResponseItemType {
-	return &u
+func (u *UpdateValuesRequestValuesValue) GetDouble() float64 {
+	if u == nil {
+		return 0
+	}
+	return u.Double
 }
 
-// Value of the dynamic value.
-type UpdateResponseItemValue struct {
-	typeName    string
-	String      string
-	Double      float64
-	Boolean     bool
-	UnknownList []interface{}
+func (u *UpdateValuesRequestValuesValue) GetBoolean() bool {
+	if u == nil {
+		return false
+	}
+	return u.Boolean
 }
 
-func NewUpdateResponseItemValueFromString(value string) *UpdateResponseItemValue {
-	return &UpdateResponseItemValue{typeName: "string", String: value}
+func (u *UpdateValuesRequestValuesValue) GetStringList() []string {
+	if u == nil {
+		return nil
+	}
+	return u.StringList
 }
 
-func NewUpdateResponseItemValueFromDouble(value float64) *UpdateResponseItemValue {
-	return &UpdateResponseItemValue{typeName: "double", Double: value}
-}
-
-func NewUpdateResponseItemValueFromBoolean(value bool) *UpdateResponseItemValue {
-	return &UpdateResponseItemValue{typeName: "boolean", Boolean: value}
-}
-
-func NewUpdateResponseItemValueFromUnknownList(value []interface{}) *UpdateResponseItemValue {
-	return &UpdateResponseItemValue{typeName: "unknownList", UnknownList: value}
-}
-
-func (u *UpdateResponseItemValue) UnmarshalJSON(data []byte) error {
+func (u *UpdateValuesRequestValuesValue) UnmarshalJSON(data []byte) error {
 	var valueString string
 	if err := json.Unmarshal(data, &valueString); err == nil {
-		u.typeName = "string"
+		u.typ = "String"
 		u.String = valueString
 		return nil
 	}
 	var valueDouble float64
 	if err := json.Unmarshal(data, &valueDouble); err == nil {
-		u.typeName = "double"
+		u.typ = "Double"
 		u.Double = valueDouble
 		return nil
 	}
 	var valueBoolean bool
 	if err := json.Unmarshal(data, &valueBoolean); err == nil {
-		u.typeName = "boolean"
+		u.typ = "Boolean"
 		u.Boolean = valueBoolean
 		return nil
 	}
-	var valueUnknownList []interface{}
-	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
-		u.typeName = "unknownList"
-		u.UnknownList = valueUnknownList
+	var valueStringList []string
+	if err := json.Unmarshal(data, &valueStringList); err == nil {
+		u.typ = "StringList"
+		u.StringList = valueStringList
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
 }
 
-func (u UpdateResponseItemValue) MarshalJSON() ([]byte, error) {
-	switch u.typeName {
-	default:
-		return nil, fmt.Errorf("invalid type %s in %T", u.typeName, u)
-	case "string":
+func (u UpdateValuesRequestValuesValue) MarshalJSON() ([]byte, error) {
+	if u.typ == "String" || u.String != "" {
 		return json.Marshal(u.String)
-	case "double":
-		return json.Marshal(u.Double)
-	case "boolean":
-		return json.Marshal(u.Boolean)
-	case "unknownList":
-		return json.Marshal(u.UnknownList)
 	}
+	if u.typ == "Double" || u.Double != 0 {
+		return json.Marshal(u.Double)
+	}
+	if u.typ == "Boolean" || u.Boolean != false {
+		return json.Marshal(u.Boolean)
+	}
+	if u.typ == "StringList" || u.StringList != nil {
+		return json.Marshal(u.StringList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
-type UpdateResponseItemValueVisitor interface {
+type UpdateValuesRequestValuesValueVisitor interface {
 	VisitString(string) error
 	VisitDouble(float64) error
 	VisitBoolean(bool) error
-	VisitUnknownList([]interface{}) error
+	VisitStringList([]string) error
 }
 
-func (u *UpdateResponseItemValue) Accept(visitor UpdateResponseItemValueVisitor) error {
-	switch u.typeName {
-	default:
-		return fmt.Errorf("invalid type %s in %T", u.typeName, u)
-	case "string":
+func (u *UpdateValuesRequestValuesValue) Accept(visitor UpdateValuesRequestValuesValueVisitor) error {
+	if u.typ == "String" || u.String != "" {
 		return visitor.VisitString(u.String)
-	case "double":
-		return visitor.VisitDouble(u.Double)
-	case "boolean":
-		return visitor.VisitBoolean(u.Boolean)
-	case "unknownList":
-		return visitor.VisitUnknownList(u.UnknownList)
 	}
+	if u.typ == "Double" || u.Double != 0 {
+		return visitor.VisitDouble(u.Double)
+	}
+	if u.typ == "Boolean" || u.Boolean != false {
+		return visitor.VisitBoolean(u.Boolean)
+	}
+	if u.typ == "StringList" || u.StringList != nil {
+		return visitor.VisitStringList(u.StringList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateValuesRequest struct {
+	// A flat dictionary of keys and values to update or add.
+	Values map[string]*UpdateValuesRequestValuesValue `json:"values,omitempty" url:"-"`
+	// Optional array of access group names or IDs. If omitted and user belongs to access groups, values will be assigned to all user's access groups. Required if values should be restricted to specific access groups.
+	AccessGroups []string `json:"accessGroups,omitempty" url:"-"`
 }

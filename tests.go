@@ -5,304 +5,435 @@ package api
 import (
 	json "encoding/json"
 	fmt "fmt"
-	core "sdk/core"
+	internal "sdk/internal"
 	time "time"
 )
 
-type CreateFlowTestRequest struct {
+type CreateTestRequest struct {
 	// The name of the test.
-	Name string `json:"name"`
+	Name string `json:"name" url:"name"`
 	// The request object for the test.
-	Request map[string]interface{} `json:"request,omitempty"`
+	Request map[string]interface{} `json:"request,omitempty" url:"request,omitempty"`
 	// The expected response object for the test.
-	Response map[string]interface{} `json:"response,omitempty"`
+	Response map[string]interface{} `json:"response,omitempty" url:"response,omitempty"`
 	// Indicates whether the test is critical.
-	Critical bool `json:"critical"`
+	Critical bool `json:"critical" url:"critical"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-type CreateRuleTestRequest struct {
-	// The name of the test.
-	Name string `json:"name"`
-	// The request object for the test.
-	Request map[string]interface{} `json:"request,omitempty"`
-	// The expected response object for the test.
-	Response map[string]interface{} `json:"response,omitempty"`
-	// Indicates whether the test is critical.
-	Critical bool `json:"critical"`
+func (c *CreateTestRequest) GetName() string {
+	if c == nil {
+		return ""
+	}
+	return c.Name
 }
 
-type CreateFlowTestResponse struct {
-	// Unique identifier for the test.
-	Id string `json:"id"`
-	// The name of the test.
-	Name string `json:"name"`
-	// The request object for the test.
-	Request map[string]interface{} `json:"request,omitempty"`
-	// The expected response object for the test.
-	Response map[string]interface{} `json:"response,omitempty"`
-	// Indicates whether the test is critical.
-	Critical bool `json:"critical"`
-	// Indicates if the test resulted in an error.
-	Error bool `json:"error"`
-	// Indicates if the test was successful.
-	Success bool `json:"success"`
-	// The state of the test after execution.
-	TestState map[string]interface{} `json:"testState,omitempty"`
-	// The timestamp when the test was last executed.
-	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
-
-	_rawJSON json.RawMessage
+func (c *CreateTestRequest) GetRequest() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Request
 }
 
-func (c *CreateFlowTestResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler CreateFlowTestResponse
+func (c *CreateTestRequest) GetResponse() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.Response
+}
+
+func (c *CreateTestRequest) GetCritical() bool {
+	if c == nil {
+		return false
+	}
+	return c.Critical
+}
+
+func (c *CreateTestRequest) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *CreateTestRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateTestRequest
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CreateFlowTestResponse(value)
-	c._rawJSON = json.RawMessage(data)
+	*c = CreateTestRequest(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (c *CreateFlowTestResponse) String() string {
-	if len(c._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(c._rawJSON); err == nil {
+func (c *CreateTestRequest) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(c); err == nil {
+	if value, err := internal.StringifyJSON(c); err == nil {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
 }
 
-type CreateRuleTestResponse struct {
+type Test struct {
 	// Unique identifier for the test.
-	Id string `json:"id"`
+	Id string `json:"id" url:"id"`
 	// The name of the test.
-	Name string `json:"name"`
+	Name string `json:"name" url:"name"`
 	// The request object for the test.
-	Request map[string]interface{} `json:"request,omitempty"`
+	Request map[string]interface{} `json:"request,omitempty" url:"request,omitempty"`
 	// The expected response object for the test.
-	Response map[string]interface{} `json:"response,omitempty"`
+	Response map[string]interface{} `json:"response,omitempty" url:"response,omitempty"`
 	// Indicates whether the test is critical.
-	Critical bool `json:"critical"`
+	Critical bool `json:"critical" url:"critical"`
 	// Indicates if the test resulted in an error.
-	Error bool `json:"error"`
+	Error bool `json:"error" url:"error"`
 	// Indicates if the test was successful.
-	Success bool `json:"success"`
+	Success bool `json:"success" url:"success"`
 	// The state of the test after execution.
-	TestState map[string]interface{} `json:"testState,omitempty"`
+	TestState *TestTestState `json:"testState,omitempty" url:"testState,omitempty"`
 	// The timestamp when the test was last executed.
-	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
+	LastExecuted *time.Time `json:"lastExecuted,omitempty" url:"lastExecuted,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (c *CreateRuleTestResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler CreateRuleTestResponse
+func (t *Test) GetId() string {
+	if t == nil {
+		return ""
+	}
+	return t.Id
+}
+
+func (t *Test) GetName() string {
+	if t == nil {
+		return ""
+	}
+	return t.Name
+}
+
+func (t *Test) GetRequest() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Request
+}
+
+func (t *Test) GetResponse() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Response
+}
+
+func (t *Test) GetCritical() bool {
+	if t == nil {
+		return false
+	}
+	return t.Critical
+}
+
+func (t *Test) GetError() bool {
+	if t == nil {
+		return false
+	}
+	return t.Error
+}
+
+func (t *Test) GetSuccess() bool {
+	if t == nil {
+		return false
+	}
+	return t.Success
+}
+
+func (t *Test) GetTestState() *TestTestState {
+	if t == nil {
+		return nil
+	}
+	return t.TestState
+}
+
+func (t *Test) GetLastExecuted() *time.Time {
+	if t == nil {
+		return nil
+	}
+	return t.LastExecuted
+}
+
+func (t *Test) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *Test) UnmarshalJSON(data []byte) error {
+	type embed Test
+	var unmarshaler = struct {
+		embed
+		LastExecuted *internal.DateTime `json:"lastExecuted,omitempty"`
+	}{
+		embed: embed(*t),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*t = Test(unmarshaler.embed)
+	t.LastExecuted = unmarshaler.LastExecuted.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *Test) MarshalJSON() ([]byte, error) {
+	type embed Test
+	var marshaler = struct {
+		embed
+		LastExecuted *internal.DateTime `json:"lastExecuted,omitempty"`
+	}{
+		embed:        embed(*t),
+		LastExecuted: internal.NewOptionalDateTime(t.LastExecuted),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (t *Test) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TestListResponse = []*Test
+
+// The state of the test after execution.
+type TestTestState struct {
+	// Execution time in seconds
+	Duration *float64 `json:"duration,omitempty" url:"duration,omitempty"`
+	// Actual response returned
+	Response   map[string]interface{}                         `json:"response,omitempty" url:"response,omitempty"`
+	Conditions []map[string]*TestTestStateConditionsItemValue `json:"conditions,omitempty" url:"conditions,omitempty"`
+	// HTTP status code returned
+	HttpStatus  *int  `json:"httpStatus,omitempty" url:"httpStatus,omitempty"`
+	SuccessIdxs []int `json:"successIdxs,omitempty" url:"successIdxs,omitempty"`
+	// Error message or flag indicating if evaluation error occurred
+	EvaluationError *TestTestStateEvaluationError `json:"evaluationError,omitempty" url:"evaluationError,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TestTestState) GetDuration() *float64 {
+	if t == nil {
+		return nil
+	}
+	return t.Duration
+}
+
+func (t *TestTestState) GetResponse() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.Response
+}
+
+func (t *TestTestState) GetConditions() []map[string]*TestTestStateConditionsItemValue {
+	if t == nil {
+		return nil
+	}
+	return t.Conditions
+}
+
+func (t *TestTestState) GetHttpStatus() *int {
+	if t == nil {
+		return nil
+	}
+	return t.HttpStatus
+}
+
+func (t *TestTestState) GetSuccessIdxs() []int {
+	if t == nil {
+		return nil
+	}
+	return t.SuccessIdxs
+}
+
+func (t *TestTestState) GetEvaluationError() *TestTestStateEvaluationError {
+	if t == nil {
+		return nil
+	}
+	return t.EvaluationError
+}
+
+func (t *TestTestState) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TestTestState) UnmarshalJSON(data []byte) error {
+	type unmarshaler TestTestState
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CreateRuleTestResponse(value)
-	c._rawJSON = json.RawMessage(data)
+	*t = TestTestState(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (c *CreateRuleTestResponse) String() string {
-	if len(c._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(c._rawJSON); err == nil {
+func (t *TestTestState) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(c); err == nil {
+	if value, err := internal.StringifyJSON(t); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", c)
+	return fmt.Sprintf("%#v", t)
 }
 
-type DeleteFlowTestResponse struct {
-	// Unique identifier for the test.
-	Id string `json:"id"`
-	// The name of the test.
-	Name string `json:"name"`
-	// The request object for the test.
-	Request map[string]interface{} `json:"request,omitempty"`
-	// The expected response object for the test.
-	Response map[string]interface{} `json:"response,omitempty"`
-	// Indicates whether the test is critical.
-	Critical bool `json:"critical"`
-	// Indicates if the test resulted in an error.
-	Error bool `json:"error"`
-	// Indicates if the test was successful.
-	Success bool `json:"success"`
-	// The state of the test after execution.
-	TestState map[string]interface{} `json:"testState,omitempty"`
-	// The timestamp when the test was last executed.
-	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
+type TestTestStateConditionsItemValue struct {
+	Result *bool   `json:"result,omitempty" url:"result,omitempty"`
+	Err    *string `json:"err,omitempty" url:"err,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (d *DeleteFlowTestResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteFlowTestResponse
+func (t *TestTestStateConditionsItemValue) GetResult() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.Result
+}
+
+func (t *TestTestStateConditionsItemValue) GetErr() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Err
+}
+
+func (t *TestTestStateConditionsItemValue) GetExtraProperties() map[string]interface{} {
+	return t.extraProperties
+}
+
+func (t *TestTestStateConditionsItemValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler TestTestStateConditionsItemValue
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*d = DeleteFlowTestResponse(value)
-	d._rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (d *DeleteFlowTestResponse) String() string {
-	if len(d._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(d._rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := core.StringifyJSON(d); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", d)
-}
-
-type DeleteRuleTestResponse struct {
-	// Unique identifier for the test.
-	Id string `json:"id"`
-	// The name of the test.
-	Name string `json:"name"`
-	// The request object for the test.
-	Request map[string]interface{} `json:"request,omitempty"`
-	// The expected response object for the test.
-	Response map[string]interface{} `json:"response,omitempty"`
-	// Indicates whether the test is critical.
-	Critical bool `json:"critical"`
-	// Indicates if the test resulted in an error.
-	Error bool `json:"error"`
-	// Indicates if the test was successful.
-	Success bool `json:"success"`
-	// The state of the test after execution.
-	TestState map[string]interface{} `json:"testState,omitempty"`
-	// The timestamp when the test was last executed.
-	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
-
-	_rawJSON json.RawMessage
-}
-
-func (d *DeleteRuleTestResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteRuleTestResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
+	*t = TestTestStateConditionsItemValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
 		return err
 	}
-	*d = DeleteRuleTestResponse(value)
-	d._rawJSON = json.RawMessage(data)
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (d *DeleteRuleTestResponse) String() string {
-	if len(d._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(d._rawJSON); err == nil {
+func (t *TestTestStateConditionsItemValue) String() string {
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(d); err == nil {
+	if value, err := internal.StringifyJSON(t); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", d)
+	return fmt.Sprintf("%#v", t)
 }
 
-type ListFlowTestsResponseItem struct {
-	// Unique identifier for the test.
-	Id string `json:"id"`
-	// The name of the test.
-	Name string `json:"name"`
-	// The request object for the test.
-	Request map[string]interface{} `json:"request,omitempty"`
-	// The expected response object for the test.
-	Response map[string]interface{} `json:"response,omitempty"`
-	// Indicates whether the test is critical.
-	Critical bool `json:"critical"`
-	// Indicates if the test resulted in an error.
-	Error bool `json:"error"`
-	// Indicates if the test was successful.
-	Success bool `json:"success"`
-	// The state of the test after execution.
-	TestState map[string]interface{} `json:"testState,omitempty"`
-	// The timestamp when the test was last executed.
-	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
+// Error message or flag indicating if evaluation error occurred
+type TestTestStateEvaluationError struct {
+	Boolean bool
+	String  string
 
-	_rawJSON json.RawMessage
+	typ string
 }
 
-func (l *ListFlowTestsResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListFlowTestsResponseItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*l = ListFlowTestsResponseItem(value)
-	l._rawJSON = json.RawMessage(data)
-	return nil
+func NewTestTestStateEvaluationErrorFromBoolean(value bool) *TestTestStateEvaluationError {
+	return &TestTestStateEvaluationError{typ: "Boolean", Boolean: value}
 }
 
-func (l *ListFlowTestsResponseItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := core.StringifyJSON(l); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", l)
+func NewTestTestStateEvaluationErrorFromString(value string) *TestTestStateEvaluationError {
+	return &TestTestStateEvaluationError{typ: "String", String: value}
 }
 
-type ListRuleTestsResponseItem struct {
-	// Unique identifier for the test.
-	Id string `json:"id"`
-	// The name of the test.
-	Name string `json:"name"`
-	// The request object for the test.
-	Request map[string]interface{} `json:"request,omitempty"`
-	// The expected response object for the test.
-	Response map[string]interface{} `json:"response,omitempty"`
-	// Indicates whether the test is critical.
-	Critical bool `json:"critical"`
-	// Indicates if the test resulted in an error.
-	Error bool `json:"error"`
-	// Indicates if the test was successful.
-	Success bool `json:"success"`
-	// The state of the test after execution.
-	TestState map[string]interface{} `json:"testState,omitempty"`
-	// The timestamp when the test was last executed.
-	LastExecuted *time.Time `json:"lastExecuted,omitempty"`
-
-	_rawJSON json.RawMessage
+func (t *TestTestStateEvaluationError) GetBoolean() bool {
+	if t == nil {
+		return false
+	}
+	return t.Boolean
 }
 
-func (l *ListRuleTestsResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListRuleTestsResponseItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
+func (t *TestTestStateEvaluationError) GetString() string {
+	if t == nil {
+		return ""
 	}
-	*l = ListRuleTestsResponseItem(value)
-	l._rawJSON = json.RawMessage(data)
-	return nil
+	return t.String
 }
 
-func (l *ListRuleTestsResponseItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
-			return value
-		}
+func (t *TestTestStateEvaluationError) UnmarshalJSON(data []byte) error {
+	var valueBoolean bool
+	if err := json.Unmarshal(data, &valueBoolean); err == nil {
+		t.typ = "Boolean"
+		t.Boolean = valueBoolean
+		return nil
 	}
-	if value, err := core.StringifyJSON(l); err == nil {
-		return value
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		t.typ = "String"
+		t.String = valueString
+		return nil
 	}
-	return fmt.Sprintf("%#v", l)
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, t)
+}
+
+func (t TestTestStateEvaluationError) MarshalJSON() ([]byte, error) {
+	if t.typ == "Boolean" || t.Boolean != false {
+		return json.Marshal(t.Boolean)
+	}
+	if t.typ == "String" || t.String != "" {
+		return json.Marshal(t.String)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", t)
+}
+
+type TestTestStateEvaluationErrorVisitor interface {
+	VisitBoolean(bool) error
+	VisitString(string) error
+}
+
+func (t *TestTestStateEvaluationError) Accept(visitor TestTestStateEvaluationErrorVisitor) error {
+	if t.typ == "Boolean" || t.Boolean != false {
+		return visitor.VisitBoolean(t.Boolean)
+	}
+	if t.typ == "String" || t.String != "" {
+		return visitor.VisitString(t.String)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", t)
 }

@@ -3,23 +3,17 @@
 package decisions
 
 import (
-	bytes "bytes"
 	context "context"
-	json "encoding/json"
-	errors "errors"
-	fmt "fmt"
-	io "io"
 	http "net/http"
-	url "net/url"
 	sdk "sdk"
 	core "sdk/core"
+	internal "sdk/internal"
 	option "sdk/option"
-	time "time"
 )
 
 type Client struct {
 	baseURL string
-	caller  *core.Caller
+	caller  *internal.Caller
 	header  http.Header
 }
 
@@ -27,8 +21,8 @@ func NewClient(opts ...option.RequestOption) *Client {
 	options := core.NewRequestOptions(opts...)
 	return &Client{
 		baseURL: options.BaseURL,
-		caller: core.NewCaller(
-			&core.CallerParams{
+		caller: internal.NewCaller(
+			&internal.CallerParams{
 				Client:      options.HTTPClient,
 				MaxAttempts: options.MaxAttempts,
 			},
@@ -38,79 +32,55 @@ func NewClient(opts ...option.RequestOption) *Client {
 }
 
 // Retrieve logs for a specific user and rule, with optional date range and pagination.
-func (c *Client) Query(
+func (c *Client) QueryDecisions(
 	ctx context.Context,
-	request *sdk.QueryRequest,
+	request *sdk.QueryDecisionsRequest,
 	opts ...option.RequestOption,
-) (*sdk.QueryResponse, error) {
+) (*sdk.DecisionLogResponse, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/decisions/query"
-
-	queryParams := make(url.Values)
-	queryParams.Add("slug", fmt.Sprintf("%v", request.Slug))
-	if request.From != nil {
-		queryParams.Add("from", fmt.Sprintf("%v", request.From.Format(time.RFC3339)))
-	}
-	if request.To != nil {
-		queryParams.Add("to", fmt.Sprintf("%v", request.To.Format(time.RFC3339)))
-	}
-	if request.Cursor != nil {
-		queryParams.Add("cursor", fmt.Sprintf("%v", *request.Cursor))
-	}
-	if request.Limit != nil {
-		queryParams.Add("limit", fmt.Sprintf("%v", *request.Limit))
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/decisions/query"
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
 	}
 	if len(queryParams) > 0 {
 		endpointURL += "?" + queryParams.Encode()
 	}
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.QueryResponse
+	var response *sdk.DecisionLogResponse
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodGet,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err

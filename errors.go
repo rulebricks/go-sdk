@@ -7,7 +7,7 @@ import (
 	core "sdk/core"
 )
 
-// Bad request. Issues with the request format or rule configuration.
+// Bad request
 type BadRequestError struct {
 	*core.APIError
 	Body interface{}
@@ -34,11 +34,11 @@ func (b *BadRequestError) Unwrap() error {
 // Forbidden - Plan limit reached
 type ForbiddenError struct {
 	*core.APIError
-	Body *ForbiddenErrorBody
+	Body *Error
 }
 
 func (f *ForbiddenError) UnmarshalJSON(data []byte) error {
-	var body *ForbiddenErrorBody
+	var body *Error
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (f *ForbiddenError) Unwrap() error {
 	return f.APIError
 }
 
-// Internal server error. Issue in executing the rule due to server-side problems.
+// Internal server error
 type InternalServerError struct {
 	*core.APIError
 	Body interface{}
@@ -79,7 +79,7 @@ func (i *InternalServerError) Unwrap() error {
 	return i.APIError
 }
 
-// Rule not found
+// Resource not found
 type NotFoundError struct {
 	*core.APIError
 	Body interface{}

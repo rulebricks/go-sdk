@@ -3,22 +3,17 @@
 package values
 
 import (
-	bytes "bytes"
 	context "context"
-	json "encoding/json"
-	errors "errors"
-	fmt "fmt"
-	io "io"
 	http "net/http"
-	url "net/url"
 	sdk "sdk"
 	core "sdk/core"
+	internal "sdk/internal"
 	option "sdk/option"
 )
 
 type Client struct {
 	baseURL string
-	caller  *core.Caller
+	caller  *internal.Caller
 	header  http.Header
 }
 
@@ -26,8 +21,8 @@ func NewClient(opts ...option.RequestOption) *Client {
 	options := core.NewRequestOptions(opts...)
 	return &Client{
 		baseURL: options.BaseURL,
-		caller: core.NewCaller(
-			&core.CallerParams{
+		caller: internal.NewCaller(
+			&internal.CallerParams{
 				Client:      options.HTTPClient,
 				MaxAttempts: options.MaxAttempts,
 			},
@@ -41,58 +36,46 @@ func (c *Client) ListDynamicValues(
 	ctx context.Context,
 	request *sdk.ListDynamicValuesRequest,
 	opts ...option.RequestOption,
-) ([]*sdk.ListDynamicValuesResponseItem, error) {
+) (sdk.DynamicValueListResponse, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/values"
-
-	queryParams := make(url.Values)
-	if request.Name != nil {
-		queryParams.Add("name", fmt.Sprintf("%v", *request.Name))
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/values"
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
 	}
 	if len(queryParams) > 0 {
 		endpointURL += "?" + queryParams.Encode()
 	}
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response []*sdk.ListDynamicValuesResponseItem
+	var response sdk.DynamicValueListResponse
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodGet,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -101,62 +84,50 @@ func (c *Client) ListDynamicValues(
 }
 
 // Update existing dynamic values or add new ones for the authenticated user.
-func (c *Client) Update(
+func (c *Client) UpdateValues(
 	ctx context.Context,
-	request map[string]*sdk.UpdateRequestValue,
+	request *sdk.UpdateValuesRequest,
 	opts ...option.RequestOption,
-) ([]*sdk.UpdateResponseItem, error) {
+) (sdk.DynamicValueListResponse, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/values"
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/values"
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	headers.Set("Content-Type", "application/json")
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response []*sdk.UpdateResponseItem
+	var response sdk.DynamicValueListResponse
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodPost,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Request:      request,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -169,70 +140,56 @@ func (c *Client) DeleteDynamicValue(
 	ctx context.Context,
 	request *sdk.DeleteDynamicValueRequest,
 	opts ...option.RequestOption,
-) (*sdk.DeleteDynamicValueResponse, error) {
+) (*sdk.SuccessMessage, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/values"
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
 	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/values"
-
-	queryParams := make(url.Values)
-	queryParams.Add("id", fmt.Sprintf("%v", request.Id))
 	if len(queryParams) > 0 {
 		endpointURL += "?" + queryParams.Encode()
 	}
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.DeleteDynamicValueResponse
+	var response *sdk.SuccessMessage
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodDelete,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodDelete,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err

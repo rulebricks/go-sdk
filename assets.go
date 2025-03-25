@@ -5,328 +5,896 @@ package api
 import (
 	json "encoding/json"
 	fmt "fmt"
-	core "sdk/core"
+	internal "sdk/internal"
 	time "time"
 )
 
 type DeleteFolderRequest struct {
 	// ID of the folder to delete
-	Id string `json:"id"`
+	Id string `json:"id" url:"-"`
 }
 
 type DeleteRuleRequest struct {
 	// The ID of the rule to delete.
-	Id *string `json:"id,omitempty"`
+	Id string `json:"id" url:"-"`
 }
 
 type ExportRuleRequest struct {
 	// The ID of the rule to export.
-	Id string `json:"-"`
+	Id string `json:"-" url:"id"`
 }
 
 type ImportRuleRequest struct {
 	// The rule data to import.
-	Rule map[string]interface{} `json:"rule,omitempty"`
+	Rule map[string]interface{} `json:"rule,omitempty" url:"-"`
 }
 
 type ListRulesRequest struct {
 	// Filter rules by folder name or folder ID
-	Folder *string `json:"-"`
+	Folder *string `json:"-" url:"folder,omitempty"`
 }
 
-type DeleteFolderResponse struct {
-	// ID of the deleted folder
-	Id *string `json:"id,omitempty"`
-	// Name of the deleted folder
-	Name *string `json:"name,omitempty"`
-	// Description of the deleted folder
-	Description *string `json:"description,omitempty"`
-	// Last update timestamp of the deleted folder
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-
-	_rawJSON json.RawMessage
-}
-
-func (d *DeleteFolderResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteFolderResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*d = DeleteFolderResponse(value)
-	d._rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (d *DeleteFolderResponse) String() string {
-	if len(d._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(d._rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := core.StringifyJSON(d); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", d)
-}
-
-type DeleteRuleResponse struct {
-	Message *string `json:"message,omitempty"`
-
-	_rawJSON json.RawMessage
-}
-
-func (d *DeleteRuleResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteRuleResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*d = DeleteRuleResponse(value)
-	d._rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (d *DeleteRuleResponse) String() string {
-	if len(d._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(d._rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := core.StringifyJSON(d); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", d)
-}
-
-type ListFlowsResponseItem struct {
+type FlowBase struct {
 	// The unique identifier for the flow.
-	Id *string `json:"id,omitempty"`
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
 	// The name of the flow.
-	Name *string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// The description of the flow.
-	Description *string `json:"description,omitempty"`
-	// Whether the flow is published.
-	Published *bool `json:"published,omitempty"`
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// The unique slug for the flow used in API requests.
-	Slug *string `json:"slug,omitempty"`
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FlowBase) GetId() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Id
+}
+
+func (f *FlowBase) GetName() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Name
+}
+
+func (f *FlowBase) GetDescription() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Description
+}
+
+func (f *FlowBase) GetSlug() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Slug
+}
+
+func (f *FlowBase) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FlowBase) UnmarshalJSON(data []byte) error {
+	type unmarshaler FlowBase
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FlowBase(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FlowBase) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FlowDetail struct {
+	// The unique identifier for the flow.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// The name of the flow.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// The description of the flow.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The unique slug for the flow used in API requests.
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+	// Whether the flow is published.
+	Published *bool `json:"published,omitempty" url:"published,omitempty"`
 	// The date this flow was last updated.
-	UpdatedAt *string `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty" url:"updated_at,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (l *ListFlowsResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListFlowsResponseItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
+func (f *FlowDetail) GetId() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Id
+}
+
+func (f *FlowDetail) GetName() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Name
+}
+
+func (f *FlowDetail) GetDescription() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Description
+}
+
+func (f *FlowDetail) GetSlug() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Slug
+}
+
+func (f *FlowDetail) GetPublished() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.Published
+}
+
+func (f *FlowDetail) GetUpdatedAt() *time.Time {
+	if f == nil {
+		return nil
+	}
+	return f.UpdatedAt
+}
+
+func (f *FlowDetail) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *FlowDetail) UnmarshalJSON(data []byte) error {
+	type embed FlowDetail
+	var unmarshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updated_at,omitempty"`
+	}{
+		embed: embed(*f),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
 		return err
 	}
-	*l = ListFlowsResponseItem(value)
-	l._rawJSON = json.RawMessage(data)
+	*f = FlowDetail(unmarshaler.embed)
+	f.UpdatedAt = unmarshaler.UpdatedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (l *ListFlowsResponseItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
+func (f *FlowDetail) MarshalJSON() ([]byte, error) {
+	type embed FlowDetail
+	var marshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updated_at,omitempty"`
+	}{
+		embed:     embed(*f),
+		UpdatedAt: internal.NewOptionalDateTime(f.UpdatedAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (f *FlowDetail) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(l); err == nil {
+	if value, err := internal.StringifyJSON(f); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", l)
+	return fmt.Sprintf("%#v", f)
 }
 
-type ListFoldersResponseItem struct {
+type FlowListResponse = []*FlowDetail
+
+type Folder struct {
 	// Unique identifier for the folder.
-	Id *string `json:"id,omitempty"`
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
 	// Name of the folder.
-	Name *string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Description of the folder.
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// Timestamp of when the folder was last updated.
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	UpdatedAt *time.Time `json:"updatedAt,omitempty" url:"updatedAt,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (l *ListFoldersResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListFoldersResponseItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
+func (f *Folder) GetId() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Id
+}
+
+func (f *Folder) GetName() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Name
+}
+
+func (f *Folder) GetDescription() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Description
+}
+
+func (f *Folder) GetUpdatedAt() *time.Time {
+	if f == nil {
+		return nil
+	}
+	return f.UpdatedAt
+}
+
+func (f *Folder) GetExtraProperties() map[string]interface{} {
+	return f.extraProperties
+}
+
+func (f *Folder) UnmarshalJSON(data []byte) error {
+	type embed Folder
+	var unmarshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updatedAt,omitempty"`
+	}{
+		embed: embed(*f),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
 		return err
 	}
-	*l = ListFoldersResponseItem(value)
-	l._rawJSON = json.RawMessage(data)
+	*f = Folder(unmarshaler.embed)
+	f.UpdatedAt = unmarshaler.UpdatedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (l *ListFoldersResponseItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
+func (f *Folder) MarshalJSON() ([]byte, error) {
+	type embed Folder
+	var marshaler = struct {
+		embed
+		UpdatedAt *internal.DateTime `json:"updatedAt,omitempty"`
+	}{
+		embed:     embed(*f),
+		UpdatedAt: internal.NewOptionalDateTime(f.UpdatedAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (f *Folder) String() string {
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(l); err == nil {
+	if value, err := internal.StringifyJSON(f); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", l)
+	return fmt.Sprintf("%#v", f)
 }
 
-type ListRulesResponseItem struct {
+type FolderListResponse = []*Folder
+
+type RuleBase struct {
 	// The unique identifier for the rule.
-	Id *string `json:"id,omitempty"`
-	// The date this rule was created.
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
 	// The name of the rule.
-	Name *string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// The description of the rule.
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// The unique slug for the rule used in API requests.
-	Slug *string `json:"slug,omitempty"`
-	// The folder containing this rule
-	Folder *ListRulesResponseItemFolder `json:"folder,omitempty"`
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RuleBase) GetId() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Id
+}
+
+func (r *RuleBase) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RuleBase) GetDescription() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Description
+}
+
+func (r *RuleBase) GetSlug() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Slug
+}
+
+func (r *RuleBase) GetExtraProperties() map[string]interface{} {
+	return r.extraProperties
+}
+
+func (r *RuleBase) UnmarshalJSON(data []byte) error {
+	type unmarshaler RuleBase
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RuleBase(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleBase) String() string {
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+type RuleDetail struct {
+	// The unique identifier for the rule.
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
+	// The name of the rule.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// The description of the rule.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The unique slug for the rule used in API requests.
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+	// The date this rule was created.
+	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
+	Folder    *Folder    `json:"folder,omitempty" url:"folder,omitempty"`
 	// The published request schema for the rule.
-	RequestSchema []interface{} `json:"request_schema,omitempty"`
+	RequestSchema []*SchemaField `json:"request_schema,omitempty" url:"request_schema,omitempty"`
 	// The published response schema for the rule.
-	ResponseSchema []interface{} `json:"response_schema,omitempty"`
+	ResponseSchema []*SchemaField `json:"response_schema,omitempty" url:"response_schema,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (l *ListRulesResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListRulesResponseItem
+func (r *RuleDetail) GetId() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Id
+}
+
+func (r *RuleDetail) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RuleDetail) GetDescription() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Description
+}
+
+func (r *RuleDetail) GetSlug() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Slug
+}
+
+func (r *RuleDetail) GetCreatedAt() *time.Time {
+	if r == nil {
+		return nil
+	}
+	return r.CreatedAt
+}
+
+func (r *RuleDetail) GetFolder() *Folder {
+	if r == nil {
+		return nil
+	}
+	return r.Folder
+}
+
+func (r *RuleDetail) GetRequestSchema() []*SchemaField {
+	if r == nil {
+		return nil
+	}
+	return r.RequestSchema
+}
+
+func (r *RuleDetail) GetResponseSchema() []*SchemaField {
+	if r == nil {
+		return nil
+	}
+	return r.ResponseSchema
+}
+
+func (r *RuleDetail) GetExtraProperties() map[string]interface{} {
+	return r.extraProperties
+}
+
+func (r *RuleDetail) UnmarshalJSON(data []byte) error {
+	type embed RuleDetail
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at,omitempty"`
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RuleDetail(unmarshaler.embed)
+	r.CreatedAt = unmarshaler.CreatedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleDetail) MarshalJSON() ([]byte, error) {
+	type embed RuleDetail
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at,omitempty"`
+	}{
+		embed:     embed(*r),
+		CreatedAt: internal.NewOptionalDateTime(r.CreatedAt),
+	}
+	return json.Marshal(marshaler)
+}
+
+func (r *RuleDetail) String() string {
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// The exported rule object containing all rule definition data.
+type RuleExport = map[string]interface{}
+
+type RuleListResponse = []*RuleDetail
+
+type SchemaField struct {
+	// The unique key for this field.
+	Key *string `json:"key,omitempty" url:"key,omitempty"`
+	// Whether this field is visible in the UI.
+	Show *bool `json:"show,omitempty" url:"show,omitempty"`
+	// Display name for this field.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Description of this field.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// Data type of this field.
+	Type *SchemaFieldType `json:"type,omitempty" url:"type,omitempty"`
+	// Default value for this field.
+	DefaultValue *SchemaFieldDefaultValue `json:"defaultValue,omitempty" url:"defaultValue,omitempty"`
+	// Computed default value for this field.
+	DefaultComputedValue *string `json:"defaultComputedValue,omitempty" url:"defaultComputedValue,omitempty"`
+	// Transformation expression to apply to this field.
+	Transform *string `json:"transform,omitempty" url:"transform,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchemaField) GetKey() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Key
+}
+
+func (s *SchemaField) GetShow() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.Show
+}
+
+func (s *SchemaField) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *SchemaField) GetDescription() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Description
+}
+
+func (s *SchemaField) GetType() *SchemaFieldType {
+	if s == nil {
+		return nil
+	}
+	return s.Type
+}
+
+func (s *SchemaField) GetDefaultValue() *SchemaFieldDefaultValue {
+	if s == nil {
+		return nil
+	}
+	return s.DefaultValue
+}
+
+func (s *SchemaField) GetDefaultComputedValue() *string {
+	if s == nil {
+		return nil
+	}
+	return s.DefaultComputedValue
+}
+
+func (s *SchemaField) GetTransform() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Transform
+}
+
+func (s *SchemaField) GetExtraProperties() map[string]interface{} {
+	return s.extraProperties
+}
+
+func (s *SchemaField) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchemaField
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*l = ListRulesResponseItem(value)
-	l._rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (l *ListRulesResponseItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := core.StringifyJSON(l); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", l)
-}
-
-// The folder containing this rule
-type ListRulesResponseItemFolder struct {
-	// Unique identifier for the folder.
-	Id *string `json:"id,omitempty"`
-	// Name of the folder.
-	Name *string `json:"name,omitempty"`
-	// Description of the folder.
-	Description *string `json:"description,omitempty"`
-	// Timestamp of when the folder was last updated.
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-
-	_rawJSON json.RawMessage
-}
-
-func (l *ListRulesResponseItemFolder) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListRulesResponseItemFolder
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
+	*s = SchemaField(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
 		return err
 	}
-	*l = ListRulesResponseItemFolder(value)
-	l._rawJSON = json.RawMessage(data)
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (l *ListRulesResponseItemFolder) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
+func (s *SchemaField) String() string {
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(l); err == nil {
+	if value, err := internal.StringifyJSON(s); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", l)
+	return fmt.Sprintf("%#v", s)
 }
 
-type UpsertFolderResponse struct {
-	// ID of the created or updated folder
-	Id *string `json:"id,omitempty"`
-	// Name of the folder
-	Name *string `json:"name,omitempty"`
-	// Description of the folder
-	Description *string `json:"description,omitempty"`
-	// Timestamp of when the folder was updated
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+// Default value for this field.
+type SchemaFieldDefaultValue struct {
+	String           string
+	Double           float64
+	Boolean          bool
+	StringUnknownMap map[string]interface{}
+	UnknownList      []interface{}
 
-	_rawJSON json.RawMessage
+	typ string
 }
 
-func (u *UpsertFolderResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler UpsertFolderResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
+func NewSchemaFieldDefaultValueFromString(value string) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "String", String: value}
+}
+
+func NewSchemaFieldDefaultValueFromDouble(value float64) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "Double", Double: value}
+}
+
+func NewSchemaFieldDefaultValueFromBoolean(value bool) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "Boolean", Boolean: value}
+}
+
+func NewSchemaFieldDefaultValueFromStringUnknownMap(value map[string]interface{}) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "StringUnknownMap", StringUnknownMap: value}
+}
+
+func NewSchemaFieldDefaultValueFromUnknownList(value []interface{}) *SchemaFieldDefaultValue {
+	return &SchemaFieldDefaultValue{typ: "UnknownList", UnknownList: value}
+}
+
+func (s *SchemaFieldDefaultValue) GetString() string {
+	if s == nil {
+		return ""
 	}
-	*u = UpsertFolderResponse(value)
-	u._rawJSON = json.RawMessage(data)
-	return nil
+	return s.String
 }
 
-func (u *UpsertFolderResponse) String() string {
-	if len(u._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(u._rawJSON); err == nil {
-			return value
-		}
+func (s *SchemaFieldDefaultValue) GetDouble() float64 {
+	if s == nil {
+		return 0
 	}
-	if value, err := core.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
+	return s.Double
 }
 
-type UsageResponse struct {
+func (s *SchemaFieldDefaultValue) GetBoolean() bool {
+	if s == nil {
+		return false
+	}
+	return s.Boolean
+}
+
+func (s *SchemaFieldDefaultValue) GetStringUnknownMap() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.StringUnknownMap
+}
+
+func (s *SchemaFieldDefaultValue) GetUnknownList() []interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.UnknownList
+}
+
+func (s *SchemaFieldDefaultValue) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		s.typ = "String"
+		s.String = valueString
+		return nil
+	}
+	var valueDouble float64
+	if err := json.Unmarshal(data, &valueDouble); err == nil {
+		s.typ = "Double"
+		s.Double = valueDouble
+		return nil
+	}
+	var valueBoolean bool
+	if err := json.Unmarshal(data, &valueBoolean); err == nil {
+		s.typ = "Boolean"
+		s.Boolean = valueBoolean
+		return nil
+	}
+	var valueStringUnknownMap map[string]interface{}
+	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
+		s.typ = "StringUnknownMap"
+		s.StringUnknownMap = valueStringUnknownMap
+		return nil
+	}
+	var valueUnknownList []interface{}
+	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
+		s.typ = "UnknownList"
+		s.UnknownList = valueUnknownList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
+}
+
+func (s SchemaFieldDefaultValue) MarshalJSON() ([]byte, error) {
+	if s.typ == "String" || s.String != "" {
+		return json.Marshal(s.String)
+	}
+	if s.typ == "Double" || s.Double != 0 {
+		return json.Marshal(s.Double)
+	}
+	if s.typ == "Boolean" || s.Boolean != false {
+		return json.Marshal(s.Boolean)
+	}
+	if s.typ == "StringUnknownMap" || s.StringUnknownMap != nil {
+		return json.Marshal(s.StringUnknownMap)
+	}
+	if s.typ == "UnknownList" || s.UnknownList != nil {
+		return json.Marshal(s.UnknownList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type SchemaFieldDefaultValueVisitor interface {
+	VisitString(string) error
+	VisitDouble(float64) error
+	VisitBoolean(bool) error
+	VisitStringUnknownMap(map[string]interface{}) error
+	VisitUnknownList([]interface{}) error
+}
+
+func (s *SchemaFieldDefaultValue) Accept(visitor SchemaFieldDefaultValueVisitor) error {
+	if s.typ == "String" || s.String != "" {
+		return visitor.VisitString(s.String)
+	}
+	if s.typ == "Double" || s.Double != 0 {
+		return visitor.VisitDouble(s.Double)
+	}
+	if s.typ == "Boolean" || s.Boolean != false {
+		return visitor.VisitBoolean(s.Boolean)
+	}
+	if s.typ == "StringUnknownMap" || s.StringUnknownMap != nil {
+		return visitor.VisitStringUnknownMap(s.StringUnknownMap)
+	}
+	if s.typ == "UnknownList" || s.UnknownList != nil {
+		return visitor.VisitUnknownList(s.UnknownList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+// Data type of this field.
+type SchemaFieldType string
+
+const (
+	SchemaFieldTypeString  SchemaFieldType = "string"
+	SchemaFieldTypeNumber  SchemaFieldType = "number"
+	SchemaFieldTypeBoolean SchemaFieldType = "boolean"
+	SchemaFieldTypeObject  SchemaFieldType = "object"
+	SchemaFieldTypeArray   SchemaFieldType = "array"
+)
+
+func NewSchemaFieldTypeFromString(s string) (SchemaFieldType, error) {
+	switch s {
+	case "string":
+		return SchemaFieldTypeString, nil
+	case "number":
+		return SchemaFieldTypeNumber, nil
+	case "boolean":
+		return SchemaFieldTypeBoolean, nil
+	case "object":
+		return SchemaFieldTypeObject, nil
+	case "array":
+		return SchemaFieldTypeArray, nil
+	}
+	var t SchemaFieldType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchemaFieldType) Ptr() *SchemaFieldType {
+	return &s
+}
+
+type UsageStatistics struct {
 	// The current plan of the organization.
-	Plan *string `json:"plan,omitempty"`
+	Plan *string `json:"plan,omitempty" url:"plan,omitempty"`
 	// The start date of the current monthly period.
-	MonthlyPeriodStart *string `json:"monthly_period_start,omitempty"`
+	MonthlyPeriodStart *string `json:"monthly_period_start,omitempty" url:"monthly_period_start,omitempty"`
 	// The end date of the current monthly period.
-	MonthlyPeriodEnd *string `json:"monthly_period_end,omitempty"`
+	MonthlyPeriodEnd *string `json:"monthly_period_end,omitempty" url:"monthly_period_end,omitempty"`
 	// The number of rule executions used this month.
-	MonthlyExecutionsUsage *float64 `json:"monthly_executions_usage,omitempty"`
+	MonthlyExecutionsUsage *float64 `json:"monthly_executions_usage,omitempty" url:"monthly_executions_usage,omitempty"`
 	// The total number of rule executions allowed this month.
-	MonthlyExecutionsLimit *float64 `json:"monthly_executions_limit,omitempty"`
+	MonthlyExecutionsLimit *float64 `json:"monthly_executions_limit,omitempty" url:"monthly_executions_limit,omitempty"`
 	// The number of rule executions remaining this month.
-	MonthlyExecutionsRemaining *float64 `json:"monthly_executions_remaining,omitempty"`
+	MonthlyExecutionsRemaining *float64 `json:"monthly_executions_remaining,omitempty" url:"monthly_executions_remaining,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (u *UsageResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler UsageResponse
+func (u *UsageStatistics) GetPlan() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Plan
+}
+
+func (u *UsageStatistics) GetMonthlyPeriodStart() *string {
+	if u == nil {
+		return nil
+	}
+	return u.MonthlyPeriodStart
+}
+
+func (u *UsageStatistics) GetMonthlyPeriodEnd() *string {
+	if u == nil {
+		return nil
+	}
+	return u.MonthlyPeriodEnd
+}
+
+func (u *UsageStatistics) GetMonthlyExecutionsUsage() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.MonthlyExecutionsUsage
+}
+
+func (u *UsageStatistics) GetMonthlyExecutionsLimit() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.MonthlyExecutionsLimit
+}
+
+func (u *UsageStatistics) GetMonthlyExecutionsRemaining() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.MonthlyExecutionsRemaining
+}
+
+func (u *UsageStatistics) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UsageStatistics) UnmarshalJSON(data []byte) error {
+	type unmarshaler UsageStatistics
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*u = UsageResponse(value)
-	u._rawJSON = json.RawMessage(data)
+	*u = UsageStatistics(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (u *UsageResponse) String() string {
-	if len(u._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(u._rawJSON); err == nil {
+func (u *UsageStatistics) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(u); err == nil {
+	if value, err := internal.StringifyJSON(u); err == nil {
 		return value
 	}
 	return fmt.Sprintf("%#v", u)
@@ -334,9 +902,9 @@ func (u *UsageResponse) String() string {
 
 type UpsertFolderRequest struct {
 	// Folder ID (required for updates, omit for creation)
-	Id *string `json:"id,omitempty"`
+	Id *string `json:"id,omitempty" url:"-"`
 	// Name of the folder
-	Name string `json:"name"`
+	Name string `json:"name" url:"-"`
 	// Description of the folder
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description,omitempty" url:"-"`
 }

@@ -3,21 +3,17 @@
 package tests
 
 import (
-	bytes "bytes"
 	context "context"
-	json "encoding/json"
-	errors "errors"
-	fmt "fmt"
-	io "io"
 	http "net/http"
 	sdk "sdk"
 	core "sdk/core"
+	internal "sdk/internal"
 	option "sdk/option"
 )
 
 type Client struct {
 	baseURL string
-	caller  *core.Caller
+	caller  *internal.Caller
 	header  http.Header
 }
 
@@ -25,8 +21,8 @@ func NewClient(opts ...option.RequestOption) *Client {
 	options := core.NewRequestOptions(opts...)
 	return &Client{
 		baseURL: options.BaseURL,
-		caller: core.NewCaller(
-			&core.CallerParams{
+		caller: internal.NewCaller(
+			&internal.CallerParams{
 				Client:      options.HTTPClient,
 				MaxAttempts: options.MaxAttempts,
 			},
@@ -38,60 +34,50 @@ func NewClient(opts ...option.RequestOption) *Client {
 // Retrieves a list of tests associated with the rule identified by the slug.
 func (c *Client) ListRuleTests(
 	ctx context.Context,
-	// The slug of the rule whose tests are to be retrieved.
+	// The unique identifier for the resource.
 	slug string,
 	opts ...option.RequestOption,
-) ([]*sdk.ListRuleTestsResponseItem, error) {
+) (sdk.TestListResponse, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := fmt.Sprintf(baseURL+"/"+"api/v1/admin/rules/%v/tests", slug)
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/v1/admin/rules/%v/tests",
+		slug,
+	)
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response []*sdk.ListRuleTestsResponseItem
+	var response sdk.TestListResponse
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodGet,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -102,69 +88,58 @@ func (c *Client) ListRuleTests(
 // Adds a new test to the test suite of a rule identified by the slug.
 func (c *Client) CreateRuleTest(
 	ctx context.Context,
-	// The slug of the rule to which the test will be added.
+	// The unique identifier for the resource.
 	slug string,
-	request *sdk.CreateRuleTestRequest,
+	request *sdk.CreateTestRequest,
 	opts ...option.RequestOption,
-) (*sdk.CreateRuleTestResponse, error) {
+) (*sdk.Test, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := fmt.Sprintf(baseURL+"/"+"api/v1/admin/rules/%v/tests", slug)
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/v1/admin/rules/%v/tests",
+		slug,
+	)
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	headers.Set("Content-Type", "application/json")
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.CreateRuleTestResponse
+	var response *sdk.Test
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodPost,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Request:      request,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -175,62 +150,53 @@ func (c *Client) CreateRuleTest(
 // Deletes a test from the test suite of a rule identified by the slug.
 func (c *Client) DeleteRuleTest(
 	ctx context.Context,
-	// The slug of the rule from which the test will be deleted.
+	// The unique identifier for the resource.
 	slug string,
-	// The ID of the test to delete.
+	// The ID of the test.
 	testId string,
 	opts ...option.RequestOption,
-) (*sdk.DeleteRuleTestResponse, error) {
+) (*sdk.Test, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := fmt.Sprintf(baseURL+"/"+"api/v1/admin/rules/%v/tests/%v", slug, testId)
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/v1/admin/rules/%v/tests/%v",
+		slug,
+		testId,
+	)
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.DeleteRuleTestResponse
+	var response *sdk.Test
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodDelete,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodDelete,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -241,60 +207,50 @@ func (c *Client) DeleteRuleTest(
 // Retrieves a list of tests associated with the flow identified by the slug.
 func (c *Client) ListFlowTests(
 	ctx context.Context,
-	// The slug of the flow whose tests are to be retrieved.
+	// The unique identifier for the resource.
 	slug string,
 	opts ...option.RequestOption,
-) ([]*sdk.ListFlowTestsResponseItem, error) {
+) (sdk.TestListResponse, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := fmt.Sprintf(baseURL+"/"+"api/v1/admin/flows/%v/tests", slug)
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/v1/admin/flows/%v/tests",
+		slug,
+	)
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response []*sdk.ListFlowTestsResponseItem
+	var response sdk.TestListResponse
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodGet,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -305,69 +261,58 @@ func (c *Client) ListFlowTests(
 // Adds a new test to the test suite of a flow identified by the slug.
 func (c *Client) CreateFlowTest(
 	ctx context.Context,
-	// The slug of the flow to which the test will be added.
+	// The unique identifier for the resource.
 	slug string,
-	request *sdk.CreateFlowTestRequest,
+	request *sdk.CreateTestRequest,
 	opts ...option.RequestOption,
-) (*sdk.CreateFlowTestResponse, error) {
+) (*sdk.Test, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := fmt.Sprintf(baseURL+"/"+"api/v1/admin/flows/%v/tests", slug)
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/v1/admin/flows/%v/tests",
+		slug,
+	)
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	headers.Set("Content-Type", "application/json")
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.CreateFlowTestResponse
+	var response *sdk.Test
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodPost,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Request:      request,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -378,62 +323,53 @@ func (c *Client) CreateFlowTest(
 // Deletes a test from the test suite of a flow identified by the slug.
 func (c *Client) DeleteFlowTest(
 	ctx context.Context,
-	// The slug of the flow from which the test will be deleted.
+	// The unique identifier for the resource.
 	slug string,
-	// The ID of the test to delete.
+	// The ID of the test.
 	testId string,
 	opts ...option.RequestOption,
-) (*sdk.DeleteFlowTestResponse, error) {
+) (*sdk.Test, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := fmt.Sprintf(baseURL+"/"+"api/v1/admin/flows/%v/tests/%v", slug, testId)
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/v1/admin/flows/%v/tests/%v",
+		slug,
+		testId,
+	)
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.DeleteFlowTestResponse
+	var response *sdk.Test
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodDelete,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodDelete,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err

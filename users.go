@@ -5,145 +5,246 @@ package api
 import (
 	json "encoding/json"
 	fmt "fmt"
-	core "sdk/core"
+	internal "sdk/internal"
 )
 
-type CreateGroupRequest struct {
+type CreateUserGroupRequest struct {
 	// Unique name of the user group.
-	Name string `json:"name"`
+	Name string `json:"name" url:"-"`
 	// Description of the user group.
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description,omitempty" url:"-"`
 }
 
-type InviteRequest struct {
+type UserInviteRequest struct {
 	// Email of the user to invite.
-	Email string `json:"email"`
-	// Role to assign to the user.
-	Role *InviteRequestRole `json:"role,omitempty"`
-	// List of access group names or IDs to assign to the user.
-	AccessGroups []string `json:"accessGroups,omitempty"`
+	Email string `json:"email" url:"-"`
+	// System or custom role ID to assign to the user. Available system roles include 'admin', 'editor', and 'developer'.
+	Role *UserInviteRequestRole `json:"role,omitempty" url:"-"`
+	// List of access group names or IDs to assign to the user. All specified groups must exist in your organization.
+	AccessGroups []string `json:"accessGroups,omitempty" url:"-"`
 }
 
-type CreateGroupResponse struct {
+type UserGroup struct {
 	// Unique identifier of the user group.
-	Id *string `json:"id,omitempty"`
+	Id *string `json:"id,omitempty" url:"id,omitempty"`
 	// Name of the user group.
-	Name *string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Description of the user group.
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// List of member emails in the user group.
-	Members []string `json:"members,omitempty"`
+	Members []string `json:"members,omitempty" url:"members,omitempty"`
 
-	_rawJSON json.RawMessage
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
-func (c *CreateGroupResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler CreateGroupResponse
+func (u *UserGroup) GetId() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Id
+}
+
+func (u *UserGroup) GetName() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Name
+}
+
+func (u *UserGroup) GetDescription() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Description
+}
+
+func (u *UserGroup) GetMembers() []string {
+	if u == nil {
+		return nil
+	}
+	return u.Members
+}
+
+func (u *UserGroup) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UserGroup) UnmarshalJSON(data []byte) error {
+	type unmarshaler UserGroup
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CreateGroupResponse(value)
-	c._rawJSON = json.RawMessage(data)
+	*u = UserGroup(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
 	return nil
 }
 
-func (c *CreateGroupResponse) String() string {
-	if len(c._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(c._rawJSON); err == nil {
+func (u *UserGroup) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
 		}
 	}
-	if value, err := core.StringifyJSON(c); err == nil {
+	if value, err := internal.StringifyJSON(u); err == nil {
 		return value
 	}
-	return fmt.Sprintf("%#v", c)
+	return fmt.Sprintf("%#v", u)
 }
 
-// Role to assign to the user.
-type InviteRequestRole string
+type UserGroupListResponse = []*UserGroup
+
+type UserInviteResponse struct {
+	// Success message indicating whether a new user was invited or an existing user's permissions were updated.
+	Message *string                 `json:"message,omitempty" url:"message,omitempty"`
+	User    *UserInviteResponseUser `json:"user,omitempty" url:"user,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UserInviteResponse) GetMessage() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Message
+}
+
+func (u *UserInviteResponse) GetUser() *UserInviteResponseUser {
+	if u == nil {
+		return nil
+	}
+	return u.User
+}
+
+func (u *UserInviteResponse) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UserInviteResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler UserInviteResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UserInviteResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UserInviteResponse) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UserInviteResponseUser struct {
+	// Email of the invited user.
+	Email *string `json:"email,omitempty" url:"email,omitempty"`
+	// Role assigned to the user.
+	Role *string `json:"role,omitempty" url:"role,omitempty"`
+	// Access groups assigned to the user.
+	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UserInviteResponseUser) GetEmail() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Email
+}
+
+func (u *UserInviteResponseUser) GetRole() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Role
+}
+
+func (u *UserInviteResponseUser) GetAccessGroups() []string {
+	if u == nil {
+		return nil
+	}
+	return u.AccessGroups
+}
+
+func (u *UserInviteResponseUser) GetExtraProperties() map[string]interface{} {
+	return u.extraProperties
+}
+
+func (u *UserInviteResponseUser) UnmarshalJSON(data []byte) error {
+	type unmarshaler UserInviteResponseUser
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UserInviteResponseUser(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UserInviteResponseUser) String() string {
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+// System or custom role ID to assign to the user. Available system roles include 'admin', 'editor', and 'developer'.
+type UserInviteRequestRole string
 
 const (
-	InviteRequestRoleEditor    InviteRequestRole = "editor"
-	InviteRequestRoleDeveloper InviteRequestRole = "developer"
+	UserInviteRequestRoleAdmin      UserInviteRequestRole = "admin"
+	UserInviteRequestRoleEditor     UserInviteRequestRole = "editor"
+	UserInviteRequestRoleDeveloper  UserInviteRequestRole = "developer"
+	UserInviteRequestRoleCustomRole UserInviteRequestRole = "custom-role"
 )
 
-func NewInviteRequestRoleFromString(s string) (InviteRequestRole, error) {
+func NewUserInviteRequestRoleFromString(s string) (UserInviteRequestRole, error) {
 	switch s {
+	case "admin":
+		return UserInviteRequestRoleAdmin, nil
 	case "editor":
-		return InviteRequestRoleEditor, nil
+		return UserInviteRequestRoleEditor, nil
 	case "developer":
-		return InviteRequestRoleDeveloper, nil
+		return UserInviteRequestRoleDeveloper, nil
+	case "custom-role":
+		return UserInviteRequestRoleCustomRole, nil
 	}
-	var t InviteRequestRole
+	var t UserInviteRequestRole
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (i InviteRequestRole) Ptr() *InviteRequestRole {
-	return &i
-}
-
-type InviteResponse struct {
-	Message *string `json:"message,omitempty"`
-
-	_rawJSON json.RawMessage
-}
-
-func (i *InviteResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler InviteResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*i = InviteResponse(value)
-	i._rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (i *InviteResponse) String() string {
-	if len(i._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(i._rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := core.StringifyJSON(i); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", i)
-}
-
-type ListGroupsResponseItem struct {
-	// Unique identifier of the user group.
-	Id *string `json:"id,omitempty"`
-	// Name of the user group.
-	Name *string `json:"name,omitempty"`
-	// Description of the user group.
-	Description *string `json:"description,omitempty"`
-	// List of member emails in the user group.
-	Members []string `json:"members,omitempty"`
-
-	_rawJSON json.RawMessage
-}
-
-func (l *ListGroupsResponseItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ListGroupsResponseItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*l = ListGroupsResponseItem(value)
-	l._rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (l *ListGroupsResponseItem) String() string {
-	if len(l._rawJSON) > 0 {
-		if value, err := core.StringifyJSON(l._rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := core.StringifyJSON(l); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", l)
+func (u UserInviteRequestRole) Ptr() *UserInviteRequestRole {
+	return &u
 }

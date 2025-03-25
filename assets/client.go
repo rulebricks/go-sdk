@@ -3,22 +3,17 @@
 package assets
 
 import (
-	bytes "bytes"
 	context "context"
-	json "encoding/json"
-	errors "errors"
-	fmt "fmt"
-	io "io"
 	http "net/http"
-	url "net/url"
 	sdk "sdk"
 	core "sdk/core"
+	internal "sdk/internal"
 	option "sdk/option"
 )
 
 type Client struct {
 	baseURL string
-	caller  *core.Caller
+	caller  *internal.Caller
 	header  http.Header
 }
 
@@ -26,8 +21,8 @@ func NewClient(opts ...option.RequestOption) *Client {
 	options := core.NewRequestOptions(opts...)
 	return &Client{
 		baseURL: options.BaseURL,
-		caller: core.NewCaller(
-			&core.CallerParams{
+		caller: internal.NewCaller(
+			&internal.CallerParams{
 				Client:      options.HTTPClient,
 				MaxAttempts: options.MaxAttempts,
 			},
@@ -41,65 +36,51 @@ func (c *Client) DeleteRule(
 	ctx context.Context,
 	request *sdk.DeleteRuleRequest,
 	opts ...option.RequestOption,
-) (*sdk.DeleteRuleResponse, error) {
+) (*sdk.SuccessMessage, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/rules/delete"
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/rules/delete"
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	headers.Set("Content-Type", "application/json")
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.DeleteRuleResponse
+	var response *sdk.SuccessMessage
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodDelete,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Request:      request,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodDelete,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -112,70 +93,56 @@ func (c *Client) ExportRule(
 	ctx context.Context,
 	request *sdk.ExportRuleRequest,
 	opts ...option.RequestOption,
-) (map[string]interface{}, error) {
+) (sdk.RuleExport, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/rules/export"
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
 	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/rules/export"
-
-	queryParams := make(url.Values)
-	queryParams.Add("id", fmt.Sprintf("%v", request.Id))
 	if len(queryParams) > 0 {
 		endpointURL += "?" + queryParams.Encode()
 	}
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response map[string]interface{}
+	var response sdk.RuleExport
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodGet,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -188,65 +155,51 @@ func (c *Client) ImportRule(
 	ctx context.Context,
 	request *sdk.ImportRuleRequest,
 	opts ...option.RequestOption,
-) (map[string]interface{}, error) {
+) (sdk.RuleExport, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/rules/import"
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/rules/import"
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	headers.Set("Content-Type", "application/json")
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 403:
-			value := new(sdk.ForbiddenError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		403: func(apiError *core.APIError) error {
+			return &sdk.ForbiddenError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response map[string]interface{}
+	var response sdk.RuleExport
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodPost,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Request:      request,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -259,65 +212,51 @@ func (c *Client) ListRules(
 	ctx context.Context,
 	request *sdk.ListRulesRequest,
 	opts ...option.RequestOption,
-) ([]*sdk.ListRulesResponseItem, error) {
+) (sdk.RuleListResponse, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/rules/list"
-
-	queryParams := make(url.Values)
-	if request.Folder != nil {
-		queryParams.Add("folder", fmt.Sprintf("%v", *request.Folder))
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/rules/list"
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
 	}
 	if len(queryParams) > 0 {
 		endpointURL += "?" + queryParams.Encode()
 	}
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response []*sdk.ListRulesResponseItem
+	var response sdk.RuleListResponse
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodGet,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -329,50 +268,39 @@ func (c *Client) ListRules(
 func (c *Client) ListFlows(
 	ctx context.Context,
 	opts ...option.RequestOption,
-) ([]*sdk.ListFlowsResponseItem, error) {
+) (sdk.FlowListResponse, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/flows/list"
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/flows/list"
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response []*sdk.ListFlowsResponseItem
+	var response sdk.FlowListResponse
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodGet,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -381,33 +309,34 @@ func (c *Client) ListFlows(
 }
 
 // Get the rule execution usage of your organization.
-func (c *Client) Usage(
+func (c *Client) GetUsage(
 	ctx context.Context,
 	opts ...option.RequestOption,
-) (*sdk.UsageResponse, error) {
+) (*sdk.UsageStatistics, error) {
 	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/usage"
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
 
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/usage"
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	var response *sdk.UsageResponse
+	var response *sdk.UsageStatistics
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:         endpointURL,
-			Method:      http.MethodGet,
-			MaxAttempts: options.MaxAttempts,
-			Headers:     headers,
-			Client:      options.HTTPClient,
-			Response:    &response,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
 		},
 	); err != nil {
 		return nil, err
@@ -419,50 +348,39 @@ func (c *Client) Usage(
 func (c *Client) ListFolders(
 	ctx context.Context,
 	opts ...option.RequestOption,
-) ([]*sdk.ListFoldersResponseItem, error) {
+) (sdk.FolderListResponse, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/folders"
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/folders"
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	errorCodes := internal.ErrorCodes{
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response []*sdk.ListFoldersResponseItem
+	var response sdk.FolderListResponse
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodGet,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -475,58 +393,46 @@ func (c *Client) UpsertFolder(
 	ctx context.Context,
 	request *sdk.UpsertFolderRequest,
 	opts ...option.RequestOption,
-) (*sdk.UpsertFolderResponse, error) {
+) (*sdk.Folder, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/folders"
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/folders"
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	headers.Set("Content-Type", "application/json")
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.UpsertFolderResponse
+	var response *sdk.Folder
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodPost,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Request:      request,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
@@ -539,65 +445,51 @@ func (c *Client) DeleteFolder(
 	ctx context.Context,
 	request *sdk.DeleteFolderRequest,
 	opts ...option.RequestOption,
-) (*sdk.DeleteFolderResponse, error) {
+) (*sdk.Folder, error) {
 	options := core.NewRequestOptions(opts...)
-
-	baseURL := ""
-	if c.baseURL != "" {
-		baseURL = c.baseURL
-	}
-	if options.BaseURL != "" {
-		baseURL = options.BaseURL
-	}
-	endpointURL := baseURL + "/" + "api/v1/admin/folders"
-
-	headers := core.MergeHeaders(c.header.Clone(), options.ToHeader())
-
-	errorDecoder := func(statusCode int, body io.Reader) error {
-		raw, err := io.ReadAll(body)
-		if err != nil {
-			return err
-		}
-		apiError := core.NewAPIError(statusCode, errors.New(string(raw)))
-		decoder := json.NewDecoder(bytes.NewReader(raw))
-		switch statusCode {
-		case 400:
-			value := new(sdk.BadRequestError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		c.baseURL,
+		"",
+	)
+	endpointURL := baseURL + "/api/v1/admin/folders"
+	headers := internal.MergeHeaders(
+		c.header.Clone(),
+		options.ToHeader(),
+	)
+	headers.Set("Content-Type", "application/json")
+	errorCodes := internal.ErrorCodes{
+		400: func(apiError *core.APIError) error {
+			return &sdk.BadRequestError{
+				APIError: apiError,
 			}
-			return value
-		case 404:
-			value := new(sdk.NotFoundError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
 			}
-			return value
-		case 500:
-			value := new(sdk.InternalServerError)
-			value.APIError = apiError
-			if err := decoder.Decode(value); err != nil {
-				return apiError
+		},
+		500: func(apiError *core.APIError) error {
+			return &sdk.InternalServerError{
+				APIError: apiError,
 			}
-			return value
-		}
-		return apiError
+		},
 	}
 
-	var response *sdk.DeleteFolderResponse
+	var response *sdk.Folder
 	if err := c.caller.Call(
 		ctx,
-		&core.CallParams{
-			URL:          endpointURL,
-			Method:       http.MethodDelete,
-			MaxAttempts:  options.MaxAttempts,
-			Headers:      headers,
-			Client:       options.HTTPClient,
-			Request:      request,
-			Response:     &response,
-			ErrorDecoder: errorDecoder,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodDelete,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(errorCodes),
 		},
 	); err != nil {
 		return nil, err
