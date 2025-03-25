@@ -32,9 +32,9 @@ func NewClient(opts ...option.RequestOption) *Client {
 }
 
 // Retrieve all dynamic values for the authenticated user.
-func (c *Client) ListDynamicValues(
+func (c *Client) List(
 	ctx context.Context,
-	request *sdk.ListDynamicValuesRequest,
+	request *sdk.ListRequest,
 	opts ...option.RequestOption,
 ) (sdk.DynamicValueListResponse, error) {
 	options := core.NewRequestOptions(opts...)
@@ -84,7 +84,7 @@ func (c *Client) ListDynamicValues(
 }
 
 // Update existing dynamic values or add new ones for the authenticated user.
-func (c *Client) UpdateValues(
+func (c *Client) Update(
 	ctx context.Context,
 	request *sdk.UpdateValuesRequest,
 	opts ...option.RequestOption,
@@ -136,9 +136,9 @@ func (c *Client) UpdateValues(
 }
 
 // Delete a specific dynamic value for the authenticated user by its ID.
-func (c *Client) DeleteDynamicValue(
+func (c *Client) Delete(
 	ctx context.Context,
-	request *sdk.DeleteDynamicValueRequest,
+	request *sdk.DeleteRequest,
 	opts ...option.RequestOption,
 ) (*sdk.SuccessMessage, error) {
 	options := core.NewRequestOptions(opts...)

@@ -32,9 +32,9 @@ func NewClient(opts ...option.RequestOption) *Client {
 }
 
 // Retrieve logs for a specific user and rule, with optional date range and pagination.
-func (c *Client) QueryDecisions(
+func (c *Client) Query(
 	ctx context.Context,
-	request *sdk.QueryDecisionsRequest,
+	request *sdk.QueryRequest,
 	opts ...option.RequestOption,
 ) (*sdk.DecisionLogResponse, error) {
 	options := core.NewRequestOptions(opts...)

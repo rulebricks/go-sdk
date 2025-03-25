@@ -9,12 +9,12 @@ import (
 	time "time"
 )
 
-type DeleteDynamicValueRequest struct {
+type DeleteRequest struct {
 	// ID of the dynamic value to delete
 	Id string `json:"-" url:"id"`
 }
 
-type ListDynamicValuesRequest struct {
+type ListRequest struct {
 	// Name of a specific dynamic value to retrieve data for
 	Name *string `json:"-" url:"name,omitempty"`
 }
@@ -367,7 +367,7 @@ type ListValue struct {
 	// Access groups assigned to this value.
 	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
 	// The list value
-	Value []string `json:"value,omitempty" url:"value,omitempty"`
+	Value []*ListValueValueItem `json:"value,omitempty" url:"value,omitempty"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
@@ -401,7 +401,7 @@ func (l *ListValue) GetAccessGroups() []string {
 	return l.AccessGroups
 }
 
-func (l *ListValue) GetValue() []string {
+func (l *ListValue) GetValue() []*ListValueValueItem {
 	if l == nil {
 		return nil
 	}
@@ -438,6 +438,151 @@ func (l *ListValue) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", l)
+}
+
+type ListValueValueItem struct {
+	String           string
+	Double           float64
+	Boolean          bool
+	StringUnknownMap map[string]interface{}
+	UnknownList      []interface{}
+
+	typ string
+}
+
+func NewListValueValueItemFromString(value string) *ListValueValueItem {
+	return &ListValueValueItem{typ: "String", String: value}
+}
+
+func NewListValueValueItemFromDouble(value float64) *ListValueValueItem {
+	return &ListValueValueItem{typ: "Double", Double: value}
+}
+
+func NewListValueValueItemFromBoolean(value bool) *ListValueValueItem {
+	return &ListValueValueItem{typ: "Boolean", Boolean: value}
+}
+
+func NewListValueValueItemFromStringUnknownMap(value map[string]interface{}) *ListValueValueItem {
+	return &ListValueValueItem{typ: "StringUnknownMap", StringUnknownMap: value}
+}
+
+func NewListValueValueItemFromUnknownList(value []interface{}) *ListValueValueItem {
+	return &ListValueValueItem{typ: "UnknownList", UnknownList: value}
+}
+
+func (l *ListValueValueItem) GetString() string {
+	if l == nil {
+		return ""
+	}
+	return l.String
+}
+
+func (l *ListValueValueItem) GetDouble() float64 {
+	if l == nil {
+		return 0
+	}
+	return l.Double
+}
+
+func (l *ListValueValueItem) GetBoolean() bool {
+	if l == nil {
+		return false
+	}
+	return l.Boolean
+}
+
+func (l *ListValueValueItem) GetStringUnknownMap() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.StringUnknownMap
+}
+
+func (l *ListValueValueItem) GetUnknownList() []interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.UnknownList
+}
+
+func (l *ListValueValueItem) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		l.typ = "String"
+		l.String = valueString
+		return nil
+	}
+	var valueDouble float64
+	if err := json.Unmarshal(data, &valueDouble); err == nil {
+		l.typ = "Double"
+		l.Double = valueDouble
+		return nil
+	}
+	var valueBoolean bool
+	if err := json.Unmarshal(data, &valueBoolean); err == nil {
+		l.typ = "Boolean"
+		l.Boolean = valueBoolean
+		return nil
+	}
+	var valueStringUnknownMap map[string]interface{}
+	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
+		l.typ = "StringUnknownMap"
+		l.StringUnknownMap = valueStringUnknownMap
+		return nil
+	}
+	var valueUnknownList []interface{}
+	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
+		l.typ = "UnknownList"
+		l.UnknownList = valueUnknownList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, l)
+}
+
+func (l ListValueValueItem) MarshalJSON() ([]byte, error) {
+	if l.typ == "String" || l.String != "" {
+		return json.Marshal(l.String)
+	}
+	if l.typ == "Double" || l.Double != 0 {
+		return json.Marshal(l.Double)
+	}
+	if l.typ == "Boolean" || l.Boolean != false {
+		return json.Marshal(l.Boolean)
+	}
+	if l.typ == "StringUnknownMap" || l.StringUnknownMap != nil {
+		return json.Marshal(l.StringUnknownMap)
+	}
+	if l.typ == "UnknownList" || l.UnknownList != nil {
+		return json.Marshal(l.UnknownList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", l)
+}
+
+type ListValueValueItemVisitor interface {
+	VisitString(string) error
+	VisitDouble(float64) error
+	VisitBoolean(bool) error
+	VisitStringUnknownMap(map[string]interface{}) error
+	VisitUnknownList([]interface{}) error
+}
+
+func (l *ListValueValueItem) Accept(visitor ListValueValueItemVisitor) error {
+	if l.typ == "String" || l.String != "" {
+		return visitor.VisitString(l.String)
+	}
+	if l.typ == "Double" || l.Double != 0 {
+		return visitor.VisitDouble(l.Double)
+	}
+	if l.typ == "Boolean" || l.Boolean != false {
+		return visitor.VisitBoolean(l.Boolean)
+	}
+	if l.typ == "StringUnknownMap" || l.StringUnknownMap != nil {
+		return visitor.VisitStringUnknownMap(l.StringUnknownMap)
+	}
+	if l.typ == "UnknownList" || l.UnknownList != nil {
+		return visitor.VisitUnknownList(l.UnknownList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", l)
 }
 
 type NumberValue struct {

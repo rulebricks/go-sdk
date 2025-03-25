@@ -9,7 +9,7 @@ import (
 	time "time"
 )
 
-type QueryDecisionsRequest struct {
+type QueryRequest struct {
 	// The slug of the rule to query logs for.
 	Slug string `json:"-" url:"slug"`
 	// Start date for the query range (ISO8601 format).

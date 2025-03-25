@@ -32,7 +32,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 }
 
 // Execute a flow by its slug.
-func (c *Client) ExecuteFlow(
+func (c *Client) Execute(
 	ctx context.Context,
 	// The unique identifier for the resource.
 	slug string,
