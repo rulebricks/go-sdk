@@ -31,7 +31,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 	}
 }
 
-// Retrieve all dynamic values for the authenticated user.
+// Retrieve all dynamic values for the authenticated user. Use the 'include' parameter to control whether usage information is returned.
 func (c *Client) List(
 	ctx context.Context,
 	request *sdk.ValuesListRequest,
@@ -56,6 +56,11 @@ func (c *Client) List(
 		options.ToHeader(),
 	)
 	errorCodes := internal.ErrorCodes{
+		404: func(apiError *core.APIError) error {
+			return &sdk.NotFoundError{
+				APIError: apiError,
+			}
+		},
 		500: func(apiError *core.APIError) error {
 			return &sdk.InternalServerError{
 				APIError: apiError,
@@ -83,7 +88,7 @@ func (c *Client) List(
 	return response, nil
 }
 
-// Update existing dynamic values or add new ones for the authenticated user.
+// Update existing dynamic values or add new ones for the authenticated user. Supports both flat and nested object structures. Nested objects are automatically flattened using dot notation and keys are converted to readable format (e.g., 'user_name' becomes 'User Name', nested 'user.contact_info.email' becomes 'User.Contact Info.Email').
 func (c *Client) Update(
 	ctx context.Context,
 	request *sdk.UpdateValuesRequest,
@@ -104,6 +109,11 @@ func (c *Client) Update(
 	errorCodes := internal.ErrorCodes{
 		400: func(apiError *core.APIError) error {
 			return &sdk.BadRequestError{
+				APIError: apiError,
+			}
+		},
+		403: func(apiError *core.APIError) error {
+			return &sdk.ForbiddenError{
 				APIError: apiError,
 			}
 		},

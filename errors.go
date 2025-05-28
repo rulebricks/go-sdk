@@ -34,11 +34,11 @@ func (b *BadRequestError) Unwrap() error {
 // Forbidden - Plan limit reached
 type ForbiddenError struct {
 	*core.APIError
-	Body *Error
+	Body interface{}
 }
 
 func (f *ForbiddenError) UnmarshalJSON(data []byte) error {
-	var body *Error
+	var body interface{}
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
