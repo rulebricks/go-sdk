@@ -1797,8 +1797,8 @@ type TestTestState struct {
 	// Execution time in seconds
 	Duration *float64 `json:"duration,omitempty" url:"duration,omitempty"`
 	// Actual response returned
-	Response   map[string]interface{}                         `json:"response,omitempty" url:"response,omitempty"`
-	Conditions []map[string]*TestTestStateConditionsItemValue `json:"conditions,omitempty" url:"conditions,omitempty"`
+	Response   map[string]interface{}   `json:"response,omitempty" url:"response,omitempty"`
+	Conditions []map[string]interface{} `json:"conditions,omitempty" url:"conditions,omitempty"`
 	// HTTP status code returned
 	HTTPStatus  *int  `json:"httpStatus,omitempty" url:"httpStatus,omitempty"`
 	SuccessIdxs []int `json:"successIdxs,omitempty" url:"successIdxs,omitempty"`
@@ -1826,7 +1826,7 @@ func (t *TestTestState) GetResponse() map[string]interface{} {
 	return t.Response
 }
 
-func (t *TestTestState) GetConditions() []map[string]*TestTestStateConditionsItemValue {
+func (t *TestTestState) GetConditions() []map[string]interface{} {
 	if t == nil {
 		return nil
 	}
@@ -1881,7 +1881,7 @@ func (t *TestTestState) SetResponse(response map[string]interface{}) {
 
 // SetConditions sets the Conditions field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TestTestState) SetConditions(conditions []map[string]*TestTestStateConditionsItemValue) {
+func (t *TestTestState) SetConditions(conditions []map[string]interface{}) {
 	t.Conditions = conditions
 	t.require(testTestStateFieldConditions)
 }
@@ -1935,100 +1935,6 @@ func (t *TestTestState) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TestTestState) String() string {
-	if len(t.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(t); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", t)
-}
-
-var (
-	testTestStateConditionsItemValueFieldResult = big.NewInt(1 << 0)
-	testTestStateConditionsItemValueFieldErr    = big.NewInt(1 << 1)
-)
-
-type TestTestStateConditionsItemValue struct {
-	Result *bool   `json:"result,omitempty" url:"result,omitempty"`
-	Err    *string `json:"err,omitempty" url:"err,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (t *TestTestStateConditionsItemValue) GetResult() *bool {
-	if t == nil {
-		return nil
-	}
-	return t.Result
-}
-
-func (t *TestTestStateConditionsItemValue) GetErr() *string {
-	if t == nil {
-		return nil
-	}
-	return t.Err
-}
-
-func (t *TestTestStateConditionsItemValue) GetExtraProperties() map[string]interface{} {
-	return t.extraProperties
-}
-
-func (t *TestTestStateConditionsItemValue) require(field *big.Int) {
-	if t.explicitFields == nil {
-		t.explicitFields = big.NewInt(0)
-	}
-	t.explicitFields.Or(t.explicitFields, field)
-}
-
-// SetResult sets the Result field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TestTestStateConditionsItemValue) SetResult(result *bool) {
-	t.Result = result
-	t.require(testTestStateConditionsItemValueFieldResult)
-}
-
-// SetErr sets the Err field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TestTestStateConditionsItemValue) SetErr(err *string) {
-	t.Err = err
-	t.require(testTestStateConditionsItemValueFieldErr)
-}
-
-func (t *TestTestStateConditionsItemValue) UnmarshalJSON(data []byte) error {
-	type unmarshaler TestTestStateConditionsItemValue
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*t = TestTestStateConditionsItemValue(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *t)
-	if err != nil {
-		return err
-	}
-	t.extraProperties = extraProperties
-	t.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (t *TestTestStateConditionsItemValue) MarshalJSON() ([]byte, error) {
-	type embed TestTestStateConditionsItemValue
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*t),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (t *TestTestStateConditionsItemValue) String() string {
 	if len(t.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value
