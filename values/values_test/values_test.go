@@ -105,7 +105,7 @@ func TestValuesUpdateWithWireMock(
 				"cycling",
 			},
 		},
-		AccessGroups: []string{
+		UserGroups: []string{
 			"marketing",
 			"developers",
 		},

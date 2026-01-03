@@ -4,6 +4,7 @@ package client
 
 import (
 	assetsclient "sdk/assets/client"
+	contextsclient "sdk/contexts/client"
 	core "sdk/core"
 	decisions "sdk/decisions"
 	flows "sdk/flows"
@@ -22,6 +23,7 @@ type Client struct {
 	Users     *client.Client
 	Assets    *assetsclient.Client
 	Values    *values.Client
+	Contexts  *contextsclient.Client
 	Tests     *testsclient.Client
 
 	options *core.RequestOptions
@@ -38,6 +40,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Users:     client.NewClient(options),
 		Assets:    assetsclient.NewClient(options),
 		Values:    values.NewClient(options),
+		Contexts:  contextsclient.NewClient(options),
 		Tests:     testsclient.NewClient(options),
 		options:   options,
 		baseURL:   options.BaseURL,

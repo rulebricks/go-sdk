@@ -73,12 +73,12 @@ func (l *ListValuesRequest) SetInclude(include *string) {
 }
 
 var (
-	dynamicValueFieldID           = big.NewInt(1 << 0)
-	dynamicValueFieldName         = big.NewInt(1 << 1)
-	dynamicValueFieldType         = big.NewInt(1 << 2)
-	dynamicValueFieldValue        = big.NewInt(1 << 3)
-	dynamicValueFieldUsages       = big.NewInt(1 << 4)
-	dynamicValueFieldAccessGroups = big.NewInt(1 << 5)
+	dynamicValueFieldID         = big.NewInt(1 << 0)
+	dynamicValueFieldName       = big.NewInt(1 << 1)
+	dynamicValueFieldType       = big.NewInt(1 << 2)
+	dynamicValueFieldValue      = big.NewInt(1 << 3)
+	dynamicValueFieldUsages     = big.NewInt(1 << 4)
+	dynamicValueFieldUserGroups = big.NewInt(1 << 5)
 )
 
 type DynamicValue struct {
@@ -89,11 +89,11 @@ type DynamicValue struct {
 	// Type identifier for the value (e.g., 'string', 'number', 'boolean', 'list', 'function', etc.)
 	Type string `json:"type" url:"type"`
 	// The actual value - can be any valid JSON type
-	Value interface{} `json:"value,omitempty" url:"value,omitempty"`
+	Value *DynamicValueValue `json:"value,omitempty" url:"value,omitempty"`
 	// Rules that use this dynamic value (only included when 'include=usage' parameter is used).
 	Usages []*RuleUsage `json:"usages,omitempty" url:"usages,omitempty"`
-	// Access groups assigned to this value.
-	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+	// User groups assigned to this value.
+	UserGroups []string `json:"user_groups,omitempty" url:"user_groups,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -123,7 +123,7 @@ func (d *DynamicValue) GetType() string {
 	return d.Type
 }
 
-func (d *DynamicValue) GetValue() interface{} {
+func (d *DynamicValue) GetValue() *DynamicValueValue {
 	if d == nil {
 		return nil
 	}
@@ -137,11 +137,11 @@ func (d *DynamicValue) GetUsages() []*RuleUsage {
 	return d.Usages
 }
 
-func (d *DynamicValue) GetAccessGroups() []string {
+func (d *DynamicValue) GetUserGroups() []string {
 	if d == nil {
 		return nil
 	}
-	return d.AccessGroups
+	return d.UserGroups
 }
 
 func (d *DynamicValue) GetExtraProperties() map[string]interface{} {
@@ -178,7 +178,7 @@ func (d *DynamicValue) SetType(type_ string) {
 
 // SetValue sets the Value field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DynamicValue) SetValue(value interface{}) {
+func (d *DynamicValue) SetValue(value *DynamicValueValue) {
 	d.Value = value
 	d.require(dynamicValueFieldValue)
 }
@@ -190,11 +190,11 @@ func (d *DynamicValue) SetUsages(usages []*RuleUsage) {
 	d.require(dynamicValueFieldUsages)
 }
 
-// SetAccessGroups sets the AccessGroups field and marks it as non-optional;
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DynamicValue) SetAccessGroups(accessGroups []string) {
-	d.AccessGroups = accessGroups
-	d.require(dynamicValueFieldAccessGroups)
+func (d *DynamicValue) SetUserGroups(userGroups []string) {
+	d.UserGroups = userGroups
+	d.require(dynamicValueFieldUserGroups)
 }
 
 func (d *DynamicValue) UnmarshalJSON(data []byte) error {
@@ -237,6 +237,132 @@ func (d *DynamicValue) String() string {
 }
 
 type DynamicValueListResponse = []*DynamicValue
+
+// The actual value - can be any valid JSON type
+type DynamicValueValue struct {
+	String           string
+	Double           float64
+	Boolean          bool
+	UnknownList      []interface{}
+	StringUnknownMap map[string]interface{}
+
+	typ string
+}
+
+func (d *DynamicValueValue) GetString() string {
+	if d == nil {
+		return ""
+	}
+	return d.String
+}
+
+func (d *DynamicValueValue) GetDouble() float64 {
+	if d == nil {
+		return 0
+	}
+	return d.Double
+}
+
+func (d *DynamicValueValue) GetBoolean() bool {
+	if d == nil {
+		return false
+	}
+	return d.Boolean
+}
+
+func (d *DynamicValueValue) GetUnknownList() []interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.UnknownList
+}
+
+func (d *DynamicValueValue) GetStringUnknownMap() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.StringUnknownMap
+}
+
+func (d *DynamicValueValue) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		d.typ = "String"
+		d.String = valueString
+		return nil
+	}
+	var valueDouble float64
+	if err := json.Unmarshal(data, &valueDouble); err == nil {
+		d.typ = "Double"
+		d.Double = valueDouble
+		return nil
+	}
+	var valueBoolean bool
+	if err := json.Unmarshal(data, &valueBoolean); err == nil {
+		d.typ = "Boolean"
+		d.Boolean = valueBoolean
+		return nil
+	}
+	var valueUnknownList []interface{}
+	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
+		d.typ = "UnknownList"
+		d.UnknownList = valueUnknownList
+		return nil
+	}
+	var valueStringUnknownMap map[string]interface{}
+	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
+		d.typ = "StringUnknownMap"
+		d.StringUnknownMap = valueStringUnknownMap
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, d)
+}
+
+func (d DynamicValueValue) MarshalJSON() ([]byte, error) {
+	if d.typ == "String" || d.String != "" {
+		return json.Marshal(d.String)
+	}
+	if d.typ == "Double" || d.Double != 0 {
+		return json.Marshal(d.Double)
+	}
+	if d.typ == "Boolean" || d.Boolean != false {
+		return json.Marshal(d.Boolean)
+	}
+	if d.typ == "UnknownList" || d.UnknownList != nil {
+		return json.Marshal(d.UnknownList)
+	}
+	if d.typ == "StringUnknownMap" || d.StringUnknownMap != nil {
+		return json.Marshal(d.StringUnknownMap)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", d)
+}
+
+type DynamicValueValueVisitor interface {
+	VisitString(string) error
+	VisitDouble(float64) error
+	VisitBoolean(bool) error
+	VisitUnknownList([]interface{}) error
+	VisitStringUnknownMap(map[string]interface{}) error
+}
+
+func (d *DynamicValueValue) Accept(visitor DynamicValueValueVisitor) error {
+	if d.typ == "String" || d.String != "" {
+		return visitor.VisitString(d.String)
+	}
+	if d.typ == "Double" || d.Double != 0 {
+		return visitor.VisitDouble(d.Double)
+	}
+	if d.typ == "Boolean" || d.Boolean != false {
+		return visitor.VisitBoolean(d.Boolean)
+	}
+	if d.typ == "UnknownList" || d.UnknownList != nil {
+		return visitor.VisitUnknownList(d.UnknownList)
+	}
+	if d.typ == "StringUnknownMap" || d.StringUnknownMap != nil {
+		return visitor.VisitStringUnknownMap(d.StringUnknownMap)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", d)
+}
 
 var (
 	ruleUsageFieldID          = big.NewInt(1 << 0)
@@ -411,15 +537,15 @@ func (r *RuleUsage) String() string {
 }
 
 var (
-	updateValuesRequestFieldValues       = big.NewInt(1 << 0)
-	updateValuesRequestFieldAccessGroups = big.NewInt(1 << 1)
+	updateValuesRequestFieldValues     = big.NewInt(1 << 0)
+	updateValuesRequestFieldUserGroups = big.NewInt(1 << 1)
 )
 
 type UpdateValuesRequest struct {
 	// A dictionary of keys and values to update or add. Supports both flat key-value pairs and nested objects. Nested objects will be automatically flattened using dot notation with readable key names (e.g., 'user.contact_info.email' becomes 'User.Contact Info.Email').
 	Values map[string]interface{} `json:"values,omitempty" url:"-"`
 	// Optional array of access group names or IDs. If omitted and user belongs to access groups, values will be assigned to all user's access groups. Required if values should be restricted to specific access groups.
-	AccessGroups []string `json:"accessGroups,omitempty" url:"-"`
+	UserGroups []string `json:"user_groups,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -439,9 +565,9 @@ func (u *UpdateValuesRequest) SetValues(values map[string]interface{}) {
 	u.require(updateValuesRequestFieldValues)
 }
 
-// SetAccessGroups sets the AccessGroups field and marks it as non-optional;
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateValuesRequest) SetAccessGroups(accessGroups []string) {
-	u.AccessGroups = accessGroups
-	u.require(updateValuesRequestFieldAccessGroups)
+func (u *UpdateValuesRequest) SetUserGroups(userGroups []string) {
+	u.UserGroups = userGroups
+	u.require(updateValuesRequestFieldUserGroups)
 }

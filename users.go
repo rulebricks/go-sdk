@@ -11,11 +11,11 @@ import (
 )
 
 var (
-	createUserRequestFieldEmail        = big.NewInt(1 << 0)
-	createUserRequestFieldPassword     = big.NewInt(1 << 1)
-	createUserRequestFieldName         = big.NewInt(1 << 2)
-	createUserRequestFieldRole         = big.NewInt(1 << 3)
-	createUserRequestFieldAccessGroups = big.NewInt(1 << 4)
+	createUserRequestFieldEmail      = big.NewInt(1 << 0)
+	createUserRequestFieldPassword   = big.NewInt(1 << 1)
+	createUserRequestFieldName       = big.NewInt(1 << 2)
+	createUserRequestFieldRole       = big.NewInt(1 << 3)
+	createUserRequestFieldUserGroups = big.NewInt(1 << 4)
 )
 
 type CreateUserRequest struct {
@@ -27,8 +27,8 @@ type CreateUserRequest struct {
 	Name *string `json:"name,omitempty" url:"-"`
 	// Role to assign to the user. Defaults to 'developer' if not specified.
 	Role *string `json:"role,omitempty" url:"-"`
-	// List of access group names or IDs to assign to the user.
-	AccessGroups []string `json:"accessGroups,omitempty" url:"-"`
+	// List of user group names or IDs to assign to the user.
+	UserGroups []string `json:"user_groups,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -69,17 +69,17 @@ func (c *CreateUserRequest) SetRole(role *string) {
 	c.require(createUserRequestFieldRole)
 }
 
-// SetAccessGroups sets the AccessGroups field and marks it as non-optional;
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateUserRequest) SetAccessGroups(accessGroups []string) {
-	c.AccessGroups = accessGroups
-	c.require(createUserRequestFieldAccessGroups)
+func (c *CreateUserRequest) SetUserGroups(userGroups []string) {
+	c.UserGroups = userGroups
+	c.require(createUserRequestFieldUserGroups)
 }
 
 var (
-	userInviteRequestFieldEmail        = big.NewInt(1 << 0)
-	userInviteRequestFieldRole         = big.NewInt(1 << 1)
-	userInviteRequestFieldAccessGroups = big.NewInt(1 << 2)
+	userInviteRequestFieldEmail      = big.NewInt(1 << 0)
+	userInviteRequestFieldRole       = big.NewInt(1 << 1)
+	userInviteRequestFieldUserGroups = big.NewInt(1 << 2)
 )
 
 type UserInviteRequest struct {
@@ -87,8 +87,8 @@ type UserInviteRequest struct {
 	Email string `json:"email" url:"-"`
 	// System or custom role ID to assign to the user. Available system roles include 'admin', 'editor', and 'developer'.
 	Role *UserInviteRequestRole `json:"role,omitempty" url:"-"`
-	// List of access group names or IDs to assign to the user. All specified groups must exist in your organization.
-	AccessGroups []string `json:"accessGroups,omitempty" url:"-"`
+	// List of user group names or IDs to assign to the user. All specified groups must exist in your organization.
+	UserGroups []string `json:"user_groups,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -115,11 +115,11 @@ func (u *UserInviteRequest) SetRole(role *UserInviteRequestRole) {
 	u.require(userInviteRequestFieldRole)
 }
 
-// SetAccessGroups sets the AccessGroups field and marks it as non-optional;
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UserInviteRequest) SetAccessGroups(accessGroups []string) {
-	u.AccessGroups = accessGroups
-	u.require(userInviteRequestFieldAccessGroups)
+func (u *UserInviteRequest) SetUserGroups(userGroups []string) {
+	u.UserGroups = userGroups
+	u.require(userInviteRequestFieldUserGroups)
 }
 
 // Response after successfully creating a user.
@@ -236,12 +236,12 @@ func (c *CreateUserResponse) String() string {
 }
 
 var (
-	createUserResponseUserFieldID           = big.NewInt(1 << 0)
-	createUserResponseUserFieldEmail        = big.NewInt(1 << 1)
-	createUserResponseUserFieldName         = big.NewInt(1 << 2)
-	createUserResponseUserFieldRole         = big.NewInt(1 << 3)
-	createUserResponseUserFieldAccessGroups = big.NewInt(1 << 4)
-	createUserResponseUserFieldAPIKey       = big.NewInt(1 << 5)
+	createUserResponseUserFieldID         = big.NewInt(1 << 0)
+	createUserResponseUserFieldEmail      = big.NewInt(1 << 1)
+	createUserResponseUserFieldName       = big.NewInt(1 << 2)
+	createUserResponseUserFieldRole       = big.NewInt(1 << 3)
+	createUserResponseUserFieldUserGroups = big.NewInt(1 << 4)
+	createUserResponseUserFieldAPIKey     = big.NewInt(1 << 5)
 )
 
 type CreateUserResponseUser struct {
@@ -253,10 +253,10 @@ type CreateUserResponseUser struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Role assigned to the user.
 	Role *string `json:"role,omitempty" url:"role,omitempty"`
-	// Access groups assigned to the user.
-	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+	// User groups assigned to the user.
+	UserGroups []string `json:"user_groups,omitempty" url:"user_groups,omitempty"`
 	// API key generated for the user.
-	APIKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
+	APIKey *string `json:"api_key,omitempty" url:"api_key,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -293,11 +293,11 @@ func (c *CreateUserResponseUser) GetRole() *string {
 	return c.Role
 }
 
-func (c *CreateUserResponseUser) GetAccessGroups() []string {
+func (c *CreateUserResponseUser) GetUserGroups() []string {
 	if c == nil {
 		return nil
 	}
-	return c.AccessGroups
+	return c.UserGroups
 }
 
 func (c *CreateUserResponseUser) GetAPIKey() *string {
@@ -346,11 +346,11 @@ func (c *CreateUserResponseUser) SetRole(role *string) {
 	c.require(createUserResponseUserFieldRole)
 }
 
-// SetAccessGroups sets the AccessGroups field and marks it as non-optional;
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateUserResponseUser) SetAccessGroups(accessGroups []string) {
-	c.AccessGroups = accessGroups
-	c.require(createUserResponseUserFieldAccessGroups)
+func (c *CreateUserResponseUser) SetUserGroups(userGroups []string) {
+	c.UserGroups = userGroups
+	c.require(createUserResponseUserFieldUserGroups)
 }
 
 // SetAPIKey sets the APIKey field and marks it as non-optional;
@@ -401,13 +401,13 @@ func (c *CreateUserResponseUser) String() string {
 
 // Detailed information about a user in the organization.
 var (
-	userDetailFieldID           = big.NewInt(1 << 0)
-	userDetailFieldEmail        = big.NewInt(1 << 1)
-	userDetailFieldName         = big.NewInt(1 << 2)
-	userDetailFieldAPIKey       = big.NewInt(1 << 3)
-	userDetailFieldRole         = big.NewInt(1 << 4)
-	userDetailFieldAccessGroups = big.NewInt(1 << 5)
-	userDetailFieldJoinedAt     = big.NewInt(1 << 6)
+	userDetailFieldID         = big.NewInt(1 << 0)
+	userDetailFieldEmail      = big.NewInt(1 << 1)
+	userDetailFieldName       = big.NewInt(1 << 2)
+	userDetailFieldAPIKey     = big.NewInt(1 << 3)
+	userDetailFieldRole       = big.NewInt(1 << 4)
+	userDetailFieldUserGroups = big.NewInt(1 << 5)
+	userDetailFieldJoinedAt   = big.NewInt(1 << 6)
 )
 
 type UserDetail struct {
@@ -418,13 +418,13 @@ type UserDetail struct {
 	// Display name of the user (if set).
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// API key assigned to the user.
-	APIKey *string `json:"apiKey,omitempty" url:"apiKey,omitempty"`
+	APIKey *string `json:"api_key,omitempty" url:"api_key,omitempty"`
 	// Role assigned to the user (e.g., 'administrator', 'developer', 'editor', or custom role ID).
 	Role *string `json:"role,omitempty" url:"role,omitempty"`
-	// List of access group names the user belongs to.
-	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+	// List of user group names the user belongs to.
+	UserGroups []string `json:"user_groups,omitempty" url:"user_groups,omitempty"`
 	// Date and time when the user joined the organization.
-	JoinedAt *time.Time `json:"joinedAt,omitempty" url:"joinedAt,omitempty"`
+	JoinedAt *time.Time `json:"joined_at,omitempty" url:"joined_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -468,11 +468,11 @@ func (u *UserDetail) GetRole() *string {
 	return u.Role
 }
 
-func (u *UserDetail) GetAccessGroups() []string {
+func (u *UserDetail) GetUserGroups() []string {
 	if u == nil {
 		return nil
 	}
-	return u.AccessGroups
+	return u.UserGroups
 }
 
 func (u *UserDetail) GetJoinedAt() *time.Time {
@@ -528,11 +528,11 @@ func (u *UserDetail) SetRole(role *string) {
 	u.require(userDetailFieldRole)
 }
 
-// SetAccessGroups sets the AccessGroups field and marks it as non-optional;
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UserDetail) SetAccessGroups(accessGroups []string) {
-	u.AccessGroups = accessGroups
-	u.require(userDetailFieldAccessGroups)
+func (u *UserDetail) SetUserGroups(userGroups []string) {
+	u.UserGroups = userGroups
+	u.require(userDetailFieldUserGroups)
 }
 
 // SetJoinedAt sets the JoinedAt field and marks it as non-optional;
@@ -546,7 +546,7 @@ func (u *UserDetail) UnmarshalJSON(data []byte) error {
 	type embed UserDetail
 	var unmarshaler = struct {
 		embed
-		JoinedAt *internal.DateTime `json:"joinedAt,omitempty"`
+		JoinedAt *internal.DateTime `json:"joined_at,omitempty"`
 	}{
 		embed: embed(*u),
 	}
@@ -568,7 +568,7 @@ func (u *UserDetail) MarshalJSON() ([]byte, error) {
 	type embed UserDetail
 	var marshaler = struct {
 		embed
-		JoinedAt *internal.DateTime `json:"joinedAt,omitempty"`
+		JoinedAt *internal.DateTime `json:"joined_at,omitempty"`
 	}{
 		embed:    embed(*u),
 		JoinedAt: internal.NewOptionalDateTime(u.JoinedAt),
@@ -685,9 +685,9 @@ func (u *UserInviteResponse) String() string {
 }
 
 var (
-	userInviteResponseUserFieldEmail        = big.NewInt(1 << 0)
-	userInviteResponseUserFieldRole         = big.NewInt(1 << 1)
-	userInviteResponseUserFieldAccessGroups = big.NewInt(1 << 2)
+	userInviteResponseUserFieldEmail      = big.NewInt(1 << 0)
+	userInviteResponseUserFieldRole       = big.NewInt(1 << 1)
+	userInviteResponseUserFieldUserGroups = big.NewInt(1 << 2)
 )
 
 type UserInviteResponseUser struct {
@@ -695,8 +695,8 @@ type UserInviteResponseUser struct {
 	Email *string `json:"email,omitempty" url:"email,omitempty"`
 	// Role assigned to the user.
 	Role *string `json:"role,omitempty" url:"role,omitempty"`
-	// Access groups assigned to the user.
-	AccessGroups []string `json:"accessGroups,omitempty" url:"accessGroups,omitempty"`
+	// User groups assigned to the user.
+	UserGroups []string `json:"user_groups,omitempty" url:"user_groups,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -719,11 +719,11 @@ func (u *UserInviteResponseUser) GetRole() *string {
 	return u.Role
 }
 
-func (u *UserInviteResponseUser) GetAccessGroups() []string {
+func (u *UserInviteResponseUser) GetUserGroups() []string {
 	if u == nil {
 		return nil
 	}
-	return u.AccessGroups
+	return u.UserGroups
 }
 
 func (u *UserInviteResponseUser) GetExtraProperties() map[string]interface{} {
@@ -751,11 +751,11 @@ func (u *UserInviteResponseUser) SetRole(role *string) {
 	u.require(userInviteResponseUserFieldRole)
 }
 
-// SetAccessGroups sets the AccessGroups field and marks it as non-optional;
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UserInviteResponseUser) SetAccessGroups(accessGroups []string) {
-	u.AccessGroups = accessGroups
-	u.require(userInviteResponseUserFieldAccessGroups)
+func (u *UserInviteResponseUser) SetUserGroups(userGroups []string) {
+	u.UserGroups = userGroups
+	u.require(userInviteResponseUserFieldUserGroups)
 }
 
 func (u *UserInviteResponseUser) UnmarshalJSON(data []byte) error {

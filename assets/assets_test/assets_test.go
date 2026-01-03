@@ -8,6 +8,7 @@ import (
 	json "encoding/json"
 	require "github.com/stretchr/testify/require"
 	http "net/http"
+	sdk "sdk"
 	client "sdk/client"
 	option "sdk/option"
 	testing "testing"
@@ -76,4 +77,92 @@ func TestAssetsGetUsageWithWireMock(
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "GET", "/admin/usage", nil, 1)
+}
+
+func TestAssetsImportWithWireMock(
+	t *testing.T,
+) {
+	ResetWireMockRequests(t)
+	WireMockBaseURL := "http://localhost:8080"
+	client := client.NewClient(
+		option.WithBaseURL(
+			WireMockBaseURL,
+		),
+	)
+	request := &sdk.ImportManifestRequest{
+		Manifest: &sdk.ImportManifestRequestManifest{
+			Version: sdk.String(
+				"1.0",
+			),
+			Rules: []map[string]any{
+				map[string]any{
+					"name": "Pricing Rule",
+					"slug": "pricing-rule",
+				},
+			},
+			Flows: []map[string]any{
+				map[string]any{
+					"name": "Onboarding Flow",
+					"slug": "onboarding-flow",
+				},
+			},
+			Contexts: []map[string]any{
+				map[string]any{
+					"name": "Customer",
+					"slug": "customer",
+				},
+			},
+			Values: []map[string]any{
+				map[string]any{
+					"key":   "tax_rate",
+					"value": 0.08,
+				},
+			},
+		},
+		Overwrite: sdk.Bool(
+			false,
+		),
+	}
+	_, invocationErr := client.Assets.Import(
+		context.TODO(),
+		request,
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "POST", "/admin/import", nil, 1)
+}
+
+func TestAssetsExportWithWireMock(
+	t *testing.T,
+) {
+	ResetWireMockRequests(t)
+	WireMockBaseURL := "http://localhost:8080"
+	client := client.NewClient(
+		option.WithBaseURL(
+			WireMockBaseURL,
+		),
+	)
+	request := &sdk.ExportManifestRequest{
+		Rules: []string{
+			"pricing-rule",
+			"eligibility-check",
+		},
+		Flows: []string{
+			"onboarding-flow",
+		},
+		Contexts: []string{
+			"customer",
+		},
+		Values: []string{
+			"tax_rate",
+			"discount_threshold",
+		},
+	}
+	_, invocationErr := client.Assets.Export(
+		context.TODO(),
+		request,
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "POST", "/admin/export", nil, 1)
 }

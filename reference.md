@@ -460,7 +460,7 @@ Invite a new user to the organization or update role or access group data for an
 request := &sdk.UserInviteRequest{
         Email: "newuser@example.com",
         Role: sdk.UserInviteRequestRoleDeveloper.Ptr(),
-        AccessGroups: []string{
+        UserGroups: []string{
             "group1",
             "group2",
         },
@@ -500,7 +500,7 @@ client.Users.Invite(
 <dl>
 <dd>
 
-**accessGroups:** `[]string` — List of access group names or IDs to assign to the user. All specified groups must exist in your organization.
+**userGroups:** `[]string` — List of user group names or IDs to assign to the user. All specified groups must exist in your organization.
     
 </dd>
 </dl>
@@ -636,7 +636,7 @@ client.Users.Create(
 <dl>
 <dd>
 
-**accessGroups:** `[]string` — List of access group names or IDs to assign to the user.
+**userGroups:** `[]string` — List of user group names or IDs to assign to the user.
     
 </dd>
 </dl>
@@ -681,6 +681,220 @@ client.Assets.GetUsage(
     )
 }
 ```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Assets.Import(request) -> *sdk.ImportManifestResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Import rules, flows, contexts, and values from an RBM manifest file.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.ImportManifestRequest{
+        Manifest: &sdk.ImportManifestRequestManifest{
+            Version: sdk.String(
+                "1.0",
+            ),
+            Rules: []map[string]any{
+                map[string]any{
+                    "name": "Pricing Rule",
+                    "slug": "pricing-rule",
+                },
+            },
+            Flows: []map[string]any{
+                map[string]any{
+                    "name": "Onboarding Flow",
+                    "slug": "onboarding-flow",
+                },
+            },
+            Contexts: []map[string]any{
+                map[string]any{
+                    "name": "Customer",
+                    "slug": "customer",
+                },
+            },
+            Values: []map[string]any{
+                map[string]any{
+                    "key": "tax_rate",
+                    "value": 0.08,
+                },
+            },
+        },
+        Overwrite: sdk.Bool(
+            false,
+        ),
+    }
+client.Assets.Import(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**manifest:** `*sdk.ImportManifestRequestManifest` — The RBM manifest object containing assets to import.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**overwrite:** `*bool` — Whether to overwrite existing assets with the same ID/slug.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Assets.Export(request) -> *sdk.ExportAssetsResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Export selected rules, flows, contexts, and values to an RBM manifest file.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.ExportManifestRequest{
+        Rules: []string{
+            "pricing-rule",
+            "eligibility-check",
+        },
+        Flows: []string{
+            "onboarding-flow",
+        },
+        Contexts: []string{
+            "customer",
+        },
+        Values: []string{
+            "tax_rate",
+            "discount_threshold",
+        },
+    }
+client.Assets.Export(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**rules:** `[]string` — Rule IDs or slugs to export.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**flows:** `[]string` — Flow IDs or slugs to export.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**contexts:** `[]string` — Context IDs or slugs to export.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**values:** `[]string` — Value IDs or names to export.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**includeAll:** `*bool` — Export all assets of specified types.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**preview:** `*bool` — Return a preview of what would be exported without the full data.
+    
 </dd>
 </dl>
 </dd>
@@ -800,7 +1014,7 @@ request := &sdk.UpdateValuesRequest{
                 "cycling",
             },
         },
-        AccessGroups: []string{
+        UserGroups: []string{
             "marketing",
             "developers",
         },
@@ -832,7 +1046,7 @@ client.Values.Update(
 <dl>
 <dd>
 
-**accessGroups:** `[]string` — Optional array of access group names or IDs. If omitted and user belongs to access groups, values will be assigned to all user's access groups. Required if values should be restricted to specific access groups.
+**userGroups:** `[]string` — Optional array of access group names or IDs. If omitted and user belongs to access groups, values will be assigned to all user's access groups. Required if values should be restricted to specific access groups.
     
 </dd>
 </dl>
@@ -894,6 +1108,653 @@ client.Values.Delete(
 <dd>
 
 **id:** `string` — ID of the dynamic value to delete
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Contexts
+<details><summary><code>client.Contexts.GetInstance(Slug, Instance) -> *sdk.ContextInstanceState</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Retrieve the current state of a context instance.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.GetInstanceContextsRequest{
+        Slug: "customer",
+        Instance: "cust-12345",
+    }
+client.Contexts.GetInstance(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Submit(Slug, Instance, request) -> *sdk.SubmitContextDataResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Submit data to a context instance, creating it if it doesn't exist. May trigger bound rule/flow evaluations.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.SubmitContextsRequest{
+        Slug: "customer",
+        Instance: "cust-12345",
+        Body: map[string]any{
+            "email": "customer@example.com",
+            "age": 30,
+        },
+    }
+client.Contexts.Submit(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `sdk.SubmitContextDataRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.DeleteInstance(Slug, Instance) -> *sdk.DeleteContextInstanceResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Delete a specific context instance and its history.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.DeleteInstanceContextsRequest{
+        Slug: "customer",
+        Instance: "cust-12345",
+    }
+client.Contexts.DeleteInstance(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.GetHistory(Slug, Instance) -> *sdk.ContextInstanceHistory</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Retrieve the change history for a context instance.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.GetHistoryContextsRequest{
+        Slug: "customer",
+        Instance: "cust-12345",
+    }
+client.Contexts.GetHistory(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**field:** `*string` — Filter history to a specific field.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Maximum number of history entries to return.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.GetPending(Slug, Instance) -> *sdk.ContextInstancePendingResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Get list of rules/flows that need to be evaluated for this instance.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.GetPendingContextsRequest{
+        Slug: "customer",
+        Instance: "cust-12345",
+    }
+client.Contexts.GetPending(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Solve(Slug, Instance, RuleSlug, request) -> *sdk.SolveContextRuleResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Execute a specific rule using the context instance's state as input.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.SolveContextRuleRequest{
+        Slug: "customer",
+        Instance: "cust-12345",
+        RuleSlug: "eligibility-check",
+    }
+client.Contexts.Solve(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ruleSlug:** `string` — The unique slug for the rule.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**additionalData:** `map[string]any` — Additional data to merge with instance state for rule evaluation.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**persist:** `*bool` — Whether to persist derived outputs to the instance.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Cascade(Slug, Instance, request) -> *sdk.CascadeContextResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Trigger re-evaluation of all bound rules and flows for the instance.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.CascadeContextRequest{
+        Slug: "customer",
+        Instance: "cust-12345",
+    }
+client.Contexts.Cascade(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**maxDepth:** `*int` — Maximum depth for cascading evaluations.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Execute(Slug, Instance, FlowSlug, request) -> *sdk.SolveContextFlowResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Execute a specific flow using the context instance's state as input.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.SolveContextFlowRequest{
+        Slug: "customer",
+        Instance: "cust-12345",
+        FlowSlug: "onboarding-flow",
+    }
+client.Contexts.Execute(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**flowSlug:** `string` — The unique slug for the flow.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**additionalData:** `map[string]any` — Additional data to merge with instance state for flow execution.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**persist:** `*bool` — Whether to persist derived outputs to the instance.
     
 </dd>
 </dl>
@@ -1371,6 +2232,717 @@ client.Assets.Folders.Delete(
 <dd>
 
 **id:** `string` — ID of the folder to delete
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Contexts Admin
+<details><summary><code>client.Contexts.Admin.List() -> sdk.ContextListResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Retrieve all contexts (entities) for the authenticated user.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+client.Contexts.Admin.List(
+        context.TODO(),
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Admin.Create(request) -> sdk.CreateContextResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Create a new context (entity) for the authenticated user.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &contexts.CreateContextRequest{
+        Name: "Customer",
+        Description: sdk.String(
+            "Represents a customer in the system",
+        ),
+        Schema: []*contexts.CreateContextRequestSchemaItem{
+            &contexts.CreateContextRequestSchemaItem{
+                Key: sdk.String(
+                    "email",
+                ),
+                Name: sdk.String(
+                    "Email",
+                ),
+                Type: sdk.String(
+                    "string",
+                ),
+            },
+            &contexts.CreateContextRequestSchemaItem{
+                Key: sdk.String(
+                    "age",
+                ),
+                Name: sdk.String(
+                    "Age",
+                ),
+                Type: sdk.String(
+                    "number",
+                ),
+            },
+        },
+    }
+client.Contexts.Admin.Create(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**name:** `string` — The name of the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**slug:** `*string` — Optional custom slug. Auto-generated if not provided.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**description:** `*string` — The description of the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schema:** `[]*contexts.CreateContextRequestSchemaItem` — Initial schema fields for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**autoExecuteDecisions:** `*bool` — When true (default), bound rules and flows automatically execute when their inputs are satisfied.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttlSeconds:** `*int` — Time-to-live in seconds for live context instances. Instances expire after this duration.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**historyLimit:** `*int` — Maximum number of history entries to retain per field.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**onSchemaMismatch:** `*contexts.CreateContextRequestOnSchemaMismatch` — How to handle fields that don't match the schema.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**webhookOnSolve:** `*string` — Webhook URL called when a rule or flow successfully solves.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**webhookOnExpire:** `*string` — Webhook URL called when a live context expires due to TTL.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Admin.Get(ID) -> *sdk.ContextDetail</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Retrieve a specific context by its ID.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &contexts.GetAdminRequest{
+        ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    }
+client.Contexts.Admin.Get(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `string` — The unique identifier for the context.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Admin.Update(ID, request) -> sdk.UpdateContextResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Update an existing context's properties and schema.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &contexts.UpdateContextRequest{
+        ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        Name: sdk.String(
+            "Updated Customer",
+        ),
+        Description: sdk.String(
+            "Updated description for premium customers",
+        ),
+    }
+client.Contexts.Admin.Update(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `string` — The unique identifier for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `*string` — The name of the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**slug:** `*string` — The slug of the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**description:** `*string` — The description of the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schema:** `[]*contexts.UpdateContextRequestSchemaItem` — Updated schema fields for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**autoExecuteDecisions:** `*bool` — When true, bound rules and flows automatically execute when their inputs are satisfied.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttlSeconds:** `*int` — Time-to-live in seconds for live context instances. Instances expire after this duration.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**historyLimit:** `*int` — Maximum number of history entries to retain per field.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**onSchemaMismatch:** `*contexts.UpdateContextRequestOnSchemaMismatch` — How to handle fields that don't match the schema.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**webhookOnSolve:** `*string` — Webhook URL called when a rule or flow successfully solves.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**webhookOnExpire:** `*string` — Webhook URL called when a live context expires due to TTL.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Admin.Delete(ID) -> *sdk.DeleteContextResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Delete a specific context and all its instances.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &contexts.DeleteAdminRequest{
+        ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    }
+client.Contexts.Admin.Delete(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `string` — The unique identifier for the context.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Contexts Relationships
+<details><summary><code>client.Contexts.Relationships.List(ID) -> *sdk.ContextRelationshipsResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+List all relationships for a specific context.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &contexts.ListRelationshipsRequest{
+        ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    }
+client.Contexts.Relationships.List(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `string` — The unique identifier for the context.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Relationships.Create(ID, request) -> sdk.CreateRelationshipResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Create a new relationship between two contexts.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &contexts.CreateRelationshipRequest{
+        ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        TargetContextID: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        Type: contexts.CreateRelationshipRequestTypeOneToMany,
+        ForeignKey: "customer_id",
+        Name: sdk.String(
+            "Customer Orders",
+        ),
+    }
+client.Contexts.Relationships.Create(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `string` — The unique identifier for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**targetContextID:** `string` — The ID of the target context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**type_:** `*contexts.CreateRelationshipRequestType` — The type of relationship.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**foreignKey:** `string` — The field key to use as the foreign key.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `*string` — Display name for the relationship.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**description:** `*string` — Description of the relationship.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.Relationships.Delete(ID, Relationship) -> *sdk.DeleteRelationshipResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Delete a specific relationship between contexts.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &contexts.DeleteRelationshipsRequest{
+        ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        Relationship: "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    }
+client.Contexts.Relationships.Delete(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `string` — The unique identifier for the context.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**relationship:** `string` — The unique identifier for the relationship.
     
 </dd>
 </dl>
