@@ -79,7 +79,7 @@ func TestAssetsGetUsageWithWireMock(
 	VerifyRequestCount(t, "GET", "/admin/usage", nil, 1)
 }
 
-func TestAssetsImportWithWireMock(
+func TestAssetsImportRbmWithWireMock(
 	t *testing.T,
 ) {
 	ResetWireMockRequests(t)
@@ -106,7 +106,7 @@ func TestAssetsImportWithWireMock(
 					"slug": "onboarding-flow",
 				},
 			},
-			Contexts: []map[string]any{
+			Entities: []map[string]any{
 				map[string]any{
 					"name": "Customer",
 					"slug": "customer",
@@ -114,16 +114,14 @@ func TestAssetsImportWithWireMock(
 			},
 			Values: []map[string]any{
 				map[string]any{
-					"key":   "tax_rate",
+					"name":  "tax_rate",
 					"value": 0.08,
 				},
 			},
 		},
-		Overwrite: sdk.Bool(
-			false,
-		),
+		ConflictStrategy: sdk.ImportManifestRequestConflictStrategyUpdate.Ptr(),
 	}
-	_, invocationErr := client.Assets.Import(
+	_, invocationErr := client.Assets.ImportRbm(
 		context.TODO(),
 		request,
 	)
@@ -132,7 +130,7 @@ func TestAssetsImportWithWireMock(
 	VerifyRequestCount(t, "POST", "/admin/import", nil, 1)
 }
 
-func TestAssetsExportWithWireMock(
+func TestAssetsExportRbmWithWireMock(
 	t *testing.T,
 ) {
 	ResetWireMockRequests(t)
@@ -143,22 +141,16 @@ func TestAssetsExportWithWireMock(
 		),
 	)
 	request := &sdk.ExportManifestRequest{
-		Rules: []string{
+		RootType: sdk.ExportManifestRequestRootTypeRule,
+		RootIDs: []string{
 			"pricing-rule",
 			"eligibility-check",
 		},
-		Flows: []string{
-			"onboarding-flow",
-		},
-		Contexts: []string{
-			"customer",
-		},
-		Values: []string{
-			"tax_rate",
-			"discount_threshold",
-		},
+		IncludeDownstream: sdk.Bool(
+			false,
+		),
 	}
-	_, invocationErr := client.Assets.Export(
+	_, invocationErr := client.Assets.ExportRbm(
 		context.TODO(),
 		request,
 	)

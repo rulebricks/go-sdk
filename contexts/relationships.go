@@ -8,23 +8,23 @@ import (
 )
 
 var (
-	createRelationshipRequestFieldID              = big.NewInt(1 << 0)
-	createRelationshipRequestFieldTargetContextID = big.NewInt(1 << 1)
-	createRelationshipRequestFieldType            = big.NewInt(1 << 2)
-	createRelationshipRequestFieldForeignKey      = big.NewInt(1 << 3)
-	createRelationshipRequestFieldName            = big.NewInt(1 << 4)
-	createRelationshipRequestFieldDescription     = big.NewInt(1 << 5)
+	createRelationshipRequestFieldID             = big.NewInt(1 << 0)
+	createRelationshipRequestFieldToContextID    = big.NewInt(1 << 1)
+	createRelationshipRequestFieldRelationType   = big.NewInt(1 << 2)
+	createRelationshipRequestFieldForeignKeyFact = big.NewInt(1 << 3)
+	createRelationshipRequestFieldName           = big.NewInt(1 << 4)
+	createRelationshipRequestFieldDescription    = big.NewInt(1 << 5)
 )
 
 type CreateRelationshipRequest struct {
 	// The unique identifier for the context.
 	ID string `json:"-" url:"-"`
 	// The ID of the target context.
-	TargetContextID string `json:"targetContextId" url:"-"`
+	ToContextID string `json:"to_context_id" url:"-"`
 	// The type of relationship.
-	Type CreateRelationshipRequestType `json:"type" url:"-"`
+	RelationType CreateRelationshipRequestRelationType `json:"relation_type" url:"-"`
 	// The field key to use as the foreign key.
-	ForeignKey string `json:"foreignKey" url:"-"`
+	ForeignKeyFact string `json:"foreign_key_fact" url:"-"`
 	// Display name for the relationship.
 	Name *string `json:"name,omitempty" url:"-"`
 	// Description of the relationship.
@@ -48,25 +48,25 @@ func (c *CreateRelationshipRequest) SetID(id string) {
 	c.require(createRelationshipRequestFieldID)
 }
 
-// SetTargetContextID sets the TargetContextID field and marks it as non-optional;
+// SetToContextID sets the ToContextID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateRelationshipRequest) SetTargetContextID(targetContextID string) {
-	c.TargetContextID = targetContextID
-	c.require(createRelationshipRequestFieldTargetContextID)
+func (c *CreateRelationshipRequest) SetToContextID(toContextID string) {
+	c.ToContextID = toContextID
+	c.require(createRelationshipRequestFieldToContextID)
 }
 
-// SetType sets the Type field and marks it as non-optional;
+// SetRelationType sets the RelationType field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateRelationshipRequest) SetType(type_ CreateRelationshipRequestType) {
-	c.Type = type_
-	c.require(createRelationshipRequestFieldType)
+func (c *CreateRelationshipRequest) SetRelationType(relationType CreateRelationshipRequestRelationType) {
+	c.RelationType = relationType
+	c.require(createRelationshipRequestFieldRelationType)
 }
 
-// SetForeignKey sets the ForeignKey field and marks it as non-optional;
+// SetForeignKeyFact sets the ForeignKeyFact field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateRelationshipRequest) SetForeignKey(foreignKey string) {
-	c.ForeignKey = foreignKey
-	c.require(createRelationshipRequestFieldForeignKey)
+func (c *CreateRelationshipRequest) SetForeignKeyFact(foreignKeyFact string) {
+	c.ForeignKeyFact = foreignKeyFact
+	c.require(createRelationshipRequestFieldForeignKeyFact)
 }
 
 // SetName sets the Name field and marks it as non-optional;
@@ -146,27 +146,27 @@ func (l *ListRelationshipsRequest) SetID(id string) {
 }
 
 // The type of relationship.
-type CreateRelationshipRequestType string
+type CreateRelationshipRequestRelationType string
 
 const (
-	CreateRelationshipRequestTypeOneToOne  CreateRelationshipRequestType = "one-to-one"
-	CreateRelationshipRequestTypeOneToMany CreateRelationshipRequestType = "one-to-many"
-	CreateRelationshipRequestTypeManyToOne CreateRelationshipRequestType = "many-to-one"
+	CreateRelationshipRequestRelationTypeHasMany   CreateRelationshipRequestRelationType = "has_many"
+	CreateRelationshipRequestRelationTypeHasOne    CreateRelationshipRequestRelationType = "has_one"
+	CreateRelationshipRequestRelationTypeBelongsTo CreateRelationshipRequestRelationType = "belongs_to"
 )
 
-func NewCreateRelationshipRequestTypeFromString(s string) (CreateRelationshipRequestType, error) {
+func NewCreateRelationshipRequestRelationTypeFromString(s string) (CreateRelationshipRequestRelationType, error) {
 	switch s {
-	case "one-to-one":
-		return CreateRelationshipRequestTypeOneToOne, nil
-	case "one-to-many":
-		return CreateRelationshipRequestTypeOneToMany, nil
-	case "many-to-one":
-		return CreateRelationshipRequestTypeManyToOne, nil
+	case "has_many":
+		return CreateRelationshipRequestRelationTypeHasMany, nil
+	case "has_one":
+		return CreateRelationshipRequestRelationTypeHasOne, nil
+	case "belongs_to":
+		return CreateRelationshipRequestRelationTypeBelongsTo, nil
 	}
-	var t CreateRelationshipRequestType
+	var t CreateRelationshipRequestRelationType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (c CreateRelationshipRequestType) Ptr() *CreateRelationshipRequestType {
+func (c CreateRelationshipRequestRelationType) Ptr() *CreateRelationshipRequestRelationType {
 	return &c
 }

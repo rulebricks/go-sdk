@@ -442,7 +442,7 @@ client.Decisions.Query(
 <dl>
 <dd>
 
-Invite a new user to the organization or update role or access group data for an existing user.
+Invite a new user to the organization or update role or user group data for an existing user.
 </dd>
 </dl>
 </dd>
@@ -524,7 +524,7 @@ client.Users.Invite(
 <dl>
 <dd>
 
-List all users (including the admin and all team members) in the organization with their details including email, name, API key, role, access groups, and join date.
+List all users (including the admin and all team members) in the organization with their details including email, name, API key, role, user groups, and join date.
 </dd>
 </dl>
 </dd>
@@ -691,7 +691,7 @@ client.Assets.GetUsage(
 </dl>
 </details>
 
-<details><summary><code>client.Assets.Import(request) -> *sdk.ImportManifestResponse</code></summary>
+<details><summary><code>client.Assets.ImportRbm(request) -> *sdk.ImportManifestResponse</code></summary>
 <dl>
 <dd>
 
@@ -703,7 +703,7 @@ client.Assets.GetUsage(
 <dl>
 <dd>
 
-Import rules, flows, contexts, and values from an RBM manifest file.
+Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm).
 </dd>
 </dl>
 </dd>
@@ -735,7 +735,7 @@ request := &sdk.ImportManifestRequest{
                     "slug": "onboarding-flow",
                 },
             },
-            Contexts: []map[string]any{
+            Entities: []map[string]any{
                 map[string]any{
                     "name": "Customer",
                     "slug": "customer",
@@ -743,16 +743,14 @@ request := &sdk.ImportManifestRequest{
             },
             Values: []map[string]any{
                 map[string]any{
-                    "key": "tax_rate",
+                    "name": "tax_rate",
                     "value": 0.08,
                 },
             },
         },
-        Overwrite: sdk.Bool(
-            false,
-        ),
+        ConflictStrategy: sdk.ImportManifestRequestConflictStrategyUpdate.Ptr(),
     }
-client.Assets.Import(
+client.Assets.ImportRbm(
         context.TODO(),
         request,
     )
@@ -779,7 +777,23 @@ client.Assets.Import(
 <dl>
 <dd>
 
-**overwrite:** `*bool` — Whether to overwrite existing assets with the same ID/slug.
+**conflictStrategy:** `*sdk.ImportManifestRequestConflictStrategy` — How to handle conflicts with existing assets. 'update' overwrites, 'skip' ignores, 'error' fails.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**targetFolderName:** `*string` — Optional folder name to place imported assets into. Created if it doesn't exist.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**legacyRuleMapping:** `map[string]*sdk.ImportManifestRequestLegacyRuleMappingValue` — Optional mapping for legacy flow imports to reuse existing rules.
     
 </dd>
 </dl>
@@ -791,7 +805,7 @@ client.Assets.Import(
 </dl>
 </details>
 
-<details><summary><code>client.Assets.Export(request) -> *sdk.ExportAssetsResponse</code></summary>
+<details><summary><code>client.Assets.ExportRbm(request) -> *sdk.ExportRbmAssetsResponse</code></summary>
 <dl>
 <dd>
 
@@ -803,7 +817,7 @@ client.Assets.Import(
 <dl>
 <dd>
 
-Export selected rules, flows, contexts, and values to an RBM manifest file.
+Export selected rules, flows, contexts, and values to an Rulebricks manifest file (*.rbm).
 </dd>
 </dl>
 </dd>
@@ -819,22 +833,16 @@ Export selected rules, flows, contexts, and values to an RBM manifest file.
 
 ```go
 request := &sdk.ExportManifestRequest{
-        Rules: []string{
+        RootType: sdk.ExportManifestRequestRootTypeRule,
+        RootIDs: []string{
             "pricing-rule",
             "eligibility-check",
         },
-        Flows: []string{
-            "onboarding-flow",
-        },
-        Contexts: []string{
-            "customer",
-        },
-        Values: []string{
-            "tax_rate",
-            "discount_threshold",
-        },
+        IncludeDownstream: sdk.Bool(
+            false,
+        ),
     }
-client.Assets.Export(
+client.Assets.ExportRbm(
         context.TODO(),
         request,
     )
@@ -853,7 +861,7 @@ client.Assets.Export(
 <dl>
 <dd>
 
-**rules:** `[]string` — Rule IDs or slugs to export.
+**rootType:** `*sdk.ExportManifestRequestRootType` — The type of root asset to export. All dependencies will be included.
     
 </dd>
 </dl>
@@ -861,7 +869,7 @@ client.Assets.Export(
 <dl>
 <dd>
 
-**flows:** `[]string` — Flow IDs or slugs to export.
+**rootIDs:** `[]string` — Array of IDs for the root assets to export. Dependencies are automatically resolved.
     
 </dd>
 </dl>
@@ -869,7 +877,7 @@ client.Assets.Export(
 <dl>
 <dd>
 
-**contexts:** `[]string` — Context IDs or slugs to export.
+**includeDownstream:** `*bool` — For context exports, whether to include rules and flows bound to the context.
     
 </dd>
 </dl>
@@ -877,7 +885,7 @@ client.Assets.Export(
 <dl>
 <dd>
 
-**values:** `[]string` — Value IDs or names to export.
+**manifestName:** `*string` — Optional name for the exported manifest.
     
 </dd>
 </dl>
@@ -885,7 +893,7 @@ client.Assets.Export(
 <dl>
 <dd>
 
-**includeAll:** `*bool` — Export all assets of specified types.
+**manifestDescription:** `*string` — Optional description for the exported manifest.
     
 </dd>
 </dl>
@@ -893,7 +901,7 @@ client.Assets.Export(
 <dl>
 <dd>
 
-**preview:** `*bool` — Return a preview of what would be exported without the full data.
+**previewOnly:** `*bool` — If true, returns a preview of what would be exported without the full data.
     
 </dd>
 </dl>
@@ -1046,7 +1054,7 @@ client.Values.Update(
 <dl>
 <dd>
 
-**userGroups:** `[]string` — Optional array of access group names or IDs. If omitted and user belongs to access groups, values will be assigned to all user's access groups. Required if values should be restricted to specific access groups.
+**userGroups:** `[]string` — Optional array of user group names or IDs. If omitted and user belongs to user groups, values will be assigned to all user's user groups. Required if values should be restricted to specific user groups.
     
 </dd>
 </dl>
@@ -1120,7 +1128,7 @@ client.Values.Delete(
 </details>
 
 ## Contexts
-<details><summary><code>client.Contexts.GetInstance(Slug, Instance) -> *sdk.ContextInstanceState</code></summary>
+<details><summary><code>client.Contexts.Get(Slug, Instance) -> *sdk.ContextInstanceState</code></summary>
 <dl>
 <dd>
 
@@ -1147,11 +1155,11 @@ Retrieve the current state of a context instance.
 <dd>
 
 ```go
-request := &sdk.GetInstanceContextsRequest{
+request := &sdk.GetContextsRequest{
         Slug: "customer",
         Instance: "cust-12345",
     }
-client.Contexts.GetInstance(
+client.Contexts.Get(
         context.TODO(),
         request,
     )
@@ -1272,7 +1280,7 @@ client.Contexts.Submit(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.DeleteInstance(Slug, Instance) -> *sdk.DeleteContextInstanceResponse</code></summary>
+<details><summary><code>client.Contexts.Delete(Slug, Instance) -> *sdk.DeleteContextInstanceResponse</code></summary>
 <dl>
 <dd>
 
@@ -1299,11 +1307,11 @@ Delete a specific context instance and its history.
 <dd>
 
 ```go
-request := &sdk.DeleteInstanceContextsRequest{
+request := &sdk.DeleteContextsRequest{
         Slug: "customer",
         Instance: "cust-12345",
     }
-client.Contexts.DeleteInstance(
+client.Contexts.Delete(
         context.TODO(),
         request,
     )
@@ -1525,10 +1533,11 @@ Execute a specific rule using the context instance's state as input.
 <dd>
 
 ```go
-request := &sdk.SolveContextRuleRequest{
+request := &sdk.SolveContextsRequest{
         Slug: "customer",
         Instance: "cust-12345",
         RuleSlug: "eligibility-check",
+        Body: map[string]any{},
     }
 client.Contexts.Solve(
         context.TODO(),
@@ -1573,15 +1582,7 @@ client.Contexts.Solve(
 <dl>
 <dd>
 
-**additionalData:** `map[string]any` — Additional data to merge with instance state for rule evaluation.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**persist:** `*bool` — Whether to persist derived outputs to the instance.
+**request:** `sdk.SolveContextRuleRequest` 
     
 </dd>
 </dl>
@@ -1620,9 +1621,10 @@ Trigger re-evaluation of all bound rules and flows for the instance.
 <dd>
 
 ```go
-request := &sdk.CascadeContextRequest{
+request := &sdk.CascadeContextsRequest{
         Slug: "customer",
         Instance: "cust-12345",
+        Body: map[string]any{},
     }
 client.Contexts.Cascade(
         context.TODO(),
@@ -1659,7 +1661,7 @@ client.Contexts.Cascade(
 <dl>
 <dd>
 
-**maxDepth:** `*int` — Maximum depth for cascading evaluations.
+**request:** `sdk.CascadeContextRequest` 
     
 </dd>
 </dl>
@@ -1698,10 +1700,11 @@ Execute a specific flow using the context instance's state as input.
 <dd>
 
 ```go
-request := &sdk.SolveContextFlowRequest{
+request := &sdk.ExecuteContextsRequest{
         Slug: "customer",
         Instance: "cust-12345",
         FlowSlug: "onboarding-flow",
+        Body: map[string]any{},
     }
 client.Contexts.Execute(
         context.TODO(),
@@ -1746,15 +1749,7 @@ client.Contexts.Execute(
 <dl>
 <dd>
 
-**additionalData:** `map[string]any` — Additional data to merge with instance state for flow execution.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**persist:** `*bool` — Whether to persist derived outputs to the instance.
+**request:** `sdk.SolveContextFlowRequest` 
     
 </dd>
 </dl>
@@ -2243,8 +2238,8 @@ client.Assets.Folders.Delete(
 </dl>
 </details>
 
-## Contexts Admin
-<details><summary><code>client.Contexts.Admin.List() -> sdk.ContextListResponse</code></summary>
+## Contexts Objects
+<details><summary><code>client.Contexts.Objects.List() -> sdk.ContextListResponse</code></summary>
 <dl>
 <dd>
 
@@ -2256,7 +2251,7 @@ client.Assets.Folders.Delete(
 <dl>
 <dd>
 
-Retrieve all contexts (entities) for the authenticated user.
+Retrieve all contexts for the authenticated user.
 </dd>
 </dl>
 </dd>
@@ -2271,7 +2266,7 @@ Retrieve all contexts (entities) for the authenticated user.
 <dd>
 
 ```go
-client.Contexts.Admin.List(
+client.Contexts.Objects.List(
         context.TODO(),
     )
 }
@@ -2286,7 +2281,7 @@ client.Contexts.Admin.List(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Admin.Create(request) -> sdk.CreateContextResponse</code></summary>
+<details><summary><code>client.Contexts.Objects.Create(request) -> sdk.CreateContextResponse</code></summary>
 <dl>
 <dd>
 
@@ -2298,7 +2293,7 @@ client.Contexts.Admin.List(
 <dl>
 <dd>
 
-Create a new context (entity) for the authenticated user.
+Create a new context for the authenticated user.
 </dd>
 </dl>
 </dd>
@@ -2342,8 +2337,9 @@ request := &contexts.CreateContextRequest{
                 ),
             },
         },
+        IdentityFact: "email",
     }
-client.Contexts.Admin.Create(
+client.Contexts.Objects.Create(
         context.TODO(),
         request,
     )
@@ -2386,7 +2382,15 @@ client.Contexts.Admin.Create(
 <dl>
 <dd>
 
-**schema:** `[]*contexts.CreateContextRequestSchemaItem` — Initial schema fields for the context.
+**schema:** `[]*contexts.CreateContextRequestSchemaItem` — Initial schema fields for the context. At least one field must be defined.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**identityFact:** `string` — The field key to use as the unique identifier for instances. Must be a key from the schema.
     
 </dd>
 </dl>
@@ -2446,7 +2450,7 @@ client.Contexts.Admin.Create(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Admin.Get(ID) -> *sdk.ContextDetail</code></summary>
+<details><summary><code>client.Contexts.Objects.Get(ID) -> *sdk.ContextDetail</code></summary>
 <dl>
 <dd>
 
@@ -2473,10 +2477,10 @@ Retrieve a specific context by its ID.
 <dd>
 
 ```go
-request := &contexts.GetAdminRequest{
+request := &contexts.GetObjectsRequest{
         ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     }
-client.Contexts.Admin.Get(
+client.Contexts.Objects.Get(
         context.TODO(),
         request,
     )
@@ -2507,7 +2511,7 @@ client.Contexts.Admin.Get(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Admin.Update(ID, request) -> sdk.UpdateContextResponse</code></summary>
+<details><summary><code>client.Contexts.Objects.Update(ID, request) -> *sdk.UpdateContextResponse</code></summary>
 <dl>
 <dd>
 
@@ -2543,7 +2547,7 @@ request := &contexts.UpdateContextRequest{
             "Updated description for premium customers",
         ),
     }
-client.Contexts.Admin.Update(
+client.Contexts.Objects.Update(
         context.TODO(),
         request,
     )
@@ -2654,7 +2658,7 @@ client.Contexts.Admin.Update(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Admin.Delete(ID) -> *sdk.DeleteContextResponse</code></summary>
+<details><summary><code>client.Contexts.Objects.Delete(ID) -> *sdk.DeleteContextResponse</code></summary>
 <dl>
 <dd>
 
@@ -2681,10 +2685,10 @@ Delete a specific context and all its instances.
 <dd>
 
 ```go
-request := &contexts.DeleteAdminRequest{
+request := &contexts.DeleteObjectsRequest{
         ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     }
-client.Contexts.Admin.Delete(
+client.Contexts.Objects.Delete(
         context.TODO(),
         request,
     )
@@ -2806,9 +2810,9 @@ Create a new relationship between two contexts.
 ```go
 request := &contexts.CreateRelationshipRequest{
         ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-        TargetContextID: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-        Type: contexts.CreateRelationshipRequestTypeOneToMany,
-        ForeignKey: "customer_id",
+        ToContextID: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        RelationType: contexts.CreateRelationshipRequestRelationTypeHasMany,
+        ForeignKeyFact: "customer_id",
         Name: sdk.String(
             "Customer Orders",
         ),
@@ -2840,7 +2844,7 @@ client.Contexts.Relationships.Create(
 <dl>
 <dd>
 
-**targetContextID:** `string` — The ID of the target context.
+**toContextID:** `string` — The ID of the target context.
     
 </dd>
 </dl>
@@ -2848,7 +2852,7 @@ client.Contexts.Relationships.Create(
 <dl>
 <dd>
 
-**type_:** `*contexts.CreateRelationshipRequestType` — The type of relationship.
+**relationType:** `*contexts.CreateRelationshipRequestRelationType` — The type of relationship.
     
 </dd>
 </dl>
@@ -2856,7 +2860,7 @@ client.Contexts.Relationships.Create(
 <dl>
 <dd>
 
-**foreignKey:** `string` — The field key to use as the foreign key.
+**foreignKeyFact:** `string` — The field key to use as the foreign key.
     
 </dd>
 </dl>

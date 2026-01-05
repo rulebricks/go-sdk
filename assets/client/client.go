@@ -56,13 +56,13 @@ func (c *Client) GetUsage(
 	return response.Body, nil
 }
 
-// Import rules, flows, contexts, and values from an RBM manifest file.
-func (c *Client) Import(
+// Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm).
+func (c *Client) ImportRbm(
 	ctx context.Context,
 	request *sdk.ImportManifestRequest,
 	opts ...option.RequestOption,
 ) (*sdk.ImportManifestResponse, error) {
-	response, err := c.WithRawResponse.Import(
+	response, err := c.WithRawResponse.ImportRbm(
 		ctx,
 		request,
 		opts...,
@@ -73,13 +73,13 @@ func (c *Client) Import(
 	return response.Body, nil
 }
 
-// Export selected rules, flows, contexts, and values to an RBM manifest file.
-func (c *Client) Export(
+// Export selected rules, flows, contexts, and values to an Rulebricks manifest file (*.rbm).
+func (c *Client) ExportRbm(
 	ctx context.Context,
 	request *sdk.ExportManifestRequest,
 	opts ...option.RequestOption,
-) (*sdk.ExportAssetsResponse, error) {
-	response, err := c.WithRawResponse.Export(
+) (*sdk.ExportRbmAssetsResponse, error) {
+	response, err := c.WithRawResponse.ExportRbm(
 		ctx,
 		request,
 		opts...,

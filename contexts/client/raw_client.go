@@ -30,9 +30,9 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 	}
 }
 
-func (r *RawClient) GetInstance(
+func (r *RawClient) Get(
 	ctx context.Context,
-	request *sdk.GetInstanceContextsRequest,
+	request *sdk.GetContextsRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*sdk.ContextInstanceState], error) {
 	options := core.NewRequestOptions(opts...)
@@ -122,9 +122,9 @@ func (r *RawClient) Submit(
 	}, nil
 }
 
-func (r *RawClient) DeleteInstance(
+func (r *RawClient) Delete(
 	ctx context.Context,
-	request *sdk.DeleteInstanceContextsRequest,
+	request *sdk.DeleteContextsRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*sdk.DeleteContextInstanceResponse], error) {
 	options := core.NewRequestOptions(opts...)
@@ -266,7 +266,7 @@ func (r *RawClient) GetPending(
 
 func (r *RawClient) Solve(
 	ctx context.Context,
-	request *sdk.SolveContextRuleRequest,
+	request *sdk.SolveContextsRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*sdk.SolveContextRuleResponse], error) {
 	options := core.NewRequestOptions(opts...)
@@ -314,7 +314,7 @@ func (r *RawClient) Solve(
 
 func (r *RawClient) Cascade(
 	ctx context.Context,
-	request *sdk.CascadeContextRequest,
+	request *sdk.CascadeContextsRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*sdk.CascadeContextResponse], error) {
 	options := core.NewRequestOptions(opts...)
@@ -361,7 +361,7 @@ func (r *RawClient) Cascade(
 
 func (r *RawClient) Execute(
 	ctx context.Context,
-	request *sdk.SolveContextFlowRequest,
+	request *sdk.ExecuteContextsRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[*sdk.SolveContextFlowResponse], error) {
 	options := core.NewRequestOptions(opts...)

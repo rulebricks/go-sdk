@@ -61,7 +61,7 @@ func VerifyRequestCount(
 	require.Equal(t, expected, len(result.Requests))
 }
 
-func TestContextsGetInstanceWithWireMock(
+func TestContextsGetWithWireMock(
 	t *testing.T,
 ) {
 	ResetWireMockRequests(t)
@@ -71,11 +71,11 @@ func TestContextsGetInstanceWithWireMock(
 			WireMockBaseURL,
 		),
 	)
-	request := &sdk.GetInstanceContextsRequest{
+	request := &sdk.GetContextsRequest{
 		Slug:     "customer",
 		Instance: "cust-12345",
 	}
-	_, invocationErr := client.Contexts.GetInstance(
+	_, invocationErr := client.Contexts.Get(
 		context.TODO(),
 		request,
 	)
@@ -111,7 +111,7 @@ func TestContextsSubmitWithWireMock(
 	VerifyRequestCount(t, "POST", "/contexts/customer/cust-12345", nil, 1)
 }
 
-func TestContextsDeleteInstanceWithWireMock(
+func TestContextsDeleteWithWireMock(
 	t *testing.T,
 ) {
 	ResetWireMockRequests(t)
@@ -121,11 +121,11 @@ func TestContextsDeleteInstanceWithWireMock(
 			WireMockBaseURL,
 		),
 	)
-	request := &sdk.DeleteInstanceContextsRequest{
+	request := &sdk.DeleteContextsRequest{
 		Slug:     "customer",
 		Instance: "cust-12345",
 	}
-	_, invocationErr := client.Contexts.DeleteInstance(
+	_, invocationErr := client.Contexts.Delete(
 		context.TODO(),
 		request,
 	)
@@ -190,10 +190,11 @@ func TestContextsSolveWithWireMock(
 			WireMockBaseURL,
 		),
 	)
-	request := &sdk.SolveContextRuleRequest{
+	request := &sdk.SolveContextsRequest{
 		Slug:     "customer",
 		Instance: "cust-12345",
 		RuleSlug: "eligibility-check",
+		Body:     map[string]any{},
 	}
 	_, invocationErr := client.Contexts.Solve(
 		context.TODO(),
@@ -214,9 +215,10 @@ func TestContextsCascadeWithWireMock(
 			WireMockBaseURL,
 		),
 	)
-	request := &sdk.CascadeContextRequest{
+	request := &sdk.CascadeContextsRequest{
 		Slug:     "customer",
 		Instance: "cust-12345",
+		Body:     map[string]any{},
 	}
 	_, invocationErr := client.Contexts.Cascade(
 		context.TODO(),
@@ -237,10 +239,11 @@ func TestContextsExecuteWithWireMock(
 			WireMockBaseURL,
 		),
 	)
-	request := &sdk.SolveContextFlowRequest{
+	request := &sdk.ExecuteContextsRequest{
 		Slug:     "customer",
 		Instance: "cust-12345",
 		FlowSlug: "onboarding-flow",
+		Body:     map[string]any{},
 	}
 	_, invocationErr := client.Contexts.Execute(
 		context.TODO(),

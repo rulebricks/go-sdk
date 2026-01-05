@@ -14,12 +14,13 @@ var (
 	createContextRequestFieldSlug                 = big.NewInt(1 << 1)
 	createContextRequestFieldDescription          = big.NewInt(1 << 2)
 	createContextRequestFieldSchema               = big.NewInt(1 << 3)
-	createContextRequestFieldAutoExecuteDecisions = big.NewInt(1 << 4)
-	createContextRequestFieldTTLSeconds           = big.NewInt(1 << 5)
-	createContextRequestFieldHistoryLimit         = big.NewInt(1 << 6)
-	createContextRequestFieldOnSchemaMismatch     = big.NewInt(1 << 7)
-	createContextRequestFieldWebhookOnSolve       = big.NewInt(1 << 8)
-	createContextRequestFieldWebhookOnExpire      = big.NewInt(1 << 9)
+	createContextRequestFieldIdentityFact         = big.NewInt(1 << 4)
+	createContextRequestFieldAutoExecuteDecisions = big.NewInt(1 << 5)
+	createContextRequestFieldTTLSeconds           = big.NewInt(1 << 6)
+	createContextRequestFieldHistoryLimit         = big.NewInt(1 << 7)
+	createContextRequestFieldOnSchemaMismatch     = big.NewInt(1 << 8)
+	createContextRequestFieldWebhookOnSolve       = big.NewInt(1 << 9)
+	createContextRequestFieldWebhookOnExpire      = big.NewInt(1 << 10)
 )
 
 type CreateContextRequest struct {
@@ -29,8 +30,10 @@ type CreateContextRequest struct {
 	Slug *string `json:"slug,omitempty" url:"-"`
 	// The description of the context.
 	Description *string `json:"description,omitempty" url:"-"`
-	// Initial schema fields for the context.
+	// Initial schema fields for the context. At least one field must be defined.
 	Schema []*CreateContextRequestSchemaItem `json:"schema,omitempty" url:"-"`
+	// The field key to use as the unique identifier for instances. Must be a key from the schema.
+	IdentityFact string `json:"identity_fact" url:"-"`
 	// When true (default), bound rules and flows automatically execute when their inputs are satisfied.
 	AutoExecuteDecisions *bool `json:"auto_execute_decisions,omitempty" url:"-"`
 	// Time-to-live in seconds for live context instances. Instances expire after this duration.
@@ -83,6 +86,13 @@ func (c *CreateContextRequest) SetSchema(schema []*CreateContextRequestSchemaIte
 	c.require(createContextRequestFieldSchema)
 }
 
+// SetIdentityFact sets the IdentityFact field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextRequest) SetIdentityFact(identityFact string) {
+	c.IdentityFact = identityFact
+	c.require(createContextRequestFieldIdentityFact)
+}
+
 // SetAutoExecuteDecisions sets the AutoExecuteDecisions field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CreateContextRequest) SetAutoExecuteDecisions(autoExecuteDecisions *bool) {
@@ -126,10 +136,10 @@ func (c *CreateContextRequest) SetWebhookOnExpire(webhookOnExpire *string) {
 }
 
 var (
-	deleteAdminRequestFieldID = big.NewInt(1 << 0)
+	deleteObjectsRequestFieldID = big.NewInt(1 << 0)
 )
 
-type DeleteAdminRequest struct {
+type DeleteObjectsRequest struct {
 	// The unique identifier for the context.
 	ID string `json:"-" url:"-"`
 
@@ -137,7 +147,7 @@ type DeleteAdminRequest struct {
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (d *DeleteAdminRequest) require(field *big.Int) {
+func (d *DeleteObjectsRequest) require(field *big.Int) {
 	if d.explicitFields == nil {
 		d.explicitFields = big.NewInt(0)
 	}
@@ -146,16 +156,16 @@ func (d *DeleteAdminRequest) require(field *big.Int) {
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteAdminRequest) SetID(id string) {
+func (d *DeleteObjectsRequest) SetID(id string) {
 	d.ID = id
-	d.require(deleteAdminRequestFieldID)
+	d.require(deleteObjectsRequestFieldID)
 }
 
 var (
-	getAdminRequestFieldID = big.NewInt(1 << 0)
+	getObjectsRequestFieldID = big.NewInt(1 << 0)
 )
 
-type GetAdminRequest struct {
+type GetObjectsRequest struct {
 	// The unique identifier for the context.
 	ID string `json:"-" url:"-"`
 
@@ -163,7 +173,7 @@ type GetAdminRequest struct {
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (g *GetAdminRequest) require(field *big.Int) {
+func (g *GetObjectsRequest) require(field *big.Int) {
 	if g.explicitFields == nil {
 		g.explicitFields = big.NewInt(0)
 	}
@@ -172,9 +182,9 @@ func (g *GetAdminRequest) require(field *big.Int) {
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetAdminRequest) SetID(id string) {
+func (g *GetObjectsRequest) SetID(id string) {
 	g.ID = id
-	g.require(getAdminRequestFieldID)
+	g.require(getObjectsRequestFieldID)
 }
 
 // How to handle fields that don't match the schema.
@@ -211,7 +221,7 @@ type CreateContextRequestSchemaItem struct {
 	Key          *string     `json:"key,omitempty" url:"key,omitempty"`
 	Name         *string     `json:"name,omitempty" url:"name,omitempty"`
 	Type         *string     `json:"type,omitempty" url:"type,omitempty"`
-	DefaultValue interface{} `json:"defaultValue,omitempty" url:"defaultValue,omitempty"`
+	DefaultValue interface{} `json:"default_value,omitempty" url:"default_value,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -360,7 +370,7 @@ type UpdateContextRequestSchemaItem struct {
 	Key          *string     `json:"key,omitempty" url:"key,omitempty"`
 	Name         *string     `json:"name,omitempty" url:"name,omitempty"`
 	Type         *string     `json:"type,omitempty" url:"type,omitempty"`
-	DefaultValue interface{} `json:"defaultValue,omitempty" url:"defaultValue,omitempty"`
+	DefaultValue interface{} `json:"default_value,omitempty" url:"default_value,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`

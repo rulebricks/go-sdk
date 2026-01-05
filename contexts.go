@@ -11,24 +11,22 @@ import (
 )
 
 var (
-	cascadeContextRequestFieldSlug     = big.NewInt(1 << 0)
-	cascadeContextRequestFieldInstance = big.NewInt(1 << 1)
-	cascadeContextRequestFieldMaxDepth = big.NewInt(1 << 2)
+	cascadeContextsRequestFieldSlug     = big.NewInt(1 << 0)
+	cascadeContextsRequestFieldInstance = big.NewInt(1 << 1)
 )
 
-type CascadeContextRequest struct {
+type CascadeContextsRequest struct {
 	// The unique slug for the context.
 	Slug string `json:"-" url:"-"`
 	// The unique identifier for the context instance.
-	Instance string `json:"-" url:"-"`
-	// Maximum depth for cascading evaluations.
-	MaxDepth *int `json:"maxDepth,omitempty" url:"-"`
+	Instance string                `json:"-" url:"-"`
+	Body     CascadeContextRequest `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (c *CascadeContextRequest) require(field *big.Int) {
+func (c *CascadeContextsRequest) require(field *big.Int) {
 	if c.explicitFields == nil {
 		c.explicitFields = big.NewInt(0)
 	}
@@ -37,31 +35,37 @@ func (c *CascadeContextRequest) require(field *big.Int) {
 
 // SetSlug sets the Slug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CascadeContextRequest) SetSlug(slug string) {
+func (c *CascadeContextsRequest) SetSlug(slug string) {
 	c.Slug = slug
-	c.require(cascadeContextRequestFieldSlug)
+	c.require(cascadeContextsRequestFieldSlug)
 }
 
 // SetInstance sets the Instance field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CascadeContextRequest) SetInstance(instance string) {
+func (c *CascadeContextsRequest) SetInstance(instance string) {
 	c.Instance = instance
-	c.require(cascadeContextRequestFieldInstance)
+	c.require(cascadeContextsRequestFieldInstance)
 }
 
-// SetMaxDepth sets the MaxDepth field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CascadeContextRequest) SetMaxDepth(maxDepth *int) {
-	c.MaxDepth = maxDepth
-	c.require(cascadeContextRequestFieldMaxDepth)
+func (c *CascadeContextsRequest) UnmarshalJSON(data []byte) error {
+	var body CascadeContextRequest
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	c.Body = body
+	return nil
+}
+
+func (c *CascadeContextsRequest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Body)
 }
 
 var (
-	deleteInstanceContextsRequestFieldSlug     = big.NewInt(1 << 0)
-	deleteInstanceContextsRequestFieldInstance = big.NewInt(1 << 1)
+	deleteContextsRequestFieldSlug     = big.NewInt(1 << 0)
+	deleteContextsRequestFieldInstance = big.NewInt(1 << 1)
 )
 
-type DeleteInstanceContextsRequest struct {
+type DeleteContextsRequest struct {
 	// The unique slug for the context.
 	Slug string `json:"-" url:"-"`
 	// The unique identifier for the context instance.
@@ -71,7 +75,7 @@ type DeleteInstanceContextsRequest struct {
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (d *DeleteInstanceContextsRequest) require(field *big.Int) {
+func (d *DeleteContextsRequest) require(field *big.Int) {
 	if d.explicitFields == nil {
 		d.explicitFields = big.NewInt(0)
 	}
@@ -80,82 +84,112 @@ func (d *DeleteInstanceContextsRequest) require(field *big.Int) {
 
 // SetSlug sets the Slug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteInstanceContextsRequest) SetSlug(slug string) {
+func (d *DeleteContextsRequest) SetSlug(slug string) {
 	d.Slug = slug
-	d.require(deleteInstanceContextsRequestFieldSlug)
+	d.require(deleteContextsRequestFieldSlug)
 }
 
 // SetInstance sets the Instance field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteInstanceContextsRequest) SetInstance(instance string) {
+func (d *DeleteContextsRequest) SetInstance(instance string) {
 	d.Instance = instance
-	d.require(deleteInstanceContextsRequestFieldInstance)
+	d.require(deleteContextsRequestFieldInstance)
 }
 
 var (
-	solveContextFlowRequestFieldSlug           = big.NewInt(1 << 0)
-	solveContextFlowRequestFieldInstance       = big.NewInt(1 << 1)
-	solveContextFlowRequestFieldFlowSlug       = big.NewInt(1 << 2)
-	solveContextFlowRequestFieldAdditionalData = big.NewInt(1 << 3)
-	solveContextFlowRequestFieldPersist        = big.NewInt(1 << 4)
+	executeContextsRequestFieldSlug     = big.NewInt(1 << 0)
+	executeContextsRequestFieldInstance = big.NewInt(1 << 1)
+	executeContextsRequestFieldFlowSlug = big.NewInt(1 << 2)
 )
 
-type SolveContextFlowRequest struct {
+type ExecuteContextsRequest struct {
 	// The unique slug for the context.
 	Slug string `json:"-" url:"-"`
 	// The unique identifier for the context instance.
 	Instance string `json:"-" url:"-"`
 	// The unique slug for the flow.
-	FlowSlug string `json:"-" url:"-"`
-	// Additional data to merge with instance state for flow execution.
-	AdditionalData map[string]interface{} `json:"additionalData,omitempty" url:"-"`
-	// Whether to persist derived outputs to the instance.
-	Persist *bool `json:"persist,omitempty" url:"-"`
+	FlowSlug string                  `json:"-" url:"-"`
+	Body     SolveContextFlowRequest `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (s *SolveContextFlowRequest) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
+func (e *ExecuteContextsRequest) require(field *big.Int) {
+	if e.explicitFields == nil {
+		e.explicitFields = big.NewInt(0)
 	}
-	s.explicitFields.Or(s.explicitFields, field)
+	e.explicitFields.Or(e.explicitFields, field)
 }
 
 // SetSlug sets the Slug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowRequest) SetSlug(slug string) {
-	s.Slug = slug
-	s.require(solveContextFlowRequestFieldSlug)
+func (e *ExecuteContextsRequest) SetSlug(slug string) {
+	e.Slug = slug
+	e.require(executeContextsRequestFieldSlug)
 }
 
 // SetInstance sets the Instance field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowRequest) SetInstance(instance string) {
-	s.Instance = instance
-	s.require(solveContextFlowRequestFieldInstance)
+func (e *ExecuteContextsRequest) SetInstance(instance string) {
+	e.Instance = instance
+	e.require(executeContextsRequestFieldInstance)
 }
 
 // SetFlowSlug sets the FlowSlug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowRequest) SetFlowSlug(flowSlug string) {
-	s.FlowSlug = flowSlug
-	s.require(solveContextFlowRequestFieldFlowSlug)
+func (e *ExecuteContextsRequest) SetFlowSlug(flowSlug string) {
+	e.FlowSlug = flowSlug
+	e.require(executeContextsRequestFieldFlowSlug)
 }
 
-// SetAdditionalData sets the AdditionalData field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowRequest) SetAdditionalData(additionalData map[string]interface{}) {
-	s.AdditionalData = additionalData
-	s.require(solveContextFlowRequestFieldAdditionalData)
+func (e *ExecuteContextsRequest) UnmarshalJSON(data []byte) error {
+	var body SolveContextFlowRequest
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	e.Body = body
+	return nil
 }
 
-// SetPersist sets the Persist field and marks it as non-optional;
+func (e *ExecuteContextsRequest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.Body)
+}
+
+var (
+	getContextsRequestFieldSlug     = big.NewInt(1 << 0)
+	getContextsRequestFieldInstance = big.NewInt(1 << 1)
+)
+
+type GetContextsRequest struct {
+	// The unique slug for the context.
+	Slug string `json:"-" url:"-"`
+	// The unique identifier for the context instance.
+	Instance string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (g *GetContextsRequest) require(field *big.Int) {
+	if g.explicitFields == nil {
+		g.explicitFields = big.NewInt(0)
+	}
+	g.explicitFields.Or(g.explicitFields, field)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowRequest) SetPersist(persist *bool) {
-	s.Persist = persist
-	s.require(solveContextFlowRequestFieldPersist)
+func (g *GetContextsRequest) SetSlug(slug string) {
+	g.Slug = slug
+	g.require(getContextsRequestFieldSlug)
+}
+
+// SetInstance sets the Instance field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetContextsRequest) SetInstance(instance string) {
+	g.Instance = instance
+	g.require(getContextsRequestFieldInstance)
 }
 
 var (
@@ -215,42 +249,6 @@ func (g *GetHistoryContextsRequest) SetLimit(limit *int) {
 }
 
 var (
-	getInstanceContextsRequestFieldSlug     = big.NewInt(1 << 0)
-	getInstanceContextsRequestFieldInstance = big.NewInt(1 << 1)
-)
-
-type GetInstanceContextsRequest struct {
-	// The unique slug for the context.
-	Slug string `json:"-" url:"-"`
-	// The unique identifier for the context instance.
-	Instance string `json:"-" url:"-"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-}
-
-func (g *GetInstanceContextsRequest) require(field *big.Int) {
-	if g.explicitFields == nil {
-		g.explicitFields = big.NewInt(0)
-	}
-	g.explicitFields.Or(g.explicitFields, field)
-}
-
-// SetSlug sets the Slug field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetInstanceContextsRequest) SetSlug(slug string) {
-	g.Slug = slug
-	g.require(getInstanceContextsRequestFieldSlug)
-}
-
-// SetInstance sets the Instance field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (g *GetInstanceContextsRequest) SetInstance(instance string) {
-	g.Instance = instance
-	g.require(getInstanceContextsRequestFieldInstance)
-}
-
-var (
 	getPendingContextsRequestFieldSlug     = big.NewInt(1 << 0)
 	getPendingContextsRequestFieldInstance = big.NewInt(1 << 1)
 )
@@ -287,30 +285,25 @@ func (g *GetPendingContextsRequest) SetInstance(instance string) {
 }
 
 var (
-	solveContextRuleRequestFieldSlug           = big.NewInt(1 << 0)
-	solveContextRuleRequestFieldInstance       = big.NewInt(1 << 1)
-	solveContextRuleRequestFieldRuleSlug       = big.NewInt(1 << 2)
-	solveContextRuleRequestFieldAdditionalData = big.NewInt(1 << 3)
-	solveContextRuleRequestFieldPersist        = big.NewInt(1 << 4)
+	solveContextsRequestFieldSlug     = big.NewInt(1 << 0)
+	solveContextsRequestFieldInstance = big.NewInt(1 << 1)
+	solveContextsRequestFieldRuleSlug = big.NewInt(1 << 2)
 )
 
-type SolveContextRuleRequest struct {
+type SolveContextsRequest struct {
 	// The unique slug for the context.
 	Slug string `json:"-" url:"-"`
 	// The unique identifier for the context instance.
 	Instance string `json:"-" url:"-"`
 	// The unique slug for the rule.
-	RuleSlug string `json:"-" url:"-"`
-	// Additional data to merge with instance state for rule evaluation.
-	AdditionalData map[string]interface{} `json:"additionalData,omitempty" url:"-"`
-	// Whether to persist derived outputs to the instance.
-	Persist *bool `json:"persist,omitempty" url:"-"`
+	RuleSlug string                  `json:"-" url:"-"`
+	Body     SolveContextRuleRequest `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (s *SolveContextRuleRequest) require(field *big.Int) {
+func (s *SolveContextsRequest) require(field *big.Int) {
 	if s.explicitFields == nil {
 		s.explicitFields = big.NewInt(0)
 	}
@@ -319,37 +312,36 @@ func (s *SolveContextRuleRequest) require(field *big.Int) {
 
 // SetSlug sets the Slug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleRequest) SetSlug(slug string) {
+func (s *SolveContextsRequest) SetSlug(slug string) {
 	s.Slug = slug
-	s.require(solveContextRuleRequestFieldSlug)
+	s.require(solveContextsRequestFieldSlug)
 }
 
 // SetInstance sets the Instance field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleRequest) SetInstance(instance string) {
+func (s *SolveContextsRequest) SetInstance(instance string) {
 	s.Instance = instance
-	s.require(solveContextRuleRequestFieldInstance)
+	s.require(solveContextsRequestFieldInstance)
 }
 
 // SetRuleSlug sets the RuleSlug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleRequest) SetRuleSlug(ruleSlug string) {
+func (s *SolveContextsRequest) SetRuleSlug(ruleSlug string) {
 	s.RuleSlug = ruleSlug
-	s.require(solveContextRuleRequestFieldRuleSlug)
+	s.require(solveContextsRequestFieldRuleSlug)
 }
 
-// SetAdditionalData sets the AdditionalData field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleRequest) SetAdditionalData(additionalData map[string]interface{}) {
-	s.AdditionalData = additionalData
-	s.require(solveContextRuleRequestFieldAdditionalData)
+func (s *SolveContextsRequest) UnmarshalJSON(data []byte) error {
+	var body SolveContextRuleRequest
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	s.Body = body
+	return nil
 }
 
-// SetPersist sets the Persist field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleRequest) SetPersist(persist *bool) {
-	s.Persist = persist
-	s.require(solveContextRuleRequestFieldPersist)
+func (s *SolveContextsRequest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.Body)
 }
 
 var (
@@ -401,6 +393,9 @@ func (s *SubmitContextsRequest) UnmarshalJSON(data []byte) error {
 func (s *SubmitContextsRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.Body)
 }
+
+// Optional request body for triggering a cascade. Currently no properties are used.
+type CascadeContextRequest = map[string]interface{}
 
 // Response after triggering a cascade re-evaluation of pending rules/flows.
 var (
@@ -946,8 +941,8 @@ type ContextInstancePendingEvaluation struct {
 	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
 	// The flow ID (if type is 'flow').
 	FlowID *string `json:"flow_id,omitempty" url:"flow_id,omitempty"`
-	// List of field keys this evaluation is waiting for.
-	WaitingOn []string `json:"waiting_on,omitempty" url:"waiting_on,omitempty"`
+	// List of field keys or dependency objects this evaluation is waiting for. Can contain simple strings for direct fields or objects for relationship dependencies.
+	WaitingOn []*ContextInstancePendingEvaluationWaitingOnItem `json:"waiting_on,omitempty" url:"waiting_on,omitempty"`
 	// When this pending evaluation was registered.
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
 	// When this pending evaluation will expire.
@@ -995,7 +990,7 @@ func (c *ContextInstancePendingEvaluation) GetFlowID() *string {
 	return c.FlowID
 }
 
-func (c *ContextInstancePendingEvaluation) GetWaitingOn() []string {
+func (c *ContextInstancePendingEvaluation) GetWaitingOn() []*ContextInstancePendingEvaluationWaitingOnItem {
 	if c == nil {
 		return nil
 	}
@@ -1064,7 +1059,7 @@ func (c *ContextInstancePendingEvaluation) SetFlowID(flowID *string) {
 
 // SetWaitingOn sets the WaitingOn field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextInstancePendingEvaluation) SetWaitingOn(waitingOn []string) {
+func (c *ContextInstancePendingEvaluation) SetWaitingOn(waitingOn []*ContextInstancePendingEvaluationWaitingOnItem) {
 	c.WaitingOn = waitingOn
 	c.require(contextInstancePendingEvaluationFieldWaitingOn)
 }
@@ -1155,6 +1150,181 @@ func NewContextInstancePendingEvaluationTypeFromString(s string) (ContextInstanc
 
 func (c ContextInstancePendingEvaluationType) Ptr() *ContextInstancePendingEvaluationType {
 	return &c
+}
+
+type ContextInstancePendingEvaluationWaitingOnItem struct {
+	String                                             string
+	ContextInstancePendingEvaluationWaitingOnItemField *ContextInstancePendingEvaluationWaitingOnItemField
+
+	typ string
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItem) GetString() string {
+	if c == nil {
+		return ""
+	}
+	return c.String
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItem) GetContextInstancePendingEvaluationWaitingOnItemField() *ContextInstancePendingEvaluationWaitingOnItemField {
+	if c == nil {
+		return nil
+	}
+	return c.ContextInstancePendingEvaluationWaitingOnItemField
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItem) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		c.typ = "String"
+		c.String = valueString
+		return nil
+	}
+	valueContextInstancePendingEvaluationWaitingOnItemField := new(ContextInstancePendingEvaluationWaitingOnItemField)
+	if err := json.Unmarshal(data, &valueContextInstancePendingEvaluationWaitingOnItemField); err == nil {
+		c.typ = "ContextInstancePendingEvaluationWaitingOnItemField"
+		c.ContextInstancePendingEvaluationWaitingOnItemField = valueContextInstancePendingEvaluationWaitingOnItemField
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ContextInstancePendingEvaluationWaitingOnItem) MarshalJSON() ([]byte, error) {
+	if c.typ == "String" || c.String != "" {
+		return json.Marshal(c.String)
+	}
+	if c.typ == "ContextInstancePendingEvaluationWaitingOnItemField" || c.ContextInstancePendingEvaluationWaitingOnItemField != nil {
+		return json.Marshal(c.ContextInstancePendingEvaluationWaitingOnItemField)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ContextInstancePendingEvaluationWaitingOnItemVisitor interface {
+	VisitString(string) error
+	VisitContextInstancePendingEvaluationWaitingOnItemField(*ContextInstancePendingEvaluationWaitingOnItemField) error
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItem) Accept(visitor ContextInstancePendingEvaluationWaitingOnItemVisitor) error {
+	if c.typ == "String" || c.String != "" {
+		return visitor.VisitString(c.String)
+	}
+	if c.typ == "ContextInstancePendingEvaluationWaitingOnItemField" || c.ContextInstancePendingEvaluationWaitingOnItemField != nil {
+		return visitor.VisitContextInstancePendingEvaluationWaitingOnItemField(c.ContextInstancePendingEvaluationWaitingOnItemField)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+var (
+	contextInstancePendingEvaluationWaitingOnItemFieldFieldField    = big.NewInt(1 << 0)
+	contextInstancePendingEvaluationWaitingOnItemFieldFieldRelation = big.NewInt(1 << 1)
+	contextInstancePendingEvaluationWaitingOnItemFieldFieldInstance = big.NewInt(1 << 2)
+)
+
+type ContextInstancePendingEvaluationWaitingOnItemField struct {
+	// Field key this evaluation is waiting for.
+	Field *string `json:"field,omitempty" url:"field,omitempty"`
+	// Related context name if waiting on a relationship.
+	Relation *string `json:"relation,omitempty" url:"relation,omitempty"`
+	// Instance ID of the related context (if applicable).
+	Instance *string `json:"instance,omitempty" url:"instance,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetField() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Field
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetRelation() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Relation
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetInstance() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Instance
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetExtraProperties() map[string]interface{} {
+	return c.extraProperties
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetField sets the Field field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) SetField(field *string) {
+	c.Field = field
+	c.require(contextInstancePendingEvaluationWaitingOnItemFieldFieldField)
+}
+
+// SetRelation sets the Relation field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) SetRelation(relation *string) {
+	c.Relation = relation
+	c.require(contextInstancePendingEvaluationWaitingOnItemFieldFieldRelation)
+}
+
+// SetInstance sets the Instance field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) SetInstance(instance *string) {
+	c.Instance = instance
+	c.require(contextInstancePendingEvaluationWaitingOnItemFieldFieldInstance)
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextInstancePendingEvaluationWaitingOnItemField
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextInstancePendingEvaluationWaitingOnItemField(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) MarshalJSON() ([]byte, error) {
+	type embed ContextInstancePendingEvaluationWaitingOnItemField
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextInstancePendingEvaluationWaitingOnItemField) String() string {
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 // List of pending evaluations for a context instance.
@@ -1589,6 +1759,9 @@ func (d *DeleteContextInstanceResponse) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
+// Optional request body for executing a flow against context. The entire body is merged with instance state before flow execution.
+type SolveContextFlowRequest = map[string]interface{}
+
 // Response after executing a flow against a context instance.
 var (
 	solveContextFlowResponseFieldStatus  = big.NewInt(1 << 0)
@@ -1759,6 +1932,9 @@ func NewSolveContextFlowResponseStatusFromString(s string) (SolveContextFlowResp
 func (s SolveContextFlowResponseStatus) Ptr() *SolveContextFlowResponseStatus {
 	return &s
 }
+
+// Optional request body for solving a rule against context. The entire body is merged with the instance state before rule evaluation.
+type SolveContextRuleRequest = map[string]interface{}
 
 // Response after solving a rule against a context instance.
 var (

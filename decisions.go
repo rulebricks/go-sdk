@@ -138,10 +138,10 @@ type DecisionLog struct {
 	Endpoint *string `json:"endpoint,omitempty" url:"endpoint,omitempty"`
 	// HTTP status code of the response.
 	Status *int `json:"status,omitempty" url:"status,omitempty"`
-	// The request payload sent to the rule/flow.
-	Request map[string]interface{} `json:"request,omitempty" url:"request,omitempty"`
-	// The response payload returned by the rule/flow.
-	Response map[string]interface{} `json:"response,omitempty" url:"response,omitempty"`
+	// The request payload sent to the rule/flow. Can be an object for single requests or an array for bulk operations.
+	Request *DecisionLogRequest `json:"request,omitempty" url:"request,omitempty"`
+	// The response payload returned by the rule/flow. Can be an object for single responses or an array for bulk operations.
+	Response *DecisionLogResponse `json:"response,omitempty" url:"response,omitempty"`
 	// Decision details including matched conditions, rows, and evaluation metadata.
 	Decision map[string]interface{} `json:"decision,omitempty" url:"decision,omitempty"`
 	// Error message if the execution failed.
@@ -152,8 +152,9 @@ type DecisionLog struct {
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
 }
 
 func (d *DecisionLog) GetTimestamp() *time.Time {
@@ -184,14 +185,14 @@ func (d *DecisionLog) GetStatus() *int {
 	return d.Status
 }
 
-func (d *DecisionLog) GetRequest() map[string]interface{} {
+func (d *DecisionLog) GetRequest() *DecisionLogRequest {
 	if d == nil {
 		return nil
 	}
 	return d.Request
 }
 
-func (d *DecisionLog) GetResponse() map[string]interface{} {
+func (d *DecisionLog) GetResponse() *DecisionLogResponse {
 	if d == nil {
 		return nil
 	}
@@ -220,7 +221,7 @@ func (d *DecisionLog) GetAbbreviated() *bool {
 }
 
 func (d *DecisionLog) GetExtraProperties() map[string]interface{} {
-	return d.extraProperties
+	return d.ExtraProperties
 }
 
 func (d *DecisionLog) require(field *big.Int) {
@@ -260,14 +261,14 @@ func (d *DecisionLog) SetStatus(status *int) {
 
 // SetRequest sets the Request field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DecisionLog) SetRequest(request map[string]interface{}) {
+func (d *DecisionLog) SetRequest(request *DecisionLogRequest) {
 	d.Request = request
 	d.require(decisionLogFieldRequest)
 }
 
 // SetResponse sets the Response field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DecisionLog) SetResponse(response map[string]interface{}) {
+func (d *DecisionLog) SetResponse(response *DecisionLogResponse) {
 	d.Response = response
 	d.require(decisionLogFieldResponse)
 }
@@ -310,7 +311,7 @@ func (d *DecisionLog) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	d.extraProperties = extraProperties
+	d.ExtraProperties = extraProperties
 	d.rawJSON = json.RawMessage(data)
 	return nil
 }
@@ -325,7 +326,7 @@ func (d *DecisionLog) MarshalJSON() ([]byte, error) {
 		Timestamp: internal.NewOptionalDateTime(d.Timestamp),
 	}
 	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
-	return json.Marshal(explicitMarshaler)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, d.ExtraProperties)
 }
 
 func (d *DecisionLog) String() string {
@@ -340,7 +341,70 @@ func (d *DecisionLog) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// Response containing decision logs or a count.
+// The request payload sent to the rule/flow. Can be an object for single requests or an array for bulk operations.
+type DecisionLogRequest struct {
+	StringUnknownMap     map[string]interface{}
+	StringUnknownMapList []map[string]interface{}
+
+	typ string
+}
+
+func (d *DecisionLogRequest) GetStringUnknownMap() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.StringUnknownMap
+}
+
+func (d *DecisionLogRequest) GetStringUnknownMapList() []map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.StringUnknownMapList
+}
+
+func (d *DecisionLogRequest) UnmarshalJSON(data []byte) error {
+	var valueStringUnknownMap map[string]interface{}
+	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
+		d.typ = "StringUnknownMap"
+		d.StringUnknownMap = valueStringUnknownMap
+		return nil
+	}
+	var valueStringUnknownMapList []map[string]interface{}
+	if err := json.Unmarshal(data, &valueStringUnknownMapList); err == nil {
+		d.typ = "StringUnknownMapList"
+		d.StringUnknownMapList = valueStringUnknownMapList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, d)
+}
+
+func (d DecisionLogRequest) MarshalJSON() ([]byte, error) {
+	if d.typ == "StringUnknownMap" || d.StringUnknownMap != nil {
+		return json.Marshal(d.StringUnknownMap)
+	}
+	if d.typ == "StringUnknownMapList" || d.StringUnknownMapList != nil {
+		return json.Marshal(d.StringUnknownMapList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", d)
+}
+
+type DecisionLogRequestVisitor interface {
+	VisitStringUnknownMap(map[string]interface{}) error
+	VisitStringUnknownMapList([]map[string]interface{}) error
+}
+
+func (d *DecisionLogRequest) Accept(visitor DecisionLogRequestVisitor) error {
+	if d.typ == "StringUnknownMap" || d.StringUnknownMap != nil {
+		return visitor.VisitStringUnknownMap(d.StringUnknownMap)
+	}
+	if d.typ == "StringUnknownMapList" || d.StringUnknownMapList != nil {
+		return visitor.VisitStringUnknownMapList(d.StringUnknownMapList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", d)
+}
+
+// Response containing decision logs or a count. Returns either {data, cursor} for log queries OR {count} for count queries - these are mutually exclusive based on the count parameter.
 var (
 	decisionLogResponseFieldData   = big.NewInt(1 << 0)
 	decisionLogResponseFieldCursor = big.NewInt(1 << 1)
@@ -348,11 +412,11 @@ var (
 )
 
 type DecisionLogResponse struct {
-	// Array of decision log entries (omitted when count=true).
+	// Array of decision log entries. Only present when count parameter is not 'true'.
 	Data []*DecisionLog `json:"data,omitempty" url:"data,omitempty"`
-	// Pagination cursor for fetching the next page. Null if no more results.
+	// Pagination cursor for fetching the next page. Null if no more results. Only present when count parameter is not 'true'.
 	Cursor *string `json:"cursor,omitempty" url:"cursor,omitempty"`
-	// Total count of matching logs (only present when count=true parameter is used).
+	// Total count of matching logs. Only present when count parameter is 'true'. When this is returned, data and cursor are not included.
 	Count *int `json:"count,omitempty" url:"count,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

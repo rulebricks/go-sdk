@@ -5,7 +5,7 @@ package client
 import (
 	context "context"
 	sdk "sdk"
-	admin "sdk/contexts/admin"
+	objects "sdk/contexts/objects"
 	relationships "sdk/contexts/relationships"
 	core "sdk/core"
 	internal "sdk/internal"
@@ -14,7 +14,7 @@ import (
 
 type Client struct {
 	WithRawResponse *RawClient
-	Admin           *admin.Client
+	Objects         *objects.Client
 	Relationships   *relationships.Client
 
 	options *core.RequestOptions
@@ -24,7 +24,7 @@ type Client struct {
 
 func NewClient(options *core.RequestOptions) *Client {
 	return &Client{
-		Admin:           admin.NewClient(options),
+		Objects:         objects.NewClient(options),
 		Relationships:   relationships.NewClient(options),
 		WithRawResponse: NewRawClient(options),
 		options:         options,
@@ -39,12 +39,12 @@ func NewClient(options *core.RequestOptions) *Client {
 }
 
 // Retrieve the current state of a context instance.
-func (c *Client) GetInstance(
+func (c *Client) Get(
 	ctx context.Context,
-	request *sdk.GetInstanceContextsRequest,
+	request *sdk.GetContextsRequest,
 	opts ...option.RequestOption,
 ) (*sdk.ContextInstanceState, error) {
-	response, err := c.WithRawResponse.GetInstance(
+	response, err := c.WithRawResponse.Get(
 		ctx,
 		request,
 		opts...,
@@ -73,12 +73,12 @@ func (c *Client) Submit(
 }
 
 // Delete a specific context instance and its history.
-func (c *Client) DeleteInstance(
+func (c *Client) Delete(
 	ctx context.Context,
-	request *sdk.DeleteInstanceContextsRequest,
+	request *sdk.DeleteContextsRequest,
 	opts ...option.RequestOption,
 ) (*sdk.DeleteContextInstanceResponse, error) {
-	response, err := c.WithRawResponse.DeleteInstance(
+	response, err := c.WithRawResponse.Delete(
 		ctx,
 		request,
 		opts...,
@@ -126,7 +126,7 @@ func (c *Client) GetPending(
 // Execute a specific rule using the context instance's state as input.
 func (c *Client) Solve(
 	ctx context.Context,
-	request *sdk.SolveContextRuleRequest,
+	request *sdk.SolveContextsRequest,
 	opts ...option.RequestOption,
 ) (*sdk.SolveContextRuleResponse, error) {
 	response, err := c.WithRawResponse.Solve(
@@ -143,7 +143,7 @@ func (c *Client) Solve(
 // Trigger re-evaluation of all bound rules and flows for the instance.
 func (c *Client) Cascade(
 	ctx context.Context,
-	request *sdk.CascadeContextRequest,
+	request *sdk.CascadeContextsRequest,
 	opts ...option.RequestOption,
 ) (*sdk.CascadeContextResponse, error) {
 	response, err := c.WithRawResponse.Cascade(
@@ -160,7 +160,7 @@ func (c *Client) Cascade(
 // Execute a specific flow using the context instance's state as input.
 func (c *Client) Execute(
 	ctx context.Context,
-	request *sdk.SolveContextFlowRequest,
+	request *sdk.ExecuteContextsRequest,
 	opts ...option.RequestOption,
 ) (*sdk.SolveContextFlowResponse, error) {
 	response, err := c.WithRawResponse.Execute(

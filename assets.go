@@ -11,27 +11,27 @@ import (
 )
 
 var (
-	exportManifestRequestFieldRules      = big.NewInt(1 << 0)
-	exportManifestRequestFieldFlows      = big.NewInt(1 << 1)
-	exportManifestRequestFieldContexts   = big.NewInt(1 << 2)
-	exportManifestRequestFieldValues     = big.NewInt(1 << 3)
-	exportManifestRequestFieldIncludeAll = big.NewInt(1 << 4)
-	exportManifestRequestFieldPreview    = big.NewInt(1 << 5)
+	exportManifestRequestFieldRootType            = big.NewInt(1 << 0)
+	exportManifestRequestFieldRootIDs             = big.NewInt(1 << 1)
+	exportManifestRequestFieldIncludeDownstream   = big.NewInt(1 << 2)
+	exportManifestRequestFieldManifestName        = big.NewInt(1 << 3)
+	exportManifestRequestFieldManifestDescription = big.NewInt(1 << 4)
+	exportManifestRequestFieldPreviewOnly         = big.NewInt(1 << 5)
 )
 
 type ExportManifestRequest struct {
-	// Rule IDs or slugs to export.
-	Rules []string `json:"rules,omitempty" url:"-"`
-	// Flow IDs or slugs to export.
-	Flows []string `json:"flows,omitempty" url:"-"`
-	// Context IDs or slugs to export.
-	Contexts []string `json:"contexts,omitempty" url:"-"`
-	// Value IDs or names to export.
-	Values []string `json:"values,omitempty" url:"-"`
-	// Export all assets of specified types.
-	IncludeAll *bool `json:"includeAll,omitempty" url:"-"`
-	// Return a preview of what would be exported without the full data.
-	Preview *bool `json:"preview,omitempty" url:"-"`
+	// The type of root asset to export. All dependencies will be included.
+	RootType ExportManifestRequestRootType `json:"root_type" url:"-"`
+	// Array of IDs for the root assets to export. Dependencies are automatically resolved.
+	RootIDs []string `json:"root_ids,omitempty" url:"-"`
+	// For context exports, whether to include rules and flows bound to the context.
+	IncludeDownstream *bool `json:"include_downstream,omitempty" url:"-"`
+	// Optional name for the exported manifest.
+	ManifestName *string `json:"manifest_name,omitempty" url:"-"`
+	// Optional description for the exported manifest.
+	ManifestDescription *string `json:"manifest_description,omitempty" url:"-"`
+	// If true, returns a preview of what would be exported without the full data.
+	PreviewOnly *bool `json:"preview_only,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -44,58 +44,64 @@ func (e *ExportManifestRequest) require(field *big.Int) {
 	e.explicitFields.Or(e.explicitFields, field)
 }
 
-// SetRules sets the Rules field and marks it as non-optional;
+// SetRootType sets the RootType field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestRequest) SetRules(rules []string) {
-	e.Rules = rules
-	e.require(exportManifestRequestFieldRules)
+func (e *ExportManifestRequest) SetRootType(rootType ExportManifestRequestRootType) {
+	e.RootType = rootType
+	e.require(exportManifestRequestFieldRootType)
 }
 
-// SetFlows sets the Flows field and marks it as non-optional;
+// SetRootIDs sets the RootIDs field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestRequest) SetFlows(flows []string) {
-	e.Flows = flows
-	e.require(exportManifestRequestFieldFlows)
+func (e *ExportManifestRequest) SetRootIDs(rootIDs []string) {
+	e.RootIDs = rootIDs
+	e.require(exportManifestRequestFieldRootIDs)
 }
 
-// SetContexts sets the Contexts field and marks it as non-optional;
+// SetIncludeDownstream sets the IncludeDownstream field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestRequest) SetContexts(contexts []string) {
-	e.Contexts = contexts
-	e.require(exportManifestRequestFieldContexts)
+func (e *ExportManifestRequest) SetIncludeDownstream(includeDownstream *bool) {
+	e.IncludeDownstream = includeDownstream
+	e.require(exportManifestRequestFieldIncludeDownstream)
 }
 
-// SetValues sets the Values field and marks it as non-optional;
+// SetManifestName sets the ManifestName field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestRequest) SetValues(values []string) {
-	e.Values = values
-	e.require(exportManifestRequestFieldValues)
+func (e *ExportManifestRequest) SetManifestName(manifestName *string) {
+	e.ManifestName = manifestName
+	e.require(exportManifestRequestFieldManifestName)
 }
 
-// SetIncludeAll sets the IncludeAll field and marks it as non-optional;
+// SetManifestDescription sets the ManifestDescription field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestRequest) SetIncludeAll(includeAll *bool) {
-	e.IncludeAll = includeAll
-	e.require(exportManifestRequestFieldIncludeAll)
+func (e *ExportManifestRequest) SetManifestDescription(manifestDescription *string) {
+	e.ManifestDescription = manifestDescription
+	e.require(exportManifestRequestFieldManifestDescription)
 }
 
-// SetPreview sets the Preview field and marks it as non-optional;
+// SetPreviewOnly sets the PreviewOnly field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestRequest) SetPreview(preview *bool) {
-	e.Preview = preview
-	e.require(exportManifestRequestFieldPreview)
+func (e *ExportManifestRequest) SetPreviewOnly(previewOnly *bool) {
+	e.PreviewOnly = previewOnly
+	e.require(exportManifestRequestFieldPreviewOnly)
 }
 
 var (
-	importManifestRequestFieldManifest  = big.NewInt(1 << 0)
-	importManifestRequestFieldOverwrite = big.NewInt(1 << 1)
+	importManifestRequestFieldManifest          = big.NewInt(1 << 0)
+	importManifestRequestFieldConflictStrategy  = big.NewInt(1 << 1)
+	importManifestRequestFieldTargetFolderName  = big.NewInt(1 << 2)
+	importManifestRequestFieldLegacyRuleMapping = big.NewInt(1 << 3)
 )
 
 type ImportManifestRequest struct {
 	// The RBM manifest object containing assets to import.
 	Manifest *ImportManifestRequestManifest `json:"manifest,omitempty" url:"-"`
-	// Whether to overwrite existing assets with the same ID/slug.
-	Overwrite *bool `json:"overwrite,omitempty" url:"-"`
+	// How to handle conflicts with existing assets. 'update' overwrites, 'skip' ignores, 'error' fails.
+	ConflictStrategy *ImportManifestRequestConflictStrategy `json:"conflict_strategy,omitempty" url:"-"`
+	// Optional folder name to place imported assets into. Created if it doesn't exist.
+	TargetFolderName *string `json:"target_folder_name,omitempty" url:"-"`
+	// Optional mapping for legacy flow imports to reuse existing rules.
+	LegacyRuleMapping map[string]*ImportManifestRequestLegacyRuleMappingValue `json:"legacy_rule_mapping,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -115,21 +121,40 @@ func (i *ImportManifestRequest) SetManifest(manifest *ImportManifestRequestManif
 	i.require(importManifestRequestFieldManifest)
 }
 
-// SetOverwrite sets the Overwrite field and marks it as non-optional;
+// SetConflictStrategy sets the ConflictStrategy field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestRequest) SetOverwrite(overwrite *bool) {
-	i.Overwrite = overwrite
-	i.require(importManifestRequestFieldOverwrite)
+func (i *ImportManifestRequest) SetConflictStrategy(conflictStrategy *ImportManifestRequestConflictStrategy) {
+	i.ConflictStrategy = conflictStrategy
+	i.require(importManifestRequestFieldConflictStrategy)
+}
+
+// SetTargetFolderName sets the TargetFolderName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequest) SetTargetFolderName(targetFolderName *string) {
+	i.TargetFolderName = targetFolderName
+	i.require(importManifestRequestFieldTargetFolderName)
+}
+
+// SetLegacyRuleMapping sets the LegacyRuleMapping field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequest) SetLegacyRuleMapping(legacyRuleMapping map[string]*ImportManifestRequestLegacyRuleMappingValue) {
+	i.LegacyRuleMapping = legacyRuleMapping
+	i.require(importManifestRequestFieldLegacyRuleMapping)
 }
 
 var (
-	exportManifestPreviewResponseFieldCounts = big.NewInt(1 << 0)
-	exportManifestPreviewResponseFieldItems  = big.NewInt(1 << 1)
+	exportManifestPreviewResponseFieldSuccess = big.NewInt(1 << 0)
+	exportManifestPreviewResponseFieldPreview = big.NewInt(1 << 1)
+	exportManifestPreviewResponseFieldError   = big.NewInt(1 << 2)
 )
 
 type ExportManifestPreviewResponse struct {
-	Counts *ExportManifestPreviewResponseCounts `json:"counts,omitempty" url:"counts,omitempty"`
-	Items  *ExportManifestPreviewResponseItems  `json:"items,omitempty" url:"items,omitempty"`
+	// Whether the preview completed successfully.
+	Success *bool `json:"success,omitempty" url:"success,omitempty"`
+	// Preview of assets that would be exported.
+	Preview *ExportManifestPreviewResponsePreview `json:"preview,omitempty" url:"preview,omitempty"`
+	// Error message if preview failed.
+	Error *string `json:"error,omitempty" url:"error,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -138,18 +163,25 @@ type ExportManifestPreviewResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *ExportManifestPreviewResponse) GetCounts() *ExportManifestPreviewResponseCounts {
+func (e *ExportManifestPreviewResponse) GetSuccess() *bool {
 	if e == nil {
 		return nil
 	}
-	return e.Counts
+	return e.Success
 }
 
-func (e *ExportManifestPreviewResponse) GetItems() *ExportManifestPreviewResponseItems {
+func (e *ExportManifestPreviewResponse) GetPreview() *ExportManifestPreviewResponsePreview {
 	if e == nil {
 		return nil
 	}
-	return e.Items
+	return e.Preview
+}
+
+func (e *ExportManifestPreviewResponse) GetError() *string {
+	if e == nil {
+		return nil
+	}
+	return e.Error
 }
 
 func (e *ExportManifestPreviewResponse) GetExtraProperties() map[string]interface{} {
@@ -163,18 +195,25 @@ func (e *ExportManifestPreviewResponse) require(field *big.Int) {
 	e.explicitFields.Or(e.explicitFields, field)
 }
 
-// SetCounts sets the Counts field and marks it as non-optional;
+// SetSuccess sets the Success field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponse) SetCounts(counts *ExportManifestPreviewResponseCounts) {
-	e.Counts = counts
-	e.require(exportManifestPreviewResponseFieldCounts)
+func (e *ExportManifestPreviewResponse) SetSuccess(success *bool) {
+	e.Success = success
+	e.require(exportManifestPreviewResponseFieldSuccess)
 }
 
-// SetItems sets the Items field and marks it as non-optional;
+// SetPreview sets the Preview field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponse) SetItems(items *ExportManifestPreviewResponseItems) {
-	e.Items = items
-	e.require(exportManifestPreviewResponseFieldItems)
+func (e *ExportManifestPreviewResponse) SetPreview(preview *ExportManifestPreviewResponsePreview) {
+	e.Preview = preview
+	e.require(exportManifestPreviewResponseFieldPreview)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestPreviewResponse) SetError(error_ *string) {
+	e.Error = error_
+	e.require(exportManifestPreviewResponseFieldError)
 }
 
 func (e *ExportManifestPreviewResponse) UnmarshalJSON(data []byte) error {
@@ -216,14 +255,109 @@ func (e *ExportManifestPreviewResponse) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
+// Preview of assets that would be exported.
 var (
-	exportManifestPreviewResponseCountsFieldRules    = big.NewInt(1 << 0)
-	exportManifestPreviewResponseCountsFieldFlows    = big.NewInt(1 << 1)
-	exportManifestPreviewResponseCountsFieldContexts = big.NewInt(1 << 2)
-	exportManifestPreviewResponseCountsFieldValues   = big.NewInt(1 << 3)
+	exportManifestPreviewResponsePreviewFieldCounts = big.NewInt(1 << 0)
+	exportManifestPreviewResponsePreviewFieldItems  = big.NewInt(1 << 1)
 )
 
-type ExportManifestPreviewResponseCounts struct {
+type ExportManifestPreviewResponsePreview struct {
+	Counts *ExportManifestPreviewResponsePreviewCounts `json:"counts,omitempty" url:"counts,omitempty"`
+	Items  *ExportManifestPreviewResponsePreviewItems  `json:"items,omitempty" url:"items,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (e *ExportManifestPreviewResponsePreview) GetCounts() *ExportManifestPreviewResponsePreviewCounts {
+	if e == nil {
+		return nil
+	}
+	return e.Counts
+}
+
+func (e *ExportManifestPreviewResponsePreview) GetItems() *ExportManifestPreviewResponsePreviewItems {
+	if e == nil {
+		return nil
+	}
+	return e.Items
+}
+
+func (e *ExportManifestPreviewResponsePreview) GetExtraProperties() map[string]interface{} {
+	return e.extraProperties
+}
+
+func (e *ExportManifestPreviewResponsePreview) require(field *big.Int) {
+	if e.explicitFields == nil {
+		e.explicitFields = big.NewInt(0)
+	}
+	e.explicitFields.Or(e.explicitFields, field)
+}
+
+// SetCounts sets the Counts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestPreviewResponsePreview) SetCounts(counts *ExportManifestPreviewResponsePreviewCounts) {
+	e.Counts = counts
+	e.require(exportManifestPreviewResponsePreviewFieldCounts)
+}
+
+// SetItems sets the Items field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestPreviewResponsePreview) SetItems(items *ExportManifestPreviewResponsePreviewItems) {
+	e.Items = items
+	e.require(exportManifestPreviewResponsePreviewFieldItems)
+}
+
+func (e *ExportManifestPreviewResponsePreview) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExportManifestPreviewResponsePreview
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*e = ExportManifestPreviewResponsePreview(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *e)
+	if err != nil {
+		return err
+	}
+	e.extraProperties = extraProperties
+	e.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (e *ExportManifestPreviewResponsePreview) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestPreviewResponsePreview
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*e),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, e.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (e *ExportManifestPreviewResponsePreview) String() string {
+	if len(e.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(e); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", e)
+}
+
+var (
+	exportManifestPreviewResponsePreviewCountsFieldRules    = big.NewInt(1 << 0)
+	exportManifestPreviewResponsePreviewCountsFieldFlows    = big.NewInt(1 << 1)
+	exportManifestPreviewResponsePreviewCountsFieldContexts = big.NewInt(1 << 2)
+	exportManifestPreviewResponsePreviewCountsFieldValues   = big.NewInt(1 << 3)
+)
+
+type ExportManifestPreviewResponsePreviewCounts struct {
 	Rules    *int `json:"rules,omitempty" url:"rules,omitempty"`
 	Flows    *int `json:"flows,omitempty" url:"flows,omitempty"`
 	Contexts *int `json:"contexts,omitempty" url:"contexts,omitempty"`
@@ -236,39 +370,39 @@ type ExportManifestPreviewResponseCounts struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *ExportManifestPreviewResponseCounts) GetRules() *int {
+func (e *ExportManifestPreviewResponsePreviewCounts) GetRules() *int {
 	if e == nil {
 		return nil
 	}
 	return e.Rules
 }
 
-func (e *ExportManifestPreviewResponseCounts) GetFlows() *int {
+func (e *ExportManifestPreviewResponsePreviewCounts) GetFlows() *int {
 	if e == nil {
 		return nil
 	}
 	return e.Flows
 }
 
-func (e *ExportManifestPreviewResponseCounts) GetContexts() *int {
+func (e *ExportManifestPreviewResponsePreviewCounts) GetContexts() *int {
 	if e == nil {
 		return nil
 	}
 	return e.Contexts
 }
 
-func (e *ExportManifestPreviewResponseCounts) GetValues() *int {
+func (e *ExportManifestPreviewResponsePreviewCounts) GetValues() *int {
 	if e == nil {
 		return nil
 	}
 	return e.Values
 }
 
-func (e *ExportManifestPreviewResponseCounts) GetExtraProperties() map[string]interface{} {
+func (e *ExportManifestPreviewResponsePreviewCounts) GetExtraProperties() map[string]interface{} {
 	return e.extraProperties
 }
 
-func (e *ExportManifestPreviewResponseCounts) require(field *big.Int) {
+func (e *ExportManifestPreviewResponsePreviewCounts) require(field *big.Int) {
 	if e.explicitFields == nil {
 		e.explicitFields = big.NewInt(0)
 	}
@@ -277,39 +411,39 @@ func (e *ExportManifestPreviewResponseCounts) require(field *big.Int) {
 
 // SetRules sets the Rules field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseCounts) SetRules(rules *int) {
+func (e *ExportManifestPreviewResponsePreviewCounts) SetRules(rules *int) {
 	e.Rules = rules
-	e.require(exportManifestPreviewResponseCountsFieldRules)
+	e.require(exportManifestPreviewResponsePreviewCountsFieldRules)
 }
 
 // SetFlows sets the Flows field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseCounts) SetFlows(flows *int) {
+func (e *ExportManifestPreviewResponsePreviewCounts) SetFlows(flows *int) {
 	e.Flows = flows
-	e.require(exportManifestPreviewResponseCountsFieldFlows)
+	e.require(exportManifestPreviewResponsePreviewCountsFieldFlows)
 }
 
 // SetContexts sets the Contexts field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseCounts) SetContexts(contexts *int) {
+func (e *ExportManifestPreviewResponsePreviewCounts) SetContexts(contexts *int) {
 	e.Contexts = contexts
-	e.require(exportManifestPreviewResponseCountsFieldContexts)
+	e.require(exportManifestPreviewResponsePreviewCountsFieldContexts)
 }
 
 // SetValues sets the Values field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseCounts) SetValues(values *int) {
+func (e *ExportManifestPreviewResponsePreviewCounts) SetValues(values *int) {
 	e.Values = values
-	e.require(exportManifestPreviewResponseCountsFieldValues)
+	e.require(exportManifestPreviewResponsePreviewCountsFieldValues)
 }
 
-func (e *ExportManifestPreviewResponseCounts) UnmarshalJSON(data []byte) error {
-	type unmarshaler ExportManifestPreviewResponseCounts
+func (e *ExportManifestPreviewResponsePreviewCounts) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExportManifestPreviewResponsePreviewCounts
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*e = ExportManifestPreviewResponseCounts(value)
+	*e = ExportManifestPreviewResponsePreviewCounts(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *e)
 	if err != nil {
 		return err
@@ -319,8 +453,8 @@ func (e *ExportManifestPreviewResponseCounts) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e *ExportManifestPreviewResponseCounts) MarshalJSON() ([]byte, error) {
-	type embed ExportManifestPreviewResponseCounts
+func (e *ExportManifestPreviewResponsePreviewCounts) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestPreviewResponsePreviewCounts
 	var marshaler = struct {
 		embed
 	}{
@@ -330,7 +464,7 @@ func (e *ExportManifestPreviewResponseCounts) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (e *ExportManifestPreviewResponseCounts) String() string {
+func (e *ExportManifestPreviewResponsePreviewCounts) String() string {
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -343,17 +477,17 @@ func (e *ExportManifestPreviewResponseCounts) String() string {
 }
 
 var (
-	exportManifestPreviewResponseItemsFieldRules    = big.NewInt(1 << 0)
-	exportManifestPreviewResponseItemsFieldFlows    = big.NewInt(1 << 1)
-	exportManifestPreviewResponseItemsFieldContexts = big.NewInt(1 << 2)
-	exportManifestPreviewResponseItemsFieldValues   = big.NewInt(1 << 3)
+	exportManifestPreviewResponsePreviewItemsFieldRules    = big.NewInt(1 << 0)
+	exportManifestPreviewResponsePreviewItemsFieldFlows    = big.NewInt(1 << 1)
+	exportManifestPreviewResponsePreviewItemsFieldContexts = big.NewInt(1 << 2)
+	exportManifestPreviewResponsePreviewItemsFieldValues   = big.NewInt(1 << 3)
 )
 
-type ExportManifestPreviewResponseItems struct {
-	Rules    []*ExportManifestPreviewResponseItemsRulesItem    `json:"rules,omitempty" url:"rules,omitempty"`
-	Flows    []*ExportManifestPreviewResponseItemsFlowsItem    `json:"flows,omitempty" url:"flows,omitempty"`
-	Contexts []*ExportManifestPreviewResponseItemsContextsItem `json:"contexts,omitempty" url:"contexts,omitempty"`
-	Values   []*ExportManifestPreviewResponseItemsValuesItem   `json:"values,omitempty" url:"values,omitempty"`
+type ExportManifestPreviewResponsePreviewItems struct {
+	Rules    []*ExportManifestPreviewResponsePreviewItemsRulesItem    `json:"rules,omitempty" url:"rules,omitempty"`
+	Flows    []*ExportManifestPreviewResponsePreviewItemsFlowsItem    `json:"flows,omitempty" url:"flows,omitempty"`
+	Contexts []*ExportManifestPreviewResponsePreviewItemsContextsItem `json:"contexts,omitempty" url:"contexts,omitempty"`
+	Values   []*ExportManifestPreviewResponsePreviewItemsValuesItem   `json:"values,omitempty" url:"values,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -362,39 +496,39 @@ type ExportManifestPreviewResponseItems struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *ExportManifestPreviewResponseItems) GetRules() []*ExportManifestPreviewResponseItemsRulesItem {
+func (e *ExportManifestPreviewResponsePreviewItems) GetRules() []*ExportManifestPreviewResponsePreviewItemsRulesItem {
 	if e == nil {
 		return nil
 	}
 	return e.Rules
 }
 
-func (e *ExportManifestPreviewResponseItems) GetFlows() []*ExportManifestPreviewResponseItemsFlowsItem {
+func (e *ExportManifestPreviewResponsePreviewItems) GetFlows() []*ExportManifestPreviewResponsePreviewItemsFlowsItem {
 	if e == nil {
 		return nil
 	}
 	return e.Flows
 }
 
-func (e *ExportManifestPreviewResponseItems) GetContexts() []*ExportManifestPreviewResponseItemsContextsItem {
+func (e *ExportManifestPreviewResponsePreviewItems) GetContexts() []*ExportManifestPreviewResponsePreviewItemsContextsItem {
 	if e == nil {
 		return nil
 	}
 	return e.Contexts
 }
 
-func (e *ExportManifestPreviewResponseItems) GetValues() []*ExportManifestPreviewResponseItemsValuesItem {
+func (e *ExportManifestPreviewResponsePreviewItems) GetValues() []*ExportManifestPreviewResponsePreviewItemsValuesItem {
 	if e == nil {
 		return nil
 	}
 	return e.Values
 }
 
-func (e *ExportManifestPreviewResponseItems) GetExtraProperties() map[string]interface{} {
+func (e *ExportManifestPreviewResponsePreviewItems) GetExtraProperties() map[string]interface{} {
 	return e.extraProperties
 }
 
-func (e *ExportManifestPreviewResponseItems) require(field *big.Int) {
+func (e *ExportManifestPreviewResponsePreviewItems) require(field *big.Int) {
 	if e.explicitFields == nil {
 		e.explicitFields = big.NewInt(0)
 	}
@@ -403,39 +537,39 @@ func (e *ExportManifestPreviewResponseItems) require(field *big.Int) {
 
 // SetRules sets the Rules field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItems) SetRules(rules []*ExportManifestPreviewResponseItemsRulesItem) {
+func (e *ExportManifestPreviewResponsePreviewItems) SetRules(rules []*ExportManifestPreviewResponsePreviewItemsRulesItem) {
 	e.Rules = rules
-	e.require(exportManifestPreviewResponseItemsFieldRules)
+	e.require(exportManifestPreviewResponsePreviewItemsFieldRules)
 }
 
 // SetFlows sets the Flows field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItems) SetFlows(flows []*ExportManifestPreviewResponseItemsFlowsItem) {
+func (e *ExportManifestPreviewResponsePreviewItems) SetFlows(flows []*ExportManifestPreviewResponsePreviewItemsFlowsItem) {
 	e.Flows = flows
-	e.require(exportManifestPreviewResponseItemsFieldFlows)
+	e.require(exportManifestPreviewResponsePreviewItemsFieldFlows)
 }
 
 // SetContexts sets the Contexts field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItems) SetContexts(contexts []*ExportManifestPreviewResponseItemsContextsItem) {
+func (e *ExportManifestPreviewResponsePreviewItems) SetContexts(contexts []*ExportManifestPreviewResponsePreviewItemsContextsItem) {
 	e.Contexts = contexts
-	e.require(exportManifestPreviewResponseItemsFieldContexts)
+	e.require(exportManifestPreviewResponsePreviewItemsFieldContexts)
 }
 
 // SetValues sets the Values field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItems) SetValues(values []*ExportManifestPreviewResponseItemsValuesItem) {
+func (e *ExportManifestPreviewResponsePreviewItems) SetValues(values []*ExportManifestPreviewResponsePreviewItemsValuesItem) {
 	e.Values = values
-	e.require(exportManifestPreviewResponseItemsFieldValues)
+	e.require(exportManifestPreviewResponsePreviewItemsFieldValues)
 }
 
-func (e *ExportManifestPreviewResponseItems) UnmarshalJSON(data []byte) error {
-	type unmarshaler ExportManifestPreviewResponseItems
+func (e *ExportManifestPreviewResponsePreviewItems) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExportManifestPreviewResponsePreviewItems
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*e = ExportManifestPreviewResponseItems(value)
+	*e = ExportManifestPreviewResponsePreviewItems(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *e)
 	if err != nil {
 		return err
@@ -445,8 +579,8 @@ func (e *ExportManifestPreviewResponseItems) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e *ExportManifestPreviewResponseItems) MarshalJSON() ([]byte, error) {
-	type embed ExportManifestPreviewResponseItems
+func (e *ExportManifestPreviewResponsePreviewItems) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestPreviewResponsePreviewItems
 	var marshaler = struct {
 		embed
 	}{
@@ -456,7 +590,7 @@ func (e *ExportManifestPreviewResponseItems) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (e *ExportManifestPreviewResponseItems) String() string {
+func (e *ExportManifestPreviewResponsePreviewItems) String() string {
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -469,12 +603,12 @@ func (e *ExportManifestPreviewResponseItems) String() string {
 }
 
 var (
-	exportManifestPreviewResponseItemsContextsItemFieldID   = big.NewInt(1 << 0)
-	exportManifestPreviewResponseItemsContextsItemFieldName = big.NewInt(1 << 1)
-	exportManifestPreviewResponseItemsContextsItemFieldSlug = big.NewInt(1 << 2)
+	exportManifestPreviewResponsePreviewItemsContextsItemFieldID   = big.NewInt(1 << 0)
+	exportManifestPreviewResponsePreviewItemsContextsItemFieldName = big.NewInt(1 << 1)
+	exportManifestPreviewResponsePreviewItemsContextsItemFieldSlug = big.NewInt(1 << 2)
 )
 
-type ExportManifestPreviewResponseItemsContextsItem struct {
+type ExportManifestPreviewResponsePreviewItemsContextsItem struct {
 	ID   *string `json:"id,omitempty" url:"id,omitempty"`
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
@@ -486,32 +620,32 @@ type ExportManifestPreviewResponseItemsContextsItem struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *ExportManifestPreviewResponseItemsContextsItem) GetID() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) GetID() *string {
 	if e == nil {
 		return nil
 	}
 	return e.ID
 }
 
-func (e *ExportManifestPreviewResponseItemsContextsItem) GetName() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) GetName() *string {
 	if e == nil {
 		return nil
 	}
 	return e.Name
 }
 
-func (e *ExportManifestPreviewResponseItemsContextsItem) GetSlug() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) GetSlug() *string {
 	if e == nil {
 		return nil
 	}
 	return e.Slug
 }
 
-func (e *ExportManifestPreviewResponseItemsContextsItem) GetExtraProperties() map[string]interface{} {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) GetExtraProperties() map[string]interface{} {
 	return e.extraProperties
 }
 
-func (e *ExportManifestPreviewResponseItemsContextsItem) require(field *big.Int) {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) require(field *big.Int) {
 	if e.explicitFields == nil {
 		e.explicitFields = big.NewInt(0)
 	}
@@ -520,32 +654,32 @@ func (e *ExportManifestPreviewResponseItemsContextsItem) require(field *big.Int)
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsContextsItem) SetID(id *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) SetID(id *string) {
 	e.ID = id
-	e.require(exportManifestPreviewResponseItemsContextsItemFieldID)
+	e.require(exportManifestPreviewResponsePreviewItemsContextsItemFieldID)
 }
 
 // SetName sets the Name field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsContextsItem) SetName(name *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) SetName(name *string) {
 	e.Name = name
-	e.require(exportManifestPreviewResponseItemsContextsItemFieldName)
+	e.require(exportManifestPreviewResponsePreviewItemsContextsItemFieldName)
 }
 
 // SetSlug sets the Slug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsContextsItem) SetSlug(slug *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) SetSlug(slug *string) {
 	e.Slug = slug
-	e.require(exportManifestPreviewResponseItemsContextsItemFieldSlug)
+	e.require(exportManifestPreviewResponsePreviewItemsContextsItemFieldSlug)
 }
 
-func (e *ExportManifestPreviewResponseItemsContextsItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ExportManifestPreviewResponseItemsContextsItem
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExportManifestPreviewResponsePreviewItemsContextsItem
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*e = ExportManifestPreviewResponseItemsContextsItem(value)
+	*e = ExportManifestPreviewResponsePreviewItemsContextsItem(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *e)
 	if err != nil {
 		return err
@@ -555,8 +689,8 @@ func (e *ExportManifestPreviewResponseItemsContextsItem) UnmarshalJSON(data []by
 	return nil
 }
 
-func (e *ExportManifestPreviewResponseItemsContextsItem) MarshalJSON() ([]byte, error) {
-	type embed ExportManifestPreviewResponseItemsContextsItem
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestPreviewResponsePreviewItemsContextsItem
 	var marshaler = struct {
 		embed
 	}{
@@ -566,7 +700,7 @@ func (e *ExportManifestPreviewResponseItemsContextsItem) MarshalJSON() ([]byte, 
 	return json.Marshal(explicitMarshaler)
 }
 
-func (e *ExportManifestPreviewResponseItemsContextsItem) String() string {
+func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) String() string {
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -579,12 +713,12 @@ func (e *ExportManifestPreviewResponseItemsContextsItem) String() string {
 }
 
 var (
-	exportManifestPreviewResponseItemsFlowsItemFieldID   = big.NewInt(1 << 0)
-	exportManifestPreviewResponseItemsFlowsItemFieldName = big.NewInt(1 << 1)
-	exportManifestPreviewResponseItemsFlowsItemFieldSlug = big.NewInt(1 << 2)
+	exportManifestPreviewResponsePreviewItemsFlowsItemFieldID   = big.NewInt(1 << 0)
+	exportManifestPreviewResponsePreviewItemsFlowsItemFieldName = big.NewInt(1 << 1)
+	exportManifestPreviewResponsePreviewItemsFlowsItemFieldSlug = big.NewInt(1 << 2)
 )
 
-type ExportManifestPreviewResponseItemsFlowsItem struct {
+type ExportManifestPreviewResponsePreviewItemsFlowsItem struct {
 	ID   *string `json:"id,omitempty" url:"id,omitempty"`
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
@@ -596,32 +730,32 @@ type ExportManifestPreviewResponseItemsFlowsItem struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *ExportManifestPreviewResponseItemsFlowsItem) GetID() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) GetID() *string {
 	if e == nil {
 		return nil
 	}
 	return e.ID
 }
 
-func (e *ExportManifestPreviewResponseItemsFlowsItem) GetName() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) GetName() *string {
 	if e == nil {
 		return nil
 	}
 	return e.Name
 }
 
-func (e *ExportManifestPreviewResponseItemsFlowsItem) GetSlug() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) GetSlug() *string {
 	if e == nil {
 		return nil
 	}
 	return e.Slug
 }
 
-func (e *ExportManifestPreviewResponseItemsFlowsItem) GetExtraProperties() map[string]interface{} {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) GetExtraProperties() map[string]interface{} {
 	return e.extraProperties
 }
 
-func (e *ExportManifestPreviewResponseItemsFlowsItem) require(field *big.Int) {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) require(field *big.Int) {
 	if e.explicitFields == nil {
 		e.explicitFields = big.NewInt(0)
 	}
@@ -630,32 +764,32 @@ func (e *ExportManifestPreviewResponseItemsFlowsItem) require(field *big.Int) {
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsFlowsItem) SetID(id *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) SetID(id *string) {
 	e.ID = id
-	e.require(exportManifestPreviewResponseItemsFlowsItemFieldID)
+	e.require(exportManifestPreviewResponsePreviewItemsFlowsItemFieldID)
 }
 
 // SetName sets the Name field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsFlowsItem) SetName(name *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) SetName(name *string) {
 	e.Name = name
-	e.require(exportManifestPreviewResponseItemsFlowsItemFieldName)
+	e.require(exportManifestPreviewResponsePreviewItemsFlowsItemFieldName)
 }
 
 // SetSlug sets the Slug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsFlowsItem) SetSlug(slug *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) SetSlug(slug *string) {
 	e.Slug = slug
-	e.require(exportManifestPreviewResponseItemsFlowsItemFieldSlug)
+	e.require(exportManifestPreviewResponsePreviewItemsFlowsItemFieldSlug)
 }
 
-func (e *ExportManifestPreviewResponseItemsFlowsItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ExportManifestPreviewResponseItemsFlowsItem
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExportManifestPreviewResponsePreviewItemsFlowsItem
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*e = ExportManifestPreviewResponseItemsFlowsItem(value)
+	*e = ExportManifestPreviewResponsePreviewItemsFlowsItem(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *e)
 	if err != nil {
 		return err
@@ -665,8 +799,8 @@ func (e *ExportManifestPreviewResponseItemsFlowsItem) UnmarshalJSON(data []byte)
 	return nil
 }
 
-func (e *ExportManifestPreviewResponseItemsFlowsItem) MarshalJSON() ([]byte, error) {
-	type embed ExportManifestPreviewResponseItemsFlowsItem
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestPreviewResponsePreviewItemsFlowsItem
 	var marshaler = struct {
 		embed
 	}{
@@ -676,7 +810,7 @@ func (e *ExportManifestPreviewResponseItemsFlowsItem) MarshalJSON() ([]byte, err
 	return json.Marshal(explicitMarshaler)
 }
 
-func (e *ExportManifestPreviewResponseItemsFlowsItem) String() string {
+func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) String() string {
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -689,12 +823,12 @@ func (e *ExportManifestPreviewResponseItemsFlowsItem) String() string {
 }
 
 var (
-	exportManifestPreviewResponseItemsRulesItemFieldID   = big.NewInt(1 << 0)
-	exportManifestPreviewResponseItemsRulesItemFieldName = big.NewInt(1 << 1)
-	exportManifestPreviewResponseItemsRulesItemFieldSlug = big.NewInt(1 << 2)
+	exportManifestPreviewResponsePreviewItemsRulesItemFieldID   = big.NewInt(1 << 0)
+	exportManifestPreviewResponsePreviewItemsRulesItemFieldName = big.NewInt(1 << 1)
+	exportManifestPreviewResponsePreviewItemsRulesItemFieldSlug = big.NewInt(1 << 2)
 )
 
-type ExportManifestPreviewResponseItemsRulesItem struct {
+type ExportManifestPreviewResponsePreviewItemsRulesItem struct {
 	ID   *string `json:"id,omitempty" url:"id,omitempty"`
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
@@ -706,32 +840,32 @@ type ExportManifestPreviewResponseItemsRulesItem struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *ExportManifestPreviewResponseItemsRulesItem) GetID() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) GetID() *string {
 	if e == nil {
 		return nil
 	}
 	return e.ID
 }
 
-func (e *ExportManifestPreviewResponseItemsRulesItem) GetName() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) GetName() *string {
 	if e == nil {
 		return nil
 	}
 	return e.Name
 }
 
-func (e *ExportManifestPreviewResponseItemsRulesItem) GetSlug() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) GetSlug() *string {
 	if e == nil {
 		return nil
 	}
 	return e.Slug
 }
 
-func (e *ExportManifestPreviewResponseItemsRulesItem) GetExtraProperties() map[string]interface{} {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) GetExtraProperties() map[string]interface{} {
 	return e.extraProperties
 }
 
-func (e *ExportManifestPreviewResponseItemsRulesItem) require(field *big.Int) {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) require(field *big.Int) {
 	if e.explicitFields == nil {
 		e.explicitFields = big.NewInt(0)
 	}
@@ -740,32 +874,32 @@ func (e *ExportManifestPreviewResponseItemsRulesItem) require(field *big.Int) {
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsRulesItem) SetID(id *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) SetID(id *string) {
 	e.ID = id
-	e.require(exportManifestPreviewResponseItemsRulesItemFieldID)
+	e.require(exportManifestPreviewResponsePreviewItemsRulesItemFieldID)
 }
 
 // SetName sets the Name field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsRulesItem) SetName(name *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) SetName(name *string) {
 	e.Name = name
-	e.require(exportManifestPreviewResponseItemsRulesItemFieldName)
+	e.require(exportManifestPreviewResponsePreviewItemsRulesItemFieldName)
 }
 
 // SetSlug sets the Slug field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsRulesItem) SetSlug(slug *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) SetSlug(slug *string) {
 	e.Slug = slug
-	e.require(exportManifestPreviewResponseItemsRulesItemFieldSlug)
+	e.require(exportManifestPreviewResponsePreviewItemsRulesItemFieldSlug)
 }
 
-func (e *ExportManifestPreviewResponseItemsRulesItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ExportManifestPreviewResponseItemsRulesItem
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExportManifestPreviewResponsePreviewItemsRulesItem
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*e = ExportManifestPreviewResponseItemsRulesItem(value)
+	*e = ExportManifestPreviewResponsePreviewItemsRulesItem(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *e)
 	if err != nil {
 		return err
@@ -775,8 +909,8 @@ func (e *ExportManifestPreviewResponseItemsRulesItem) UnmarshalJSON(data []byte)
 	return nil
 }
 
-func (e *ExportManifestPreviewResponseItemsRulesItem) MarshalJSON() ([]byte, error) {
-	type embed ExportManifestPreviewResponseItemsRulesItem
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestPreviewResponsePreviewItemsRulesItem
 	var marshaler = struct {
 		embed
 	}{
@@ -786,7 +920,7 @@ func (e *ExportManifestPreviewResponseItemsRulesItem) MarshalJSON() ([]byte, err
 	return json.Marshal(explicitMarshaler)
 }
 
-func (e *ExportManifestPreviewResponseItemsRulesItem) String() string {
+func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) String() string {
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -799,11 +933,11 @@ func (e *ExportManifestPreviewResponseItemsRulesItem) String() string {
 }
 
 var (
-	exportManifestPreviewResponseItemsValuesItemFieldID   = big.NewInt(1 << 0)
-	exportManifestPreviewResponseItemsValuesItemFieldName = big.NewInt(1 << 1)
+	exportManifestPreviewResponsePreviewItemsValuesItemFieldID   = big.NewInt(1 << 0)
+	exportManifestPreviewResponsePreviewItemsValuesItemFieldName = big.NewInt(1 << 1)
 )
 
-type ExportManifestPreviewResponseItemsValuesItem struct {
+type ExportManifestPreviewResponsePreviewItemsValuesItem struct {
 	ID   *string `json:"id,omitempty" url:"id,omitempty"`
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 
@@ -814,25 +948,25 @@ type ExportManifestPreviewResponseItemsValuesItem struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *ExportManifestPreviewResponseItemsValuesItem) GetID() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) GetID() *string {
 	if e == nil {
 		return nil
 	}
 	return e.ID
 }
 
-func (e *ExportManifestPreviewResponseItemsValuesItem) GetName() *string {
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) GetName() *string {
 	if e == nil {
 		return nil
 	}
 	return e.Name
 }
 
-func (e *ExportManifestPreviewResponseItemsValuesItem) GetExtraProperties() map[string]interface{} {
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) GetExtraProperties() map[string]interface{} {
 	return e.extraProperties
 }
 
-func (e *ExportManifestPreviewResponseItemsValuesItem) require(field *big.Int) {
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) require(field *big.Int) {
 	if e.explicitFields == nil {
 		e.explicitFields = big.NewInt(0)
 	}
@@ -841,25 +975,25 @@ func (e *ExportManifestPreviewResponseItemsValuesItem) require(field *big.Int) {
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsValuesItem) SetID(id *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) SetID(id *string) {
 	e.ID = id
-	e.require(exportManifestPreviewResponseItemsValuesItemFieldID)
+	e.require(exportManifestPreviewResponsePreviewItemsValuesItemFieldID)
 }
 
 // SetName sets the Name field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestPreviewResponseItemsValuesItem) SetName(name *string) {
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) SetName(name *string) {
 	e.Name = name
-	e.require(exportManifestPreviewResponseItemsValuesItemFieldName)
+	e.require(exportManifestPreviewResponsePreviewItemsValuesItemFieldName)
 }
 
-func (e *ExportManifestPreviewResponseItemsValuesItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler ExportManifestPreviewResponseItemsValuesItem
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExportManifestPreviewResponsePreviewItemsValuesItem
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*e = ExportManifestPreviewResponseItemsValuesItem(value)
+	*e = ExportManifestPreviewResponsePreviewItemsValuesItem(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *e)
 	if err != nil {
 		return err
@@ -869,8 +1003,8 @@ func (e *ExportManifestPreviewResponseItemsValuesItem) UnmarshalJSON(data []byte
 	return nil
 }
 
-func (e *ExportManifestPreviewResponseItemsValuesItem) MarshalJSON() ([]byte, error) {
-	type embed ExportManifestPreviewResponseItemsValuesItem
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestPreviewResponsePreviewItemsValuesItem
 	var marshaler = struct {
 		embed
 	}{
@@ -880,7 +1014,7 @@ func (e *ExportManifestPreviewResponseItemsValuesItem) MarshalJSON() ([]byte, er
 	return json.Marshal(explicitMarshaler)
 }
 
-func (e *ExportManifestPreviewResponseItemsValuesItem) String() string {
+func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) String() string {
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -893,22 +1027,18 @@ func (e *ExportManifestPreviewResponseItemsValuesItem) String() string {
 }
 
 var (
-	exportManifestResponseFieldVersion    = big.NewInt(1 << 0)
-	exportManifestResponseFieldExportedAt = big.NewInt(1 << 1)
-	exportManifestResponseFieldRules      = big.NewInt(1 << 2)
-	exportManifestResponseFieldFlows      = big.NewInt(1 << 3)
-	exportManifestResponseFieldContexts   = big.NewInt(1 << 4)
-	exportManifestResponseFieldValues     = big.NewInt(1 << 5)
+	exportManifestResponseFieldSuccess  = big.NewInt(1 << 0)
+	exportManifestResponseFieldManifest = big.NewInt(1 << 1)
+	exportManifestResponseFieldError    = big.NewInt(1 << 2)
 )
 
 type ExportManifestResponse struct {
-	// Manifest format version.
-	Version    *string                  `json:"version,omitempty" url:"version,omitempty"`
-	ExportedAt *time.Time               `json:"exported_at,omitempty" url:"exported_at,omitempty"`
-	Rules      []map[string]interface{} `json:"rules,omitempty" url:"rules,omitempty"`
-	Flows      []map[string]interface{} `json:"flows,omitempty" url:"flows,omitempty"`
-	Contexts   []map[string]interface{} `json:"contexts,omitempty" url:"contexts,omitempty"`
-	Values     []map[string]interface{} `json:"values,omitempty" url:"values,omitempty"`
+	// Whether the export completed successfully.
+	Success *bool `json:"success,omitempty" url:"success,omitempty"`
+	// The exported manifest data.
+	Manifest *ExportManifestResponseManifest `json:"manifest,omitempty" url:"manifest,omitempty"`
+	// Error message if export failed.
+	Error *string `json:"error,omitempty" url:"error,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -917,46 +1047,25 @@ type ExportManifestResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (e *ExportManifestResponse) GetVersion() *string {
+func (e *ExportManifestResponse) GetSuccess() *bool {
 	if e == nil {
 		return nil
 	}
-	return e.Version
+	return e.Success
 }
 
-func (e *ExportManifestResponse) GetExportedAt() *time.Time {
+func (e *ExportManifestResponse) GetManifest() *ExportManifestResponseManifest {
 	if e == nil {
 		return nil
 	}
-	return e.ExportedAt
+	return e.Manifest
 }
 
-func (e *ExportManifestResponse) GetRules() []map[string]interface{} {
+func (e *ExportManifestResponse) GetError() *string {
 	if e == nil {
 		return nil
 	}
-	return e.Rules
-}
-
-func (e *ExportManifestResponse) GetFlows() []map[string]interface{} {
-	if e == nil {
-		return nil
-	}
-	return e.Flows
-}
-
-func (e *ExportManifestResponse) GetContexts() []map[string]interface{} {
-	if e == nil {
-		return nil
-	}
-	return e.Contexts
-}
-
-func (e *ExportManifestResponse) GetValues() []map[string]interface{} {
-	if e == nil {
-		return nil
-	}
-	return e.Values
+	return e.Error
 }
 
 func (e *ExportManifestResponse) GetExtraProperties() map[string]interface{} {
@@ -970,61 +1079,34 @@ func (e *ExportManifestResponse) require(field *big.Int) {
 	e.explicitFields.Or(e.explicitFields, field)
 }
 
-// SetVersion sets the Version field and marks it as non-optional;
+// SetSuccess sets the Success field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponse) SetVersion(version *string) {
-	e.Version = version
-	e.require(exportManifestResponseFieldVersion)
+func (e *ExportManifestResponse) SetSuccess(success *bool) {
+	e.Success = success
+	e.require(exportManifestResponseFieldSuccess)
 }
 
-// SetExportedAt sets the ExportedAt field and marks it as non-optional;
+// SetManifest sets the Manifest field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponse) SetExportedAt(exportedAt *time.Time) {
-	e.ExportedAt = exportedAt
-	e.require(exportManifestResponseFieldExportedAt)
+func (e *ExportManifestResponse) SetManifest(manifest *ExportManifestResponseManifest) {
+	e.Manifest = manifest
+	e.require(exportManifestResponseFieldManifest)
 }
 
-// SetRules sets the Rules field and marks it as non-optional;
+// SetError sets the Error field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponse) SetRules(rules []map[string]interface{}) {
-	e.Rules = rules
-	e.require(exportManifestResponseFieldRules)
-}
-
-// SetFlows sets the Flows field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponse) SetFlows(flows []map[string]interface{}) {
-	e.Flows = flows
-	e.require(exportManifestResponseFieldFlows)
-}
-
-// SetContexts sets the Contexts field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponse) SetContexts(contexts []map[string]interface{}) {
-	e.Contexts = contexts
-	e.require(exportManifestResponseFieldContexts)
-}
-
-// SetValues sets the Values field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponse) SetValues(values []map[string]interface{}) {
-	e.Values = values
-	e.require(exportManifestResponseFieldValues)
+func (e *ExportManifestResponse) SetError(error_ *string) {
+	e.Error = error_
+	e.require(exportManifestResponseFieldError)
 }
 
 func (e *ExportManifestResponse) UnmarshalJSON(data []byte) error {
-	type embed ExportManifestResponse
-	var unmarshaler = struct {
-		embed
-		ExportedAt *internal.DateTime `json:"exported_at,omitempty"`
-	}{
-		embed: embed(*e),
-	}
-	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+	type unmarshaler ExportManifestResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*e = ExportManifestResponse(unmarshaler.embed)
-	e.ExportedAt = unmarshaler.ExportedAt.TimePtr()
+	*e = ExportManifestResponse(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *e)
 	if err != nil {
 		return err
@@ -1038,10 +1120,8 @@ func (e *ExportManifestResponse) MarshalJSON() ([]byte, error) {
 	type embed ExportManifestResponse
 	var marshaler = struct {
 		embed
-		ExportedAt *internal.DateTime `json:"exported_at,omitempty"`
 	}{
-		embed:      embed(*e),
-		ExportedAt: internal.NewOptionalDateTime(e.ExportedAt),
+		embed: embed(*e),
 	}
 	explicitMarshaler := internal.HandleExplicitFields(marshaler, e.explicitFields)
 	return json.Marshal(explicitMarshaler)
@@ -1059,22 +1139,34 @@ func (e *ExportManifestResponse) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
+// The exported manifest data.
 var (
-	importManifestResponseFieldMessage  = big.NewInt(1 << 0)
-	importManifestResponseFieldImported = big.NewInt(1 << 1)
-	importManifestResponseFieldSkipped  = big.NewInt(1 << 2)
-	importManifestResponseFieldErrors   = big.NewInt(1 << 3)
+	exportManifestResponseManifestFieldVersion     = big.NewInt(1 << 0)
+	exportManifestResponseManifestFieldName        = big.NewInt(1 << 1)
+	exportManifestResponseManifestFieldDescription = big.NewInt(1 << 2)
+	exportManifestResponseManifestFieldExportedAt  = big.NewInt(1 << 3)
+	exportManifestResponseManifestFieldContexts    = big.NewInt(1 << 4)
+	exportManifestResponseManifestFieldValues      = big.NewInt(1 << 5)
+	exportManifestResponseManifestFieldRules       = big.NewInt(1 << 6)
+	exportManifestResponseManifestFieldFlows       = big.NewInt(1 << 7)
 )
 
-type ImportManifestResponse struct {
-	// Success message.
-	Message *string `json:"message,omitempty" url:"message,omitempty"`
-	// Count of imported assets by type.
-	Imported *ImportManifestResponseImported `json:"imported,omitempty" url:"imported,omitempty"`
-	// Count of skipped assets by type (already exist and overwrite=false).
-	Skipped *ImportManifestResponseSkipped `json:"skipped,omitempty" url:"skipped,omitempty"`
-	// Any errors encountered during import.
-	Errors []*ImportManifestResponseErrorsItem `json:"errors,omitempty" url:"errors,omitempty"`
+type ExportManifestResponseManifest struct {
+	// Manifest format version.
+	Version *string `json:"version,omitempty" url:"version,omitempty"`
+	// Manifest name.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Manifest description.
+	Description *string    `json:"description,omitempty" url:"description,omitempty"`
+	ExportedAt  *time.Time `json:"exported_at,omitempty" url:"exported_at,omitempty"`
+	// Exported contexts.
+	Contexts []map[string]interface{} `json:"contexts,omitempty" url:"contexts,omitempty"`
+	// Exported dynamic values.
+	Values []map[string]interface{} `json:"values,omitempty" url:"values,omitempty"`
+	// Exported rules.
+	Rules []map[string]interface{} `json:"rules,omitempty" url:"rules,omitempty"`
+	// Exported flows.
+	Flows []map[string]interface{} `json:"flows,omitempty" url:"flows,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1083,21 +1175,231 @@ type ImportManifestResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (i *ImportManifestResponse) GetMessage() *string {
+func (e *ExportManifestResponseManifest) GetVersion() *string {
+	if e == nil {
+		return nil
+	}
+	return e.Version
+}
+
+func (e *ExportManifestResponseManifest) GetName() *string {
+	if e == nil {
+		return nil
+	}
+	return e.Name
+}
+
+func (e *ExportManifestResponseManifest) GetDescription() *string {
+	if e == nil {
+		return nil
+	}
+	return e.Description
+}
+
+func (e *ExportManifestResponseManifest) GetExportedAt() *time.Time {
+	if e == nil {
+		return nil
+	}
+	return e.ExportedAt
+}
+
+func (e *ExportManifestResponseManifest) GetContexts() []map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.Contexts
+}
+
+func (e *ExportManifestResponseManifest) GetValues() []map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.Values
+}
+
+func (e *ExportManifestResponseManifest) GetRules() []map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.Rules
+}
+
+func (e *ExportManifestResponseManifest) GetFlows() []map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.Flows
+}
+
+func (e *ExportManifestResponseManifest) GetExtraProperties() map[string]interface{} {
+	return e.extraProperties
+}
+
+func (e *ExportManifestResponseManifest) require(field *big.Int) {
+	if e.explicitFields == nil {
+		e.explicitFields = big.NewInt(0)
+	}
+	e.explicitFields.Or(e.explicitFields, field)
+}
+
+// SetVersion sets the Version field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestResponseManifest) SetVersion(version *string) {
+	e.Version = version
+	e.require(exportManifestResponseManifestFieldVersion)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestResponseManifest) SetName(name *string) {
+	e.Name = name
+	e.require(exportManifestResponseManifestFieldName)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestResponseManifest) SetDescription(description *string) {
+	e.Description = description
+	e.require(exportManifestResponseManifestFieldDescription)
+}
+
+// SetExportedAt sets the ExportedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestResponseManifest) SetExportedAt(exportedAt *time.Time) {
+	e.ExportedAt = exportedAt
+	e.require(exportManifestResponseManifestFieldExportedAt)
+}
+
+// SetContexts sets the Contexts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestResponseManifest) SetContexts(contexts []map[string]interface{}) {
+	e.Contexts = contexts
+	e.require(exportManifestResponseManifestFieldContexts)
+}
+
+// SetValues sets the Values field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestResponseManifest) SetValues(values []map[string]interface{}) {
+	e.Values = values
+	e.require(exportManifestResponseManifestFieldValues)
+}
+
+// SetRules sets the Rules field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestResponseManifest) SetRules(rules []map[string]interface{}) {
+	e.Rules = rules
+	e.require(exportManifestResponseManifestFieldRules)
+}
+
+// SetFlows sets the Flows field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestResponseManifest) SetFlows(flows []map[string]interface{}) {
+	e.Flows = flows
+	e.require(exportManifestResponseManifestFieldFlows)
+}
+
+func (e *ExportManifestResponseManifest) UnmarshalJSON(data []byte) error {
+	type embed ExportManifestResponseManifest
+	var unmarshaler = struct {
+		embed
+		ExportedAt *internal.DateTime `json:"exported_at,omitempty"`
+	}{
+		embed: embed(*e),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*e = ExportManifestResponseManifest(unmarshaler.embed)
+	e.ExportedAt = unmarshaler.ExportedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *e)
+	if err != nil {
+		return err
+	}
+	e.extraProperties = extraProperties
+	e.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (e *ExportManifestResponseManifest) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestResponseManifest
+	var marshaler = struct {
+		embed
+		ExportedAt *internal.DateTime `json:"exported_at,omitempty"`
+	}{
+		embed:      embed(*e),
+		ExportedAt: internal.NewOptionalDateTime(e.ExportedAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, e.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (e *ExportManifestResponseManifest) String() string {
+	if len(e.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(e); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", e)
+}
+
+var (
+	importManifestResponseFieldSuccess             = big.NewInt(1 << 0)
+	importManifestResponseFieldCreated             = big.NewInt(1 << 1)
+	importManifestResponseFieldUpdated             = big.NewInt(1 << 2)
+	importManifestResponseFieldSkipped             = big.NewInt(1 << 3)
+	importManifestResponseFieldErrors              = big.NewInt(1 << 4)
+	importManifestResponseFieldWarnings            = big.NewInt(1 << 5)
+	importManifestResponseFieldOrganizationCreated = big.NewInt(1 << 6)
+)
+
+type ImportManifestResponse struct {
+	// Whether the import completed successfully.
+	Success *bool `json:"success,omitempty" url:"success,omitempty"`
+	// Assets that were created during import.
+	Created []*ImportManifestResponseCreatedItem `json:"created,omitempty" url:"created,omitempty"`
+	// Assets that were updated during import.
+	Updated []*ImportManifestResponseUpdatedItem `json:"updated,omitempty" url:"updated,omitempty"`
+	// Assets that were skipped during import.
+	Skipped []*ImportManifestResponseSkippedItem `json:"skipped,omitempty" url:"skipped,omitempty"`
+	// Any errors encountered during import.
+	Errors []*ImportManifestResponseErrorsItem `json:"errors,omitempty" url:"errors,omitempty"`
+	// Non-fatal warnings from import validation.
+	Warnings []string `json:"warnings,omitempty" url:"warnings,omitempty"`
+	// IDs of any organizational folders created during import.
+	OrganizationCreated *ImportManifestResponseOrganizationCreated `json:"organization_created,omitempty" url:"organization_created,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImportManifestResponse) GetSuccess() *bool {
 	if i == nil {
 		return nil
 	}
-	return i.Message
+	return i.Success
 }
 
-func (i *ImportManifestResponse) GetImported() *ImportManifestResponseImported {
+func (i *ImportManifestResponse) GetCreated() []*ImportManifestResponseCreatedItem {
 	if i == nil {
 		return nil
 	}
-	return i.Imported
+	return i.Created
 }
 
-func (i *ImportManifestResponse) GetSkipped() *ImportManifestResponseSkipped {
+func (i *ImportManifestResponse) GetUpdated() []*ImportManifestResponseUpdatedItem {
+	if i == nil {
+		return nil
+	}
+	return i.Updated
+}
+
+func (i *ImportManifestResponse) GetSkipped() []*ImportManifestResponseSkippedItem {
 	if i == nil {
 		return nil
 	}
@@ -1111,6 +1413,20 @@ func (i *ImportManifestResponse) GetErrors() []*ImportManifestResponseErrorsItem
 	return i.Errors
 }
 
+func (i *ImportManifestResponse) GetWarnings() []string {
+	if i == nil {
+		return nil
+	}
+	return i.Warnings
+}
+
+func (i *ImportManifestResponse) GetOrganizationCreated() *ImportManifestResponseOrganizationCreated {
+	if i == nil {
+		return nil
+	}
+	return i.OrganizationCreated
+}
+
 func (i *ImportManifestResponse) GetExtraProperties() map[string]interface{} {
 	return i.extraProperties
 }
@@ -1122,23 +1438,30 @@ func (i *ImportManifestResponse) require(field *big.Int) {
 	i.explicitFields.Or(i.explicitFields, field)
 }
 
-// SetMessage sets the Message field and marks it as non-optional;
+// SetSuccess sets the Success field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponse) SetMessage(message *string) {
-	i.Message = message
-	i.require(importManifestResponseFieldMessage)
+func (i *ImportManifestResponse) SetSuccess(success *bool) {
+	i.Success = success
+	i.require(importManifestResponseFieldSuccess)
 }
 
-// SetImported sets the Imported field and marks it as non-optional;
+// SetCreated sets the Created field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponse) SetImported(imported *ImportManifestResponseImported) {
-	i.Imported = imported
-	i.require(importManifestResponseFieldImported)
+func (i *ImportManifestResponse) SetCreated(created []*ImportManifestResponseCreatedItem) {
+	i.Created = created
+	i.require(importManifestResponseFieldCreated)
+}
+
+// SetUpdated sets the Updated field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponse) SetUpdated(updated []*ImportManifestResponseUpdatedItem) {
+	i.Updated = updated
+	i.require(importManifestResponseFieldUpdated)
 }
 
 // SetSkipped sets the Skipped field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponse) SetSkipped(skipped *ImportManifestResponseSkipped) {
+func (i *ImportManifestResponse) SetSkipped(skipped []*ImportManifestResponseSkippedItem) {
 	i.Skipped = skipped
 	i.require(importManifestResponseFieldSkipped)
 }
@@ -1148,6 +1471,20 @@ func (i *ImportManifestResponse) SetSkipped(skipped *ImportManifestResponseSkipp
 func (i *ImportManifestResponse) SetErrors(errors []*ImportManifestResponseErrorsItem) {
 	i.Errors = errors
 	i.require(importManifestResponseFieldErrors)
+}
+
+// SetWarnings sets the Warnings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponse) SetWarnings(warnings []string) {
+	i.Warnings = warnings
+	i.require(importManifestResponseFieldWarnings)
+}
+
+// SetOrganizationCreated sets the OrganizationCreated field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponse) SetOrganizationCreated(organizationCreated *ImportManifestResponseOrganizationCreated) {
+	i.OrganizationCreated = organizationCreated
+	i.require(importManifestResponseFieldOrganizationCreated)
 }
 
 func (i *ImportManifestResponse) UnmarshalJSON(data []byte) error {
@@ -1190,15 +1527,147 @@ func (i *ImportManifestResponse) String() string {
 }
 
 var (
-	importManifestResponseErrorsItemFieldType  = big.NewInt(1 << 0)
-	importManifestResponseErrorsItemFieldID    = big.NewInt(1 << 1)
-	importManifestResponseErrorsItemFieldError = big.NewInt(1 << 2)
+	importManifestResponseCreatedItemFieldType     = big.NewInt(1 << 0)
+	importManifestResponseCreatedItemFieldStableID = big.NewInt(1 << 1)
+	importManifestResponseCreatedItemFieldDbID     = big.NewInt(1 << 2)
+	importManifestResponseCreatedItemFieldStatus   = big.NewInt(1 << 3)
+)
+
+type ImportManifestResponseCreatedItem struct {
+	// Asset type (context, value, rule, flow, relationship).
+	Type *string `json:"type,omitempty" url:"type,omitempty"`
+	// Stable ID of asset.
+	StableID *string `json:"stable_id,omitempty" url:"stable_id,omitempty"`
+	// Database ID of asset.
+	DbID *string `json:"db_id,omitempty" url:"db_id,omitempty"`
+	// Import status.
+	Status *string `json:"status,omitempty" url:"status,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImportManifestResponseCreatedItem) GetType() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Type
+}
+
+func (i *ImportManifestResponseCreatedItem) GetStableID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.StableID
+}
+
+func (i *ImportManifestResponseCreatedItem) GetDbID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.DbID
+}
+
+func (i *ImportManifestResponseCreatedItem) GetStatus() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Status
+}
+
+func (i *ImportManifestResponseCreatedItem) GetExtraProperties() map[string]interface{} {
+	return i.extraProperties
+}
+
+func (i *ImportManifestResponseCreatedItem) require(field *big.Int) {
+	if i.explicitFields == nil {
+		i.explicitFields = big.NewInt(0)
+	}
+	i.explicitFields.Or(i.explicitFields, field)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseCreatedItem) SetType(type_ *string) {
+	i.Type = type_
+	i.require(importManifestResponseCreatedItemFieldType)
+}
+
+// SetStableID sets the StableID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseCreatedItem) SetStableID(stableID *string) {
+	i.StableID = stableID
+	i.require(importManifestResponseCreatedItemFieldStableID)
+}
+
+// SetDbID sets the DbID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseCreatedItem) SetDbID(dbID *string) {
+	i.DbID = dbID
+	i.require(importManifestResponseCreatedItemFieldDbID)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseCreatedItem) SetStatus(status *string) {
+	i.Status = status
+	i.require(importManifestResponseCreatedItemFieldStatus)
+}
+
+func (i *ImportManifestResponseCreatedItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportManifestResponseCreatedItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImportManifestResponseCreatedItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImportManifestResponseCreatedItem) MarshalJSON() ([]byte, error) {
+	type embed ImportManifestResponseCreatedItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImportManifestResponseCreatedItem) String() string {
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	importManifestResponseErrorsItemFieldType     = big.NewInt(1 << 0)
+	importManifestResponseErrorsItemFieldStableID = big.NewInt(1 << 1)
+	importManifestResponseErrorsItemFieldStatus   = big.NewInt(1 << 2)
+	importManifestResponseErrorsItemFieldReason   = big.NewInt(1 << 3)
 )
 
 type ImportManifestResponseErrorsItem struct {
-	Type  *string `json:"type,omitempty" url:"type,omitempty"`
-	ID    *string `json:"id,omitempty" url:"id,omitempty"`
-	Error *string `json:"error,omitempty" url:"error,omitempty"`
+	Type     *string `json:"type,omitempty" url:"type,omitempty"`
+	StableID *string `json:"stable_id,omitempty" url:"stable_id,omitempty"`
+	Status   *string `json:"status,omitempty" url:"status,omitempty"`
+	Reason   *string `json:"reason,omitempty" url:"reason,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1214,18 +1683,25 @@ func (i *ImportManifestResponseErrorsItem) GetType() *string {
 	return i.Type
 }
 
-func (i *ImportManifestResponseErrorsItem) GetID() *string {
+func (i *ImportManifestResponseErrorsItem) GetStableID() *string {
 	if i == nil {
 		return nil
 	}
-	return i.ID
+	return i.StableID
 }
 
-func (i *ImportManifestResponseErrorsItem) GetError() *string {
+func (i *ImportManifestResponseErrorsItem) GetStatus() *string {
 	if i == nil {
 		return nil
 	}
-	return i.Error
+	return i.Status
+}
+
+func (i *ImportManifestResponseErrorsItem) GetReason() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Reason
 }
 
 func (i *ImportManifestResponseErrorsItem) GetExtraProperties() map[string]interface{} {
@@ -1246,18 +1722,25 @@ func (i *ImportManifestResponseErrorsItem) SetType(type_ *string) {
 	i.require(importManifestResponseErrorsItemFieldType)
 }
 
-// SetID sets the ID field and marks it as non-optional;
+// SetStableID sets the StableID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseErrorsItem) SetID(id *string) {
-	i.ID = id
-	i.require(importManifestResponseErrorsItemFieldID)
+func (i *ImportManifestResponseErrorsItem) SetStableID(stableID *string) {
+	i.StableID = stableID
+	i.require(importManifestResponseErrorsItemFieldStableID)
 }
 
-// SetError sets the Error field and marks it as non-optional;
+// SetStatus sets the Status field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseErrorsItem) SetError(error_ *string) {
-	i.Error = error_
-	i.require(importManifestResponseErrorsItemFieldError)
+func (i *ImportManifestResponseErrorsItem) SetStatus(status *string) {
+	i.Status = status
+	i.require(importManifestResponseErrorsItemFieldStatus)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseErrorsItem) SetReason(reason *string) {
+	i.Reason = reason
+	i.require(importManifestResponseErrorsItemFieldReason)
 }
 
 func (i *ImportManifestResponseErrorsItem) UnmarshalJSON(data []byte) error {
@@ -1299,19 +1782,17 @@ func (i *ImportManifestResponseErrorsItem) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
-// Count of imported assets by type.
+// IDs of any organizational folders created during import.
 var (
-	importManifestResponseImportedFieldRules    = big.NewInt(1 << 0)
-	importManifestResponseImportedFieldFlows    = big.NewInt(1 << 1)
-	importManifestResponseImportedFieldContexts = big.NewInt(1 << 2)
-	importManifestResponseImportedFieldValues   = big.NewInt(1 << 3)
+	importManifestResponseOrganizationCreatedFieldEntitySetID = big.NewInt(1 << 0)
+	importManifestResponseOrganizationCreatedFieldRuleTagID   = big.NewInt(1 << 1)
+	importManifestResponseOrganizationCreatedFieldFlowTagID   = big.NewInt(1 << 2)
 )
 
-type ImportManifestResponseImported struct {
-	Rules    *int `json:"rules,omitempty" url:"rules,omitempty"`
-	Flows    *int `json:"flows,omitempty" url:"flows,omitempty"`
-	Contexts *int `json:"contexts,omitempty" url:"contexts,omitempty"`
-	Values   *int `json:"values,omitempty" url:"values,omitempty"`
+type ImportManifestResponseOrganizationCreated struct {
+	EntitySetID *string `json:"entity_set_id,omitempty" url:"entity_set_id,omitempty"`
+	RuleTagID   *string `json:"rule_tag_id,omitempty" url:"rule_tag_id,omitempty"`
+	FlowTagID   *string `json:"flow_tag_id,omitempty" url:"flow_tag_id,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1320,80 +1801,66 @@ type ImportManifestResponseImported struct {
 	rawJSON         json.RawMessage
 }
 
-func (i *ImportManifestResponseImported) GetRules() *int {
+func (i *ImportManifestResponseOrganizationCreated) GetEntitySetID() *string {
 	if i == nil {
 		return nil
 	}
-	return i.Rules
+	return i.EntitySetID
 }
 
-func (i *ImportManifestResponseImported) GetFlows() *int {
+func (i *ImportManifestResponseOrganizationCreated) GetRuleTagID() *string {
 	if i == nil {
 		return nil
 	}
-	return i.Flows
+	return i.RuleTagID
 }
 
-func (i *ImportManifestResponseImported) GetContexts() *int {
+func (i *ImportManifestResponseOrganizationCreated) GetFlowTagID() *string {
 	if i == nil {
 		return nil
 	}
-	return i.Contexts
+	return i.FlowTagID
 }
 
-func (i *ImportManifestResponseImported) GetValues() *int {
-	if i == nil {
-		return nil
-	}
-	return i.Values
-}
-
-func (i *ImportManifestResponseImported) GetExtraProperties() map[string]interface{} {
+func (i *ImportManifestResponseOrganizationCreated) GetExtraProperties() map[string]interface{} {
 	return i.extraProperties
 }
 
-func (i *ImportManifestResponseImported) require(field *big.Int) {
+func (i *ImportManifestResponseOrganizationCreated) require(field *big.Int) {
 	if i.explicitFields == nil {
 		i.explicitFields = big.NewInt(0)
 	}
 	i.explicitFields.Or(i.explicitFields, field)
 }
 
-// SetRules sets the Rules field and marks it as non-optional;
+// SetEntitySetID sets the EntitySetID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseImported) SetRules(rules *int) {
-	i.Rules = rules
-	i.require(importManifestResponseImportedFieldRules)
+func (i *ImportManifestResponseOrganizationCreated) SetEntitySetID(entitySetID *string) {
+	i.EntitySetID = entitySetID
+	i.require(importManifestResponseOrganizationCreatedFieldEntitySetID)
 }
 
-// SetFlows sets the Flows field and marks it as non-optional;
+// SetRuleTagID sets the RuleTagID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseImported) SetFlows(flows *int) {
-	i.Flows = flows
-	i.require(importManifestResponseImportedFieldFlows)
+func (i *ImportManifestResponseOrganizationCreated) SetRuleTagID(ruleTagID *string) {
+	i.RuleTagID = ruleTagID
+	i.require(importManifestResponseOrganizationCreatedFieldRuleTagID)
 }
 
-// SetContexts sets the Contexts field and marks it as non-optional;
+// SetFlowTagID sets the FlowTagID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseImported) SetContexts(contexts *int) {
-	i.Contexts = contexts
-	i.require(importManifestResponseImportedFieldContexts)
+func (i *ImportManifestResponseOrganizationCreated) SetFlowTagID(flowTagID *string) {
+	i.FlowTagID = flowTagID
+	i.require(importManifestResponseOrganizationCreatedFieldFlowTagID)
 }
 
-// SetValues sets the Values field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseImported) SetValues(values *int) {
-	i.Values = values
-	i.require(importManifestResponseImportedFieldValues)
-}
-
-func (i *ImportManifestResponseImported) UnmarshalJSON(data []byte) error {
-	type unmarshaler ImportManifestResponseImported
+func (i *ImportManifestResponseOrganizationCreated) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportManifestResponseOrganizationCreated
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*i = ImportManifestResponseImported(value)
+	*i = ImportManifestResponseOrganizationCreated(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *i)
 	if err != nil {
 		return err
@@ -1403,8 +1870,8 @@ func (i *ImportManifestResponseImported) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (i *ImportManifestResponseImported) MarshalJSON() ([]byte, error) {
-	type embed ImportManifestResponseImported
+func (i *ImportManifestResponseOrganizationCreated) MarshalJSON() ([]byte, error) {
+	type embed ImportManifestResponseOrganizationCreated
 	var marshaler = struct {
 		embed
 	}{
@@ -1414,7 +1881,7 @@ func (i *ImportManifestResponseImported) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (i *ImportManifestResponseImported) String() string {
+func (i *ImportManifestResponseOrganizationCreated) String() string {
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -1426,19 +1893,18 @@ func (i *ImportManifestResponseImported) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
-// Count of skipped assets by type (already exist and overwrite=false).
 var (
-	importManifestResponseSkippedFieldRules    = big.NewInt(1 << 0)
-	importManifestResponseSkippedFieldFlows    = big.NewInt(1 << 1)
-	importManifestResponseSkippedFieldContexts = big.NewInt(1 << 2)
-	importManifestResponseSkippedFieldValues   = big.NewInt(1 << 3)
+	importManifestResponseSkippedItemFieldType     = big.NewInt(1 << 0)
+	importManifestResponseSkippedItemFieldStableID = big.NewInt(1 << 1)
+	importManifestResponseSkippedItemFieldStatus   = big.NewInt(1 << 2)
+	importManifestResponseSkippedItemFieldReason   = big.NewInt(1 << 3)
 )
 
-type ImportManifestResponseSkipped struct {
-	Rules    *int `json:"rules,omitempty" url:"rules,omitempty"`
-	Flows    *int `json:"flows,omitempty" url:"flows,omitempty"`
-	Contexts *int `json:"contexts,omitempty" url:"contexts,omitempty"`
-	Values   *int `json:"values,omitempty" url:"values,omitempty"`
+type ImportManifestResponseSkippedItem struct {
+	Type     *string `json:"type,omitempty" url:"type,omitempty"`
+	StableID *string `json:"stable_id,omitempty" url:"stable_id,omitempty"`
+	Status   *string `json:"status,omitempty" url:"status,omitempty"`
+	Reason   *string `json:"reason,omitempty" url:"reason,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1447,80 +1913,80 @@ type ImportManifestResponseSkipped struct {
 	rawJSON         json.RawMessage
 }
 
-func (i *ImportManifestResponseSkipped) GetRules() *int {
+func (i *ImportManifestResponseSkippedItem) GetType() *string {
 	if i == nil {
 		return nil
 	}
-	return i.Rules
+	return i.Type
 }
 
-func (i *ImportManifestResponseSkipped) GetFlows() *int {
+func (i *ImportManifestResponseSkippedItem) GetStableID() *string {
 	if i == nil {
 		return nil
 	}
-	return i.Flows
+	return i.StableID
 }
 
-func (i *ImportManifestResponseSkipped) GetContexts() *int {
+func (i *ImportManifestResponseSkippedItem) GetStatus() *string {
 	if i == nil {
 		return nil
 	}
-	return i.Contexts
+	return i.Status
 }
 
-func (i *ImportManifestResponseSkipped) GetValues() *int {
+func (i *ImportManifestResponseSkippedItem) GetReason() *string {
 	if i == nil {
 		return nil
 	}
-	return i.Values
+	return i.Reason
 }
 
-func (i *ImportManifestResponseSkipped) GetExtraProperties() map[string]interface{} {
+func (i *ImportManifestResponseSkippedItem) GetExtraProperties() map[string]interface{} {
 	return i.extraProperties
 }
 
-func (i *ImportManifestResponseSkipped) require(field *big.Int) {
+func (i *ImportManifestResponseSkippedItem) require(field *big.Int) {
 	if i.explicitFields == nil {
 		i.explicitFields = big.NewInt(0)
 	}
 	i.explicitFields.Or(i.explicitFields, field)
 }
 
-// SetRules sets the Rules field and marks it as non-optional;
+// SetType sets the Type field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseSkipped) SetRules(rules *int) {
-	i.Rules = rules
-	i.require(importManifestResponseSkippedFieldRules)
+func (i *ImportManifestResponseSkippedItem) SetType(type_ *string) {
+	i.Type = type_
+	i.require(importManifestResponseSkippedItemFieldType)
 }
 
-// SetFlows sets the Flows field and marks it as non-optional;
+// SetStableID sets the StableID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseSkipped) SetFlows(flows *int) {
-	i.Flows = flows
-	i.require(importManifestResponseSkippedFieldFlows)
+func (i *ImportManifestResponseSkippedItem) SetStableID(stableID *string) {
+	i.StableID = stableID
+	i.require(importManifestResponseSkippedItemFieldStableID)
 }
 
-// SetContexts sets the Contexts field and marks it as non-optional;
+// SetStatus sets the Status field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseSkipped) SetContexts(contexts *int) {
-	i.Contexts = contexts
-	i.require(importManifestResponseSkippedFieldContexts)
+func (i *ImportManifestResponseSkippedItem) SetStatus(status *string) {
+	i.Status = status
+	i.require(importManifestResponseSkippedItemFieldStatus)
 }
 
-// SetValues sets the Values field and marks it as non-optional;
+// SetReason sets the Reason field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestResponseSkipped) SetValues(values *int) {
-	i.Values = values
-	i.require(importManifestResponseSkippedFieldValues)
+func (i *ImportManifestResponseSkippedItem) SetReason(reason *string) {
+	i.Reason = reason
+	i.require(importManifestResponseSkippedItemFieldReason)
 }
 
-func (i *ImportManifestResponseSkipped) UnmarshalJSON(data []byte) error {
-	type unmarshaler ImportManifestResponseSkipped
+func (i *ImportManifestResponseSkippedItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportManifestResponseSkippedItem
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*i = ImportManifestResponseSkipped(value)
+	*i = ImportManifestResponseSkippedItem(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *i)
 	if err != nil {
 		return err
@@ -1530,8 +1996,8 @@ func (i *ImportManifestResponseSkipped) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (i *ImportManifestResponseSkipped) MarshalJSON() ([]byte, error) {
-	type embed ImportManifestResponseSkipped
+func (i *ImportManifestResponseSkippedItem) MarshalJSON() ([]byte, error) {
+	type embed ImportManifestResponseSkippedItem
 	var marshaler = struct {
 		embed
 	}{
@@ -1541,7 +2007,133 @@ func (i *ImportManifestResponseSkipped) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (i *ImportManifestResponseSkipped) String() string {
+func (i *ImportManifestResponseSkippedItem) String() string {
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	importManifestResponseUpdatedItemFieldType     = big.NewInt(1 << 0)
+	importManifestResponseUpdatedItemFieldStableID = big.NewInt(1 << 1)
+	importManifestResponseUpdatedItemFieldDbID     = big.NewInt(1 << 2)
+	importManifestResponseUpdatedItemFieldStatus   = big.NewInt(1 << 3)
+)
+
+type ImportManifestResponseUpdatedItem struct {
+	Type     *string `json:"type,omitempty" url:"type,omitempty"`
+	StableID *string `json:"stable_id,omitempty" url:"stable_id,omitempty"`
+	DbID     *string `json:"db_id,omitempty" url:"db_id,omitempty"`
+	Status   *string `json:"status,omitempty" url:"status,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImportManifestResponseUpdatedItem) GetType() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Type
+}
+
+func (i *ImportManifestResponseUpdatedItem) GetStableID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.StableID
+}
+
+func (i *ImportManifestResponseUpdatedItem) GetDbID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.DbID
+}
+
+func (i *ImportManifestResponseUpdatedItem) GetStatus() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Status
+}
+
+func (i *ImportManifestResponseUpdatedItem) GetExtraProperties() map[string]interface{} {
+	return i.extraProperties
+}
+
+func (i *ImportManifestResponseUpdatedItem) require(field *big.Int) {
+	if i.explicitFields == nil {
+		i.explicitFields = big.NewInt(0)
+	}
+	i.explicitFields.Or(i.explicitFields, field)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseUpdatedItem) SetType(type_ *string) {
+	i.Type = type_
+	i.require(importManifestResponseUpdatedItemFieldType)
+}
+
+// SetStableID sets the StableID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseUpdatedItem) SetStableID(stableID *string) {
+	i.StableID = stableID
+	i.require(importManifestResponseUpdatedItemFieldStableID)
+}
+
+// SetDbID sets the DbID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseUpdatedItem) SetDbID(dbID *string) {
+	i.DbID = dbID
+	i.require(importManifestResponseUpdatedItemFieldDbID)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestResponseUpdatedItem) SetStatus(status *string) {
+	i.Status = status
+	i.require(importManifestResponseUpdatedItemFieldStatus)
+}
+
+func (i *ImportManifestResponseUpdatedItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportManifestResponseUpdatedItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImportManifestResponseUpdatedItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImportManifestResponseUpdatedItem) MarshalJSON() ([]byte, error) {
+	type embed ImportManifestResponseUpdatedItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImportManifestResponseUpdatedItem) String() string {
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -1560,21 +2152,30 @@ var (
 	usageStatisticsFieldMonthlyExecutionsUsage     = big.NewInt(1 << 3)
 	usageStatisticsFieldMonthlyExecutionsLimit     = big.NewInt(1 << 4)
 	usageStatisticsFieldMonthlyExecutionsRemaining = big.NewInt(1 << 5)
+	usageStatisticsFieldUnlimitedPlan              = big.NewInt(1 << 6)
+	usageStatisticsFieldDaysRemainingInPeriod      = big.NewInt(1 << 7)
+	usageStatisticsFieldDailyAverageUsage          = big.NewInt(1 << 8)
 )
 
 type UsageStatistics struct {
 	// The current plan of the organization.
 	Plan *string `json:"plan,omitempty" url:"plan,omitempty"`
-	// The start date of the current monthly period.
+	// The start date of the current monthly period (MM-DD-YYYY).
 	MonthlyPeriodStart *string `json:"monthly_period_start,omitempty" url:"monthly_period_start,omitempty"`
-	// The end date of the current monthly period.
+	// The end date of the current monthly period (MM-DD-YYYY).
 	MonthlyPeriodEnd *string `json:"monthly_period_end,omitempty" url:"monthly_period_end,omitempty"`
 	// The number of rule executions used this month.
 	MonthlyExecutionsUsage *float64 `json:"monthly_executions_usage,omitempty" url:"monthly_executions_usage,omitempty"`
-	// The total number of rule executions allowed this month.
+	// The total number of rule executions allowed this month. -1 indicates unlimited.
 	MonthlyExecutionsLimit *float64 `json:"monthly_executions_limit,omitempty" url:"monthly_executions_limit,omitempty"`
-	// The number of rule executions remaining this month.
+	// The number of rule executions remaining this month. -1 indicates unlimited.
 	MonthlyExecutionsRemaining *float64 `json:"monthly_executions_remaining,omitempty" url:"monthly_executions_remaining,omitempty"`
+	// Whether the plan has unlimited executions (true when monthly_executions_limit is -1).
+	UnlimitedPlan *bool `json:"unlimited_plan,omitempty" url:"unlimited_plan,omitempty"`
+	// Number of days remaining in the current billing period.
+	DaysRemainingInPeriod *float64 `json:"days_remaining_in_period,omitempty" url:"days_remaining_in_period,omitempty"`
+	// Average number of executions per day in the current period.
+	DailyAverageUsage *float64 `json:"daily_average_usage,omitempty" url:"daily_average_usage,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1623,6 +2224,27 @@ func (u *UsageStatistics) GetMonthlyExecutionsRemaining() *float64 {
 		return nil
 	}
 	return u.MonthlyExecutionsRemaining
+}
+
+func (u *UsageStatistics) GetUnlimitedPlan() *bool {
+	if u == nil {
+		return nil
+	}
+	return u.UnlimitedPlan
+}
+
+func (u *UsageStatistics) GetDaysRemainingInPeriod() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.DaysRemainingInPeriod
+}
+
+func (u *UsageStatistics) GetDailyAverageUsage() *float64 {
+	if u == nil {
+		return nil
+	}
+	return u.DailyAverageUsage
 }
 
 func (u *UsageStatistics) GetExtraProperties() map[string]interface{} {
@@ -1678,6 +2300,27 @@ func (u *UsageStatistics) SetMonthlyExecutionsRemaining(monthlyExecutionsRemaini
 	u.require(usageStatisticsFieldMonthlyExecutionsRemaining)
 }
 
+// SetUnlimitedPlan sets the UnlimitedPlan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageStatistics) SetUnlimitedPlan(unlimitedPlan *bool) {
+	u.UnlimitedPlan = unlimitedPlan
+	u.require(usageStatisticsFieldUnlimitedPlan)
+}
+
+// SetDaysRemainingInPeriod sets the DaysRemainingInPeriod field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageStatistics) SetDaysRemainingInPeriod(daysRemainingInPeriod *float64) {
+	u.DaysRemainingInPeriod = daysRemainingInPeriod
+	u.require(usageStatisticsFieldDaysRemainingInPeriod)
+}
+
+// SetDailyAverageUsage sets the DailyAverageUsage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UsageStatistics) SetDailyAverageUsage(dailyAverageUsage *float64) {
+	u.DailyAverageUsage = dailyAverageUsage
+	u.require(usageStatisticsFieldDailyAverageUsage)
+}
+
 func (u *UsageStatistics) UnmarshalJSON(data []byte) error {
 	type unmarshaler UsageStatistics
 	var value unmarshaler
@@ -1717,28 +2360,57 @@ func (u *UsageStatistics) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
-type ExportAssetsResponse struct {
+// The type of root asset to export. All dependencies will be included.
+type ExportManifestRequestRootType string
+
+const (
+	ExportManifestRequestRootTypeRule    ExportManifestRequestRootType = "rule"
+	ExportManifestRequestRootTypeFlow    ExportManifestRequestRootType = "flow"
+	ExportManifestRequestRootTypeContext ExportManifestRequestRootType = "context"
+	ExportManifestRequestRootTypeValue   ExportManifestRequestRootType = "value"
+)
+
+func NewExportManifestRequestRootTypeFromString(s string) (ExportManifestRequestRootType, error) {
+	switch s {
+	case "rule":
+		return ExportManifestRequestRootTypeRule, nil
+	case "flow":
+		return ExportManifestRequestRootTypeFlow, nil
+	case "context":
+		return ExportManifestRequestRootTypeContext, nil
+	case "value":
+		return ExportManifestRequestRootTypeValue, nil
+	}
+	var t ExportManifestRequestRootType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (e ExportManifestRequestRootType) Ptr() *ExportManifestRequestRootType {
+	return &e
+}
+
+type ExportRbmAssetsResponse struct {
 	ExportManifestResponse        *ExportManifestResponse
 	ExportManifestPreviewResponse *ExportManifestPreviewResponse
 
 	typ string
 }
 
-func (e *ExportAssetsResponse) GetExportManifestResponse() *ExportManifestResponse {
+func (e *ExportRbmAssetsResponse) GetExportManifestResponse() *ExportManifestResponse {
 	if e == nil {
 		return nil
 	}
 	return e.ExportManifestResponse
 }
 
-func (e *ExportAssetsResponse) GetExportManifestPreviewResponse() *ExportManifestPreviewResponse {
+func (e *ExportRbmAssetsResponse) GetExportManifestPreviewResponse() *ExportManifestPreviewResponse {
 	if e == nil {
 		return nil
 	}
 	return e.ExportManifestPreviewResponse
 }
 
-func (e *ExportAssetsResponse) UnmarshalJSON(data []byte) error {
+func (e *ExportRbmAssetsResponse) UnmarshalJSON(data []byte) error {
 	valueExportManifestResponse := new(ExportManifestResponse)
 	if err := json.Unmarshal(data, &valueExportManifestResponse); err == nil {
 		e.typ = "ExportManifestResponse"
@@ -1754,7 +2426,7 @@ func (e *ExportAssetsResponse) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, e)
 }
 
-func (e ExportAssetsResponse) MarshalJSON() ([]byte, error) {
+func (e ExportRbmAssetsResponse) MarshalJSON() ([]byte, error) {
 	if e.typ == "ExportManifestResponse" || e.ExportManifestResponse != nil {
 		return json.Marshal(e.ExportManifestResponse)
 	}
@@ -1764,12 +2436,12 @@ func (e ExportAssetsResponse) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", e)
 }
 
-type ExportAssetsResponseVisitor interface {
+type ExportRbmAssetsResponseVisitor interface {
 	VisitExportManifestResponse(*ExportManifestResponse) error
 	VisitExportManifestPreviewResponse(*ExportManifestPreviewResponse) error
 }
 
-func (e *ExportAssetsResponse) Accept(visitor ExportAssetsResponseVisitor) error {
+func (e *ExportRbmAssetsResponse) Accept(visitor ExportRbmAssetsResponseVisitor) error {
 	if e.typ == "ExportManifestResponse" || e.ExportManifestResponse != nil {
 		return visitor.VisitExportManifestResponse(e.ExportManifestResponse)
 	}
@@ -1779,12 +2451,154 @@ func (e *ExportAssetsResponse) Accept(visitor ExportAssetsResponseVisitor) error
 	return fmt.Errorf("type %T does not include a non-empty union type", e)
 }
 
+// How to handle conflicts with existing assets. 'update' overwrites, 'skip' ignores, 'error' fails.
+type ImportManifestRequestConflictStrategy string
+
+const (
+	ImportManifestRequestConflictStrategyUpdate ImportManifestRequestConflictStrategy = "update"
+	ImportManifestRequestConflictStrategySkip   ImportManifestRequestConflictStrategy = "skip"
+	ImportManifestRequestConflictStrategyError  ImportManifestRequestConflictStrategy = "error"
+)
+
+func NewImportManifestRequestConflictStrategyFromString(s string) (ImportManifestRequestConflictStrategy, error) {
+	switch s {
+	case "update":
+		return ImportManifestRequestConflictStrategyUpdate, nil
+	case "skip":
+		return ImportManifestRequestConflictStrategySkip, nil
+	case "error":
+		return ImportManifestRequestConflictStrategyError, nil
+	}
+	var t ImportManifestRequestConflictStrategy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i ImportManifestRequestConflictStrategy) Ptr() *ImportManifestRequestConflictStrategy {
+	return &i
+}
+
+var (
+	importManifestRequestLegacyRuleMappingValueFieldAction = big.NewInt(1 << 0)
+	importManifestRequestLegacyRuleMappingValueFieldRuleID = big.NewInt(1 << 1)
+)
+
+type ImportManifestRequestLegacyRuleMappingValue struct {
+	Action *ImportManifestRequestLegacyRuleMappingValueAction `json:"action,omitempty" url:"action,omitempty"`
+	RuleID *string                                            `json:"rule_id,omitempty" url:"rule_id,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImportManifestRequestLegacyRuleMappingValue) GetAction() *ImportManifestRequestLegacyRuleMappingValueAction {
+	if i == nil {
+		return nil
+	}
+	return i.Action
+}
+
+func (i *ImportManifestRequestLegacyRuleMappingValue) GetRuleID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.RuleID
+}
+
+func (i *ImportManifestRequestLegacyRuleMappingValue) GetExtraProperties() map[string]interface{} {
+	return i.extraProperties
+}
+
+func (i *ImportManifestRequestLegacyRuleMappingValue) require(field *big.Int) {
+	if i.explicitFields == nil {
+		i.explicitFields = big.NewInt(0)
+	}
+	i.explicitFields.Or(i.explicitFields, field)
+}
+
+// SetAction sets the Action field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestLegacyRuleMappingValue) SetAction(action *ImportManifestRequestLegacyRuleMappingValueAction) {
+	i.Action = action
+	i.require(importManifestRequestLegacyRuleMappingValueFieldAction)
+}
+
+// SetRuleID sets the RuleID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestLegacyRuleMappingValue) SetRuleID(ruleID *string) {
+	i.RuleID = ruleID
+	i.require(importManifestRequestLegacyRuleMappingValueFieldRuleID)
+}
+
+func (i *ImportManifestRequestLegacyRuleMappingValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportManifestRequestLegacyRuleMappingValue
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImportManifestRequestLegacyRuleMappingValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImportManifestRequestLegacyRuleMappingValue) MarshalJSON() ([]byte, error) {
+	type embed ImportManifestRequestLegacyRuleMappingValue
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImportManifestRequestLegacyRuleMappingValue) String() string {
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+type ImportManifestRequestLegacyRuleMappingValueAction string
+
+const (
+	ImportManifestRequestLegacyRuleMappingValueActionReuse  ImportManifestRequestLegacyRuleMappingValueAction = "reuse"
+	ImportManifestRequestLegacyRuleMappingValueActionCreate ImportManifestRequestLegacyRuleMappingValueAction = "create"
+)
+
+func NewImportManifestRequestLegacyRuleMappingValueActionFromString(s string) (ImportManifestRequestLegacyRuleMappingValueAction, error) {
+	switch s {
+	case "reuse":
+		return ImportManifestRequestLegacyRuleMappingValueActionReuse, nil
+	case "create":
+		return ImportManifestRequestLegacyRuleMappingValueActionCreate, nil
+	}
+	var t ImportManifestRequestLegacyRuleMappingValueAction
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i ImportManifestRequestLegacyRuleMappingValueAction) Ptr() *ImportManifestRequestLegacyRuleMappingValueAction {
+	return &i
+}
+
 // The RBM manifest object containing assets to import.
 var (
 	importManifestRequestManifestFieldVersion  = big.NewInt(1 << 0)
 	importManifestRequestManifestFieldRules    = big.NewInt(1 << 1)
 	importManifestRequestManifestFieldFlows    = big.NewInt(1 << 2)
-	importManifestRequestManifestFieldContexts = big.NewInt(1 << 3)
+	importManifestRequestManifestFieldEntities = big.NewInt(1 << 3)
 	importManifestRequestManifestFieldValues   = big.NewInt(1 << 4)
 )
 
@@ -1795,8 +2609,8 @@ type ImportManifestRequestManifest struct {
 	Rules []map[string]interface{} `json:"rules,omitempty" url:"rules,omitempty"`
 	// Flows to import.
 	Flows []map[string]interface{} `json:"flows,omitempty" url:"flows,omitempty"`
-	// Contexts (entities) to import.
-	Contexts []map[string]interface{} `json:"contexts,omitempty" url:"contexts,omitempty"`
+	// Contexts to import.
+	Entities []map[string]interface{} `json:"entities,omitempty" url:"entities,omitempty"`
 	// Dynamic values to import.
 	Values []map[string]interface{} `json:"values,omitempty" url:"values,omitempty"`
 
@@ -1828,11 +2642,11 @@ func (i *ImportManifestRequestManifest) GetFlows() []map[string]interface{} {
 	return i.Flows
 }
 
-func (i *ImportManifestRequestManifest) GetContexts() []map[string]interface{} {
+func (i *ImportManifestRequestManifest) GetEntities() []map[string]interface{} {
 	if i == nil {
 		return nil
 	}
-	return i.Contexts
+	return i.Entities
 }
 
 func (i *ImportManifestRequestManifest) GetValues() []map[string]interface{} {
@@ -1874,11 +2688,11 @@ func (i *ImportManifestRequestManifest) SetFlows(flows []map[string]interface{})
 	i.require(importManifestRequestManifestFieldFlows)
 }
 
-// SetContexts sets the Contexts field and marks it as non-optional;
+// SetEntities sets the Entities field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestRequestManifest) SetContexts(contexts []map[string]interface{}) {
-	i.Contexts = contexts
-	i.require(importManifestRequestManifestFieldContexts)
+func (i *ImportManifestRequestManifest) SetEntities(entities []map[string]interface{}) {
+	i.Entities = entities
+	i.require(importManifestRequestManifestFieldEntities)
 }
 
 // SetValues sets the Values field and marks it as non-optional;

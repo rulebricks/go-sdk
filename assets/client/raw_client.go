@@ -69,7 +69,7 @@ func (r *RawClient) GetUsage(
 	}, nil
 }
 
-func (r *RawClient) Import(
+func (r *RawClient) ImportRbm(
 	ctx context.Context,
 	request *sdk.ImportManifestRequest,
 	opts ...option.RequestOption,
@@ -112,11 +112,11 @@ func (r *RawClient) Import(
 	}, nil
 }
 
-func (r *RawClient) Export(
+func (r *RawClient) ExportRbm(
 	ctx context.Context,
 	request *sdk.ExportManifestRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*sdk.ExportAssetsResponse], error) {
+) (*core.Response[*sdk.ExportRbmAssetsResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -129,7 +129,7 @@ func (r *RawClient) Export(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *sdk.ExportAssetsResponse
+	var response *sdk.ExportRbmAssetsResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -148,7 +148,7 @@ func (r *RawClient) Export(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*sdk.ExportAssetsResponse]{
+	return &core.Response[*sdk.ExportRbmAssetsResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
