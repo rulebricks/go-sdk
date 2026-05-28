@@ -175,6 +175,9 @@ func (b *BulkRuleResponseItemError) GetError() *string {
 }
 
 func (b *BulkRuleResponseItemError) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
 	return b.extraProperties
 }
 
@@ -220,6 +223,9 @@ func (b *BulkRuleResponseItemError) MarshalJSON() ([]byte, error) {
 }
 
 func (b *BulkRuleResponseItemError) String() string {
+	if b == nil {
+		return "<nil>"
+	}
 	if len(b.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
 			return value
@@ -268,6 +274,9 @@ func (p *ParallelSolveRequestValue) GetFlow() *string {
 }
 
 func (p *ParallelSolveRequestValue) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
 	return p.ExtraProperties
 }
 
@@ -324,6 +333,9 @@ func (p *ParallelSolveRequestValue) MarshalJSON() ([]byte, error) {
 }
 
 func (p *ParallelSolveRequestValue) String() string {
+	if p == nil {
+		return "<nil>"
+	}
 	if len(p.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
 			return value

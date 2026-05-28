@@ -3,8 +3,10 @@
 package contexts
 
 import (
+	json "encoding/json"
 	fmt "fmt"
 	big "math/big"
+	internal "sdk/internal"
 )
 
 var (
@@ -81,6 +83,27 @@ func (c *CreateRelationshipRequest) SetName(name *string) {
 func (c *CreateRelationshipRequest) SetDescription(description *string) {
 	c.Description = description
 	c.require(createRelationshipRequestFieldDescription)
+}
+
+func (c *CreateRelationshipRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateRelationshipRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*c = CreateRelationshipRequest(body)
+	return nil
+}
+
+func (c *CreateRelationshipRequest) MarshalJSON() ([]byte, error) {
+	type embed CreateRelationshipRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }
 
 var (

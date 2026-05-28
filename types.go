@@ -124,6 +124,9 @@ func (c *ContextBase) GetWebhookOnExpire() *string {
 }
 
 func (c *ContextBase) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -232,6 +235,9 @@ func (c *ContextBase) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextBase) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -467,6 +473,9 @@ func (c *ContextDetail) GetUpdatedAt() *time.Time {
 }
 
 func (c *ContextDetail) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -650,6 +659,9 @@ func (c *ContextDetail) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextDetail) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -719,6 +731,9 @@ func (c *ContextDetailBoundFlowsItem) GetOriginRule() *ContextDetailBoundFlowsIt
 }
 
 func (c *ContextDetailBoundFlowsItem) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -792,6 +807,9 @@ func (c *ContextDetailBoundFlowsItem) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextDetailBoundFlowsItem) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -843,6 +861,9 @@ func (c *ContextDetailBoundFlowsItemOriginRule) GetSlug() *string {
 }
 
 func (c *ContextDetailBoundFlowsItemOriginRule) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -902,6 +923,9 @@ func (c *ContextDetailBoundFlowsItemOriginRule) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextDetailBoundFlowsItemOriginRule) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -962,6 +986,9 @@ func (c *ContextDetailBoundRulesItem) GetPublished() *bool {
 }
 
 func (c *ContextDetailBoundRulesItem) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1028,6 +1055,9 @@ func (c *ContextDetailBoundRulesItem) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextDetailBoundRulesItem) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1071,6 +1101,9 @@ func (c *ContextDetailFolder) GetName() *string {
 }
 
 func (c *ContextDetailFolder) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1123,6 +1156,9 @@ func (c *ContextDetailFolder) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextDetailFolder) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1165,6 +1201,9 @@ func (c *ContextDetailRelationships) GetIncoming() []*ContextRelationshipIncomin
 }
 
 func (c *ContextDetailRelationships) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1217,6 +1256,9 @@ func (c *ContextDetailRelationships) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextDetailRelationships) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1418,6 +1460,9 @@ func (c *ContextListItem) GetUpdatedAt() *time.Time {
 }
 
 func (c *ContextListItem) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1594,6 +1639,9 @@ func (c *ContextListItem) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextListItem) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1636,6 +1684,9 @@ func (c *ContextListItemFolder) GetName() *string {
 }
 
 func (c *ContextListItemFolder) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1688,6 +1739,9 @@ func (c *ContextListItemFolder) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextListItemFolder) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1774,6 +1828,9 @@ func (c *ContextRelationshipBase) GetCreatedAt() *time.Time {
 }
 
 func (c *ContextRelationshipBase) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1862,6 +1919,9 @@ func (c *ContextRelationshipBase) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextRelationshipBase) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1981,6 +2041,9 @@ func (c *ContextRelationshipIncoming) GetSourceContext() *ContextRelationshipInc
 }
 
 func (c *ContextRelationshipIncoming) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -2076,6 +2139,9 @@ func (c *ContextRelationshipIncoming) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextRelationshipIncoming) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -2127,6 +2193,9 @@ func (c *ContextRelationshipIncomingSourceContext) GetSlug() *string {
 }
 
 func (c *ContextRelationshipIncomingSourceContext) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -2186,6 +2255,9 @@ func (c *ContextRelationshipIncomingSourceContext) MarshalJSON() ([]byte, error)
 }
 
 func (c *ContextRelationshipIncomingSourceContext) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -2279,6 +2351,9 @@ func (c *ContextRelationshipOutgoing) GetTargetContext() *ContextRelationshipOut
 }
 
 func (c *ContextRelationshipOutgoing) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -2374,6 +2449,9 @@ func (c *ContextRelationshipOutgoing) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextRelationshipOutgoing) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -2425,6 +2503,9 @@ func (c *ContextRelationshipOutgoingTargetContext) GetSlug() *string {
 }
 
 func (c *ContextRelationshipOutgoingTargetContext) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -2484,6 +2565,9 @@ func (c *ContextRelationshipOutgoingTargetContext) MarshalJSON() ([]byte, error)
 }
 
 func (c *ContextRelationshipOutgoingTargetContext) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -2536,6 +2620,9 @@ func (c *ContextRelationshipsResponse) GetIncoming() []*ContextRelationshipIncom
 }
 
 func (c *ContextRelationshipsResponse) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -2595,6 +2682,9 @@ func (c *ContextRelationshipsResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextRelationshipsResponse) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -2647,6 +2737,9 @@ func (c *ContextRelationshipsResponseContext) GetSlug() *string {
 }
 
 func (c *ContextRelationshipsResponseContext) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -2706,6 +2799,9 @@ func (c *ContextRelationshipsResponseContext) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextRelationshipsResponseContext) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -2751,6 +2847,9 @@ func (c *ContextSchema) GetDerived() []*ContextSchemaField {
 }
 
 func (c *ContextSchema) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -2803,6 +2902,9 @@ func (c *ContextSchema) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextSchema) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -2837,7 +2939,7 @@ type ContextSchemaField struct {
 	// Data type of this field. 'function' type fields compute values dynamically.
 	Type *ContextSchemaFieldType `json:"type,omitempty" url:"type,omitempty"`
 	// Default value for this field.
-	DefaultValue interface{} `json:"default_value,omitempty" url:"default_value,omitempty"`
+	DefaultValue any `json:"default_value,omitempty" url:"default_value,omitempty"`
 	// Whether this field is derived from rule/flow outputs.
 	Derived *bool `json:"derived,omitempty" url:"derived,omitempty"`
 	// The rule ID that derives this field (if derived).
@@ -2882,7 +2984,7 @@ func (c *ContextSchemaField) GetType() *ContextSchemaFieldType {
 	return c.Type
 }
 
-func (c *ContextSchemaField) GetDefaultValue() interface{} {
+func (c *ContextSchemaField) GetDefaultValue() any {
 	if c == nil {
 		return nil
 	}
@@ -2918,6 +3020,9 @@ func (c *ContextSchemaField) GetSourceField() *string {
 }
 
 func (c *ContextSchemaField) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -2958,7 +3063,7 @@ func (c *ContextSchemaField) SetType(type_ *ContextSchemaFieldType) {
 
 // SetDefaultValue sets the DefaultValue field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchemaField) SetDefaultValue(defaultValue interface{}) {
+func (c *ContextSchemaField) SetDefaultValue(defaultValue any) {
 	c.DefaultValue = defaultValue
 	c.require(contextSchemaFieldFieldDefaultValue)
 }
@@ -3019,6 +3124,9 @@ func (c *ContextSchemaField) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextSchemaField) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -3080,9 +3188,9 @@ type CreateTestRequest struct {
 	// The name of the test.
 	Name string `json:"name" url:"name"`
 	// The request object for the test.
-	Request map[string]interface{} `json:"request" url:"request"`
+	Request map[string]any `json:"request" url:"request"`
 	// The expected response object for the test.
-	Response map[string]interface{} `json:"response" url:"response"`
+	Response map[string]any `json:"response" url:"response"`
 	// Indicates whether the test is critical.
 	Critical bool `json:"critical" url:"critical"`
 
@@ -3100,14 +3208,14 @@ func (c *CreateTestRequest) GetName() string {
 	return c.Name
 }
 
-func (c *CreateTestRequest) GetRequest() map[string]interface{} {
+func (c *CreateTestRequest) GetRequest() map[string]any {
 	if c == nil {
 		return nil
 	}
 	return c.Request
 }
 
-func (c *CreateTestRequest) GetResponse() map[string]interface{} {
+func (c *CreateTestRequest) GetResponse() map[string]any {
 	if c == nil {
 		return nil
 	}
@@ -3122,6 +3230,9 @@ func (c *CreateTestRequest) GetCritical() bool {
 }
 
 func (c *CreateTestRequest) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -3141,14 +3252,14 @@ func (c *CreateTestRequest) SetName(name string) {
 
 // SetRequest sets the Request field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateTestRequest) SetRequest(request map[string]interface{}) {
+func (c *CreateTestRequest) SetRequest(request map[string]any) {
 	c.Request = request
 	c.require(createTestRequestFieldRequest)
 }
 
 // SetResponse sets the Response field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateTestRequest) SetResponse(response map[string]interface{}) {
+func (c *CreateTestRequest) SetResponse(response map[string]any) {
 	c.Response = response
 	c.require(createTestRequestFieldResponse)
 }
@@ -3188,6 +3299,9 @@ func (c *CreateTestRequest) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CreateTestRequest) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -3253,6 +3367,9 @@ func (d *DeleteContextResponse) GetPendingEvaluationsCancelled() *int {
 }
 
 func (d *DeleteContextResponse) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
 	return d.extraProperties
 }
 
@@ -3319,6 +3436,9 @@ func (d *DeleteContextResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DeleteContextResponse) String() string {
+	if d == nil {
+		return "<nil>"
+	}
 	if len(d.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
 			return value
@@ -3363,6 +3483,9 @@ func (d *DeleteRelationshipResponse) GetID() *string {
 }
 
 func (d *DeleteRelationshipResponse) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
 	return d.extraProperties
 }
 
@@ -3415,6 +3538,9 @@ func (d *DeleteRelationshipResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DeleteRelationshipResponse) String() string {
+	if d == nil {
+		return "<nil>"
+	}
 	if len(d.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
 			return value
@@ -3427,10 +3553,10 @@ func (d *DeleteRelationshipResponse) String() string {
 }
 
 // Dynamic request payload for rule execution. Structure depends on rule configuration.
-type DynamicRequestPayload = map[string]interface{}
+type DynamicRequestPayload = map[string]any
 
 // Dynamic response payload from rule execution. Structure depends on rule configuration.
-type DynamicResponsePayload = map[string]interface{}
+type DynamicResponsePayload = map[string]any
 
 var (
 	errorFieldError = big.NewInt(1 << 0)
@@ -3455,6 +3581,9 @@ func (e *Error) GetError() *string {
 }
 
 func (e *Error) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -3500,6 +3629,9 @@ func (e *Error) MarshalJSON() ([]byte, error) {
 }
 
 func (e *Error) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -3564,6 +3696,9 @@ func (f *FlowBase) GetSlug() *string {
 }
 
 func (f *FlowBase) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
 	return f.extraProperties
 }
 
@@ -3630,6 +3765,9 @@ func (f *FlowBase) MarshalJSON() ([]byte, error) {
 }
 
 func (f *FlowBase) String() string {
+	if f == nil {
+		return "<nil>"
+	}
 	if len(f.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
@@ -3734,6 +3872,9 @@ func (f *FlowDetail) GetContext() *FlowDetailContext {
 }
 
 func (f *FlowDetail) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
 	return f.extraProperties
 }
 
@@ -3836,6 +3977,9 @@ func (f *FlowDetail) MarshalJSON() ([]byte, error) {
 }
 
 func (f *FlowDetail) String() string {
+	if f == nil {
+		return "<nil>"
+	}
 	if len(f.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
@@ -3891,6 +4035,9 @@ func (f *FlowDetailContext) GetSlug() *string {
 }
 
 func (f *FlowDetailContext) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
 	return f.extraProperties
 }
 
@@ -3950,6 +4097,9 @@ func (f *FlowDetailContext) MarshalJSON() ([]byte, error) {
 }
 
 func (f *FlowDetailContext) String() string {
+	if f == nil {
+		return "<nil>"
+	}
 	if len(f.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
@@ -4005,6 +4155,9 @@ func (f *FlowDetailOriginRule) GetSlug() *string {
 }
 
 func (f *FlowDetailOriginRule) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
 	return f.extraProperties
 }
 
@@ -4064,6 +4217,9 @@ func (f *FlowDetailOriginRule) MarshalJSON() ([]byte, error) {
 }
 
 func (f *FlowDetailOriginRule) String() string {
+	if f == nil {
+		return "<nil>"
+	}
 	if len(f.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
@@ -4088,7 +4244,7 @@ type FlowExecutionError struct {
 	// Identifier of the node where the error occurred (if applicable)
 	Node *string `json:"node,omitempty" url:"node,omitempty"`
 	// Additional error details
-	Details map[string]interface{} `json:"details,omitempty" url:"details,omitempty"`
+	Details map[string]any `json:"details,omitempty" url:"details,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -4111,7 +4267,7 @@ func (f *FlowExecutionError) GetNode() *string {
 	return f.Node
 }
 
-func (f *FlowExecutionError) GetDetails() map[string]interface{} {
+func (f *FlowExecutionError) GetDetails() map[string]any {
 	if f == nil {
 		return nil
 	}
@@ -4119,6 +4275,9 @@ func (f *FlowExecutionError) GetDetails() map[string]interface{} {
 }
 
 func (f *FlowExecutionError) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
 	return f.extraProperties
 }
 
@@ -4145,7 +4304,7 @@ func (f *FlowExecutionError) SetNode(node *string) {
 
 // SetDetails sets the Details field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (f *FlowExecutionError) SetDetails(details map[string]interface{}) {
+func (f *FlowExecutionError) SetDetails(details map[string]any) {
 	f.Details = details
 	f.require(flowExecutionErrorFieldDetails)
 }
@@ -4178,6 +4337,9 @@ func (f *FlowExecutionError) MarshalJSON() ([]byte, error) {
 }
 
 func (f *FlowExecutionError) String() string {
+	if f == nil {
+		return "<nil>"
+	}
 	if len(f.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
@@ -4264,6 +4426,9 @@ func (f *Folder) GetUserGroups() []string {
 }
 
 func (f *Folder) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
 	return f.extraProperties
 }
 
@@ -4356,6 +4521,9 @@ func (f *Folder) MarshalJSON() ([]byte, error) {
 }
 
 func (f *Folder) String() string {
+	if f == nil {
+		return "<nil>"
+	}
 	if len(f.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
 			return value
@@ -4422,6 +4590,9 @@ func (r *RuleBase) GetSlug() *string {
 }
 
 func (r *RuleBase) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
 	return r.extraProperties
 }
 
@@ -4488,6 +4659,9 @@ func (r *RuleBase) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RuleBase) String() string {
+	if r == nil {
+		return "<nil>"
+	}
 	if len(r.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
 			return value
@@ -4506,10 +4680,14 @@ var (
 	ruleDetailFieldSlug           = big.NewInt(1 << 3)
 	ruleDetailFieldCreatedAt      = big.NewInt(1 << 4)
 	ruleDetailFieldUpdatedAt      = big.NewInt(1 << 5)
-	ruleDetailFieldFolder         = big.NewInt(1 << 6)
-	ruleDetailFieldContext        = big.NewInt(1 << 7)
-	ruleDetailFieldRequestSchema  = big.NewInt(1 << 8)
-	ruleDetailFieldResponseSchema = big.NewInt(1 << 9)
+	ruleDetailFieldPublished      = big.NewInt(1 << 6)
+	ruleDetailFieldNoConditions   = big.NewInt(1 << 7)
+	ruleDetailFieldMetadata       = big.NewInt(1 << 8)
+	ruleDetailFieldUserGroups     = big.NewInt(1 << 9)
+	ruleDetailFieldFolder         = big.NewInt(1 << 10)
+	ruleDetailFieldContext        = big.NewInt(1 << 11)
+	ruleDetailFieldRequestSchema  = big.NewInt(1 << 12)
+	ruleDetailFieldResponseSchema = big.NewInt(1 << 13)
 )
 
 type RuleDetail struct {
@@ -4525,12 +4703,20 @@ type RuleDetail struct {
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
 	// The date this rule was last updated.
 	UpdatedAt *time.Time `json:"updated_at,omitempty" url:"updated_at,omitempty"`
-	Folder    *Folder    `json:"folder,omitempty" url:"folder,omitempty"`
+	// Whether the rule is currently published.
+	Published *bool `json:"published,omitempty" url:"published,omitempty"`
+	// The number of condition rows configured for the rule. Uses the published condition count when the rule is published, otherwise the draft condition count.
+	NoConditions *int `json:"no_conditions,omitempty" url:"no_conditions,omitempty"`
+	// Optional user-defined metadata for API-first integrations.
+	Metadata map[string]any `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// User groups that can access this rule.
+	UserGroups []string `json:"user_groups,omitempty" url:"user_groups,omitempty"`
+	Folder     *Folder  `json:"folder,omitempty" url:"folder,omitempty"`
 	// The context this rule is bound to (if any). Rules bound to a context have their inputs/outputs mapped to context fields.
 	Context *RuleDetailContext `json:"context,omitempty" url:"context,omitempty"`
-	// The published request schema for the rule.
+	// The request schema for the rule. Uses published schema when published, otherwise draft schema.
 	RequestSchema []*SchemaField `json:"request_schema,omitempty" url:"request_schema,omitempty"`
-	// The published response schema for the rule.
+	// The response schema for the rule. Uses published schema when published, otherwise draft schema.
 	ResponseSchema []*SchemaField `json:"response_schema,omitempty" url:"response_schema,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4582,6 +4768,34 @@ func (r *RuleDetail) GetUpdatedAt() *time.Time {
 	return r.UpdatedAt
 }
 
+func (r *RuleDetail) GetPublished() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.Published
+}
+
+func (r *RuleDetail) GetNoConditions() *int {
+	if r == nil {
+		return nil
+	}
+	return r.NoConditions
+}
+
+func (r *RuleDetail) GetMetadata() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.Metadata
+}
+
+func (r *RuleDetail) GetUserGroups() []string {
+	if r == nil {
+		return nil
+	}
+	return r.UserGroups
+}
+
 func (r *RuleDetail) GetFolder() *Folder {
 	if r == nil {
 		return nil
@@ -4611,6 +4825,9 @@ func (r *RuleDetail) GetResponseSchema() []*SchemaField {
 }
 
 func (r *RuleDetail) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
 	return r.extraProperties
 }
 
@@ -4661,6 +4878,34 @@ func (r *RuleDetail) SetCreatedAt(createdAt *time.Time) {
 func (r *RuleDetail) SetUpdatedAt(updatedAt *time.Time) {
 	r.UpdatedAt = updatedAt
 	r.require(ruleDetailFieldUpdatedAt)
+}
+
+// SetPublished sets the Published field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleDetail) SetPublished(published *bool) {
+	r.Published = published
+	r.require(ruleDetailFieldPublished)
+}
+
+// SetNoConditions sets the NoConditions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleDetail) SetNoConditions(noConditions *int) {
+	r.NoConditions = noConditions
+	r.require(ruleDetailFieldNoConditions)
+}
+
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleDetail) SetMetadata(metadata map[string]any) {
+	r.Metadata = metadata
+	r.require(ruleDetailFieldMetadata)
+}
+
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleDetail) SetUserGroups(userGroups []string) {
+	r.UserGroups = userGroups
+	r.require(ruleDetailFieldUserGroups)
 }
 
 // SetFolder sets the Folder field and marks it as non-optional;
@@ -4731,6 +4976,9 @@ func (r *RuleDetail) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RuleDetail) String() string {
+	if r == nil {
+		return "<nil>"
+	}
 	if len(r.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
 			return value
@@ -4786,6 +5034,9 @@ func (r *RuleDetailContext) GetSlug() *string {
 }
 
 func (r *RuleDetailContext) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
 	return r.extraProperties
 }
 
@@ -4845,6 +5096,9 @@ func (r *RuleDetailContext) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RuleDetailContext) String() string {
+	if r == nil {
+		return "<nil>"
+	}
 	if len(r.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
 			return value
@@ -4856,8 +5110,1260 @@ func (r *RuleDetailContext) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-// The exported rule object containing all rule definition data.
-type RuleExport = map[string]interface{}
+// The exported rule object containing all rule definition data. This payload intentionally preserves raw rule document casing (for example, `requestSchema`, `sampleRequest`, and `createdAt`) so it can round-trip through `/admin/rules/import` and `.rbm` workflows.
+type RuleExport = map[string]any
+
+// A single rule row containing request conditions and response output.
+var (
+	ruleImportConditionRowFieldRequest  = big.NewInt(1 << 0)
+	ruleImportConditionRowFieldResponse = big.NewInt(1 << 1)
+	ruleImportConditionRowFieldSettings = big.NewInt(1 << 2)
+)
+
+type RuleImportConditionRow struct {
+	// Request-side cells keyed by request schema field key.
+	Request map[string]*RuleImportRequestCell `json:"request" url:"request"`
+	// Response-side cells keyed by response schema field key.
+	Response map[string]*RuleImportResponseCell `json:"response" url:"response"`
+	Settings *RuleImportRowSettings             `json:"settings" url:"settings"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RuleImportConditionRow) GetRequest() map[string]*RuleImportRequestCell {
+	if r == nil {
+		return nil
+	}
+	return r.Request
+}
+
+func (r *RuleImportConditionRow) GetResponse() map[string]*RuleImportResponseCell {
+	if r == nil {
+		return nil
+	}
+	return r.Response
+}
+
+func (r *RuleImportConditionRow) GetSettings() *RuleImportRowSettings {
+	if r == nil {
+		return nil
+	}
+	return r.Settings
+}
+
+func (r *RuleImportConditionRow) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RuleImportConditionRow) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetRequest sets the Request field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportConditionRow) SetRequest(request map[string]*RuleImportRequestCell) {
+	r.Request = request
+	r.require(ruleImportConditionRowFieldRequest)
+}
+
+// SetResponse sets the Response field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportConditionRow) SetResponse(response map[string]*RuleImportResponseCell) {
+	r.Response = response
+	r.require(ruleImportConditionRowFieldResponse)
+}
+
+// SetSettings sets the Settings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportConditionRow) SetSettings(settings *RuleImportRowSettings) {
+	r.Settings = settings
+	r.require(ruleImportConditionRowFieldSettings)
+}
+
+func (r *RuleImportConditionRow) UnmarshalJSON(data []byte) error {
+	type unmarshaler RuleImportConditionRow
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RuleImportConditionRow(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleImportConditionRow) MarshalJSON() ([]byte, error) {
+	type embed RuleImportConditionRow
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RuleImportConditionRow) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Rule object accepted by /admin/rules/import. If `id` is provided, the matching rule is partially updated (all other fields optional). If `id` is omitted, a new rule is created with all other fields required. This object intentionally preserves raw rule document casing (for example, `requestSchema`, `sampleRequest`, and `createdAt`) to support `.rbm` round-tripping.
+var (
+	ruleImportPayloadFieldID                      = big.NewInt(1 << 0)
+	ruleImportPayloadFieldStableID                = big.NewInt(1 << 1)
+	ruleImportPayloadFieldSlug                    = big.NewInt(1 << 2)
+	ruleImportPayloadFieldName                    = big.NewInt(1 << 3)
+	ruleImportPayloadFieldDescription             = big.NewInt(1 << 4)
+	ruleImportPayloadFieldCreatedAt               = big.NewInt(1 << 5)
+	ruleImportPayloadFieldUpdatedAt               = big.NewInt(1 << 6)
+	ruleImportPayloadFieldPublished               = big.NewInt(1 << 7)
+	ruleImportPayloadFieldMetadata                = big.NewInt(1 << 8)
+	ruleImportPayloadFieldPublish                 = big.NewInt(1 << 9)
+	ruleImportPayloadFieldUnpublish               = big.NewInt(1 << 10)
+	ruleImportPayloadFieldRequestSchema           = big.NewInt(1 << 11)
+	ruleImportPayloadFieldResponseSchema          = big.NewInt(1 << 12)
+	ruleImportPayloadFieldSampleRequest           = big.NewInt(1 << 13)
+	ruleImportPayloadFieldTestRequest             = big.NewInt(1 << 14)
+	ruleImportPayloadFieldSampleResponse          = big.NewInt(1 << 15)
+	ruleImportPayloadFieldConditions              = big.NewInt(1 << 16)
+	ruleImportPayloadFieldGroups                  = big.NewInt(1 << 17)
+	ruleImportPayloadFieldSettings                = big.NewInt(1 << 18)
+	ruleImportPayloadFieldTestSuite               = big.NewInt(1 << 19)
+	ruleImportPayloadFieldHistory                 = big.NewInt(1 << 20)
+	ruleImportPayloadFieldPublishedAt             = big.NewInt(1 << 21)
+	ruleImportPayloadFieldPublishedRequestSchema  = big.NewInt(1 << 22)
+	ruleImportPayloadFieldPublishedResponseSchema = big.NewInt(1 << 23)
+	ruleImportPayloadFieldPublishedConditions     = big.NewInt(1 << 24)
+	ruleImportPayloadFieldPublishedGroups         = big.NewInt(1 << 25)
+)
+
+type RuleImportPayload struct {
+	// Optional. If omitted, a new rule is created with an auto-generated UUID. If provided, the endpoint performs a partial update on the matching rule.
+	ID *string `json:"id,omitempty" url:"id,omitempty"`
+	// Optional stable ID for cross-workspace import/export identity.
+	StableID *string `json:"stable_id,omitempty" url:"stable_id,omitempty"`
+	// Optional. Auto-generated if omitted during creation. Accepted if provided.
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+	// Rule name.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Rule description.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// Creation timestamp.
+	CreatedAt *time.Time `json:"createdAt,omitempty" url:"createdAt,omitempty"`
+	// Last update timestamp.
+	UpdatedAt *time.Time `json:"updatedAt,omitempty" url:"updatedAt,omitempty"`
+	// Current publish state. Set with `_publish`/`_unpublish` to control publish transitions on import.
+	Published *bool `json:"published,omitempty" url:"published,omitempty"`
+	// Optional user-defined metadata for external IDs or implementation mappings.
+	Metadata map[string]any `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// If true, backend publishes this rule and snapshots published_* fields from draft fields.
+	Publish *bool `json:"_publish,omitempty" url:"_publish,omitempty"`
+	// If true, backend unpublishes this rule.
+	Unpublish *bool `json:"_unpublish,omitempty" url:"_unpublish,omitempty"`
+	// Draft request schema.
+	RequestSchema []*RuleImportSchemaField `json:"requestSchema,omitempty" url:"requestSchema,omitempty"`
+	// Draft response schema.
+	ResponseSchema []*RuleImportSchemaField `json:"responseSchema,omitempty" url:"responseSchema,omitempty"`
+	// Sample request JSON.
+	SampleRequest map[string]any `json:"sampleRequest,omitempty" url:"sampleRequest,omitempty"`
+	// Request payload used by editor test tab.
+	TestRequest map[string]any `json:"testRequest,omitempty" url:"testRequest,omitempty"`
+	// Sample response JSON.
+	SampleResponse map[string]any `json:"sampleResponse,omitempty" url:"sampleResponse,omitempty"`
+	// Draft condition rows.
+	Conditions []*RuleImportConditionRow `json:"conditions,omitempty" url:"conditions,omitempty"`
+	// Optional row grouping definitions.
+	Groups map[string]map[string]any `json:"groups,omitempty" url:"groups,omitempty"`
+	// Optional rule-level settings.
+	Settings map[string]any `json:"settings,omitempty" url:"settings,omitempty"`
+	// Optional rule test suite.
+	TestSuite []map[string]any `json:"testSuite,omitempty" url:"testSuite,omitempty"`
+	// Rule history entries.
+	History []map[string]any `json:"history,omitempty" url:"history,omitempty"`
+	// Publish timestamp.
+	PublishedAt *time.Time `json:"publishedAt,omitempty" url:"publishedAt,omitempty"`
+	// Optional published request schema override.
+	PublishedRequestSchema []*RuleImportSchemaField `json:"published_requestSchema,omitempty" url:"published_requestSchema,omitempty"`
+	// Optional published response schema override.
+	PublishedResponseSchema []*RuleImportSchemaField `json:"published_responseSchema,omitempty" url:"published_responseSchema,omitempty"`
+	// Optional published conditions override.
+	PublishedConditions []*RuleImportConditionRow `json:"published_conditions,omitempty" url:"published_conditions,omitempty"`
+	// Optional published groups override.
+	PublishedGroups map[string]map[string]any `json:"published_groups,omitempty" url:"published_groups,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RuleImportPayload) GetID() *string {
+	if r == nil {
+		return nil
+	}
+	return r.ID
+}
+
+func (r *RuleImportPayload) GetStableID() *string {
+	if r == nil {
+		return nil
+	}
+	return r.StableID
+}
+
+func (r *RuleImportPayload) GetSlug() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Slug
+}
+
+func (r *RuleImportPayload) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RuleImportPayload) GetDescription() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Description
+}
+
+func (r *RuleImportPayload) GetCreatedAt() *time.Time {
+	if r == nil {
+		return nil
+	}
+	return r.CreatedAt
+}
+
+func (r *RuleImportPayload) GetUpdatedAt() *time.Time {
+	if r == nil {
+		return nil
+	}
+	return r.UpdatedAt
+}
+
+func (r *RuleImportPayload) GetPublished() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.Published
+}
+
+func (r *RuleImportPayload) GetMetadata() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.Metadata
+}
+
+func (r *RuleImportPayload) GetPublish() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.Publish
+}
+
+func (r *RuleImportPayload) GetUnpublish() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.Unpublish
+}
+
+func (r *RuleImportPayload) GetRequestSchema() []*RuleImportSchemaField {
+	if r == nil {
+		return nil
+	}
+	return r.RequestSchema
+}
+
+func (r *RuleImportPayload) GetResponseSchema() []*RuleImportSchemaField {
+	if r == nil {
+		return nil
+	}
+	return r.ResponseSchema
+}
+
+func (r *RuleImportPayload) GetSampleRequest() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.SampleRequest
+}
+
+func (r *RuleImportPayload) GetTestRequest() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.TestRequest
+}
+
+func (r *RuleImportPayload) GetSampleResponse() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.SampleResponse
+}
+
+func (r *RuleImportPayload) GetConditions() []*RuleImportConditionRow {
+	if r == nil {
+		return nil
+	}
+	return r.Conditions
+}
+
+func (r *RuleImportPayload) GetGroups() map[string]map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.Groups
+}
+
+func (r *RuleImportPayload) GetSettings() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.Settings
+}
+
+func (r *RuleImportPayload) GetTestSuite() []map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.TestSuite
+}
+
+func (r *RuleImportPayload) GetHistory() []map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.History
+}
+
+func (r *RuleImportPayload) GetPublishedAt() *time.Time {
+	if r == nil {
+		return nil
+	}
+	return r.PublishedAt
+}
+
+func (r *RuleImportPayload) GetPublishedRequestSchema() []*RuleImportSchemaField {
+	if r == nil {
+		return nil
+	}
+	return r.PublishedRequestSchema
+}
+
+func (r *RuleImportPayload) GetPublishedResponseSchema() []*RuleImportSchemaField {
+	if r == nil {
+		return nil
+	}
+	return r.PublishedResponseSchema
+}
+
+func (r *RuleImportPayload) GetPublishedConditions() []*RuleImportConditionRow {
+	if r == nil {
+		return nil
+	}
+	return r.PublishedConditions
+}
+
+func (r *RuleImportPayload) GetPublishedGroups() map[string]map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.PublishedGroups
+}
+
+func (r *RuleImportPayload) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RuleImportPayload) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetID(id *string) {
+	r.ID = id
+	r.require(ruleImportPayloadFieldID)
+}
+
+// SetStableID sets the StableID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetStableID(stableID *string) {
+	r.StableID = stableID
+	r.require(ruleImportPayloadFieldStableID)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetSlug(slug *string) {
+	r.Slug = slug
+	r.require(ruleImportPayloadFieldSlug)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetName(name *string) {
+	r.Name = name
+	r.require(ruleImportPayloadFieldName)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetDescription(description *string) {
+	r.Description = description
+	r.require(ruleImportPayloadFieldDescription)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetCreatedAt(createdAt *time.Time) {
+	r.CreatedAt = createdAt
+	r.require(ruleImportPayloadFieldCreatedAt)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetUpdatedAt(updatedAt *time.Time) {
+	r.UpdatedAt = updatedAt
+	r.require(ruleImportPayloadFieldUpdatedAt)
+}
+
+// SetPublished sets the Published field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetPublished(published *bool) {
+	r.Published = published
+	r.require(ruleImportPayloadFieldPublished)
+}
+
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetMetadata(metadata map[string]any) {
+	r.Metadata = metadata
+	r.require(ruleImportPayloadFieldMetadata)
+}
+
+// SetPublish sets the Publish field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetPublish(publish *bool) {
+	r.Publish = publish
+	r.require(ruleImportPayloadFieldPublish)
+}
+
+// SetUnpublish sets the Unpublish field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetUnpublish(unpublish *bool) {
+	r.Unpublish = unpublish
+	r.require(ruleImportPayloadFieldUnpublish)
+}
+
+// SetRequestSchema sets the RequestSchema field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetRequestSchema(requestSchema []*RuleImportSchemaField) {
+	r.RequestSchema = requestSchema
+	r.require(ruleImportPayloadFieldRequestSchema)
+}
+
+// SetResponseSchema sets the ResponseSchema field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetResponseSchema(responseSchema []*RuleImportSchemaField) {
+	r.ResponseSchema = responseSchema
+	r.require(ruleImportPayloadFieldResponseSchema)
+}
+
+// SetSampleRequest sets the SampleRequest field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetSampleRequest(sampleRequest map[string]any) {
+	r.SampleRequest = sampleRequest
+	r.require(ruleImportPayloadFieldSampleRequest)
+}
+
+// SetTestRequest sets the TestRequest field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetTestRequest(testRequest map[string]any) {
+	r.TestRequest = testRequest
+	r.require(ruleImportPayloadFieldTestRequest)
+}
+
+// SetSampleResponse sets the SampleResponse field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetSampleResponse(sampleResponse map[string]any) {
+	r.SampleResponse = sampleResponse
+	r.require(ruleImportPayloadFieldSampleResponse)
+}
+
+// SetConditions sets the Conditions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetConditions(conditions []*RuleImportConditionRow) {
+	r.Conditions = conditions
+	r.require(ruleImportPayloadFieldConditions)
+}
+
+// SetGroups sets the Groups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetGroups(groups map[string]map[string]any) {
+	r.Groups = groups
+	r.require(ruleImportPayloadFieldGroups)
+}
+
+// SetSettings sets the Settings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetSettings(settings map[string]any) {
+	r.Settings = settings
+	r.require(ruleImportPayloadFieldSettings)
+}
+
+// SetTestSuite sets the TestSuite field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetTestSuite(testSuite []map[string]any) {
+	r.TestSuite = testSuite
+	r.require(ruleImportPayloadFieldTestSuite)
+}
+
+// SetHistory sets the History field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetHistory(history []map[string]any) {
+	r.History = history
+	r.require(ruleImportPayloadFieldHistory)
+}
+
+// SetPublishedAt sets the PublishedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetPublishedAt(publishedAt *time.Time) {
+	r.PublishedAt = publishedAt
+	r.require(ruleImportPayloadFieldPublishedAt)
+}
+
+// SetPublishedRequestSchema sets the PublishedRequestSchema field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetPublishedRequestSchema(publishedRequestSchema []*RuleImportSchemaField) {
+	r.PublishedRequestSchema = publishedRequestSchema
+	r.require(ruleImportPayloadFieldPublishedRequestSchema)
+}
+
+// SetPublishedResponseSchema sets the PublishedResponseSchema field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetPublishedResponseSchema(publishedResponseSchema []*RuleImportSchemaField) {
+	r.PublishedResponseSchema = publishedResponseSchema
+	r.require(ruleImportPayloadFieldPublishedResponseSchema)
+}
+
+// SetPublishedConditions sets the PublishedConditions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetPublishedConditions(publishedConditions []*RuleImportConditionRow) {
+	r.PublishedConditions = publishedConditions
+	r.require(ruleImportPayloadFieldPublishedConditions)
+}
+
+// SetPublishedGroups sets the PublishedGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetPublishedGroups(publishedGroups map[string]map[string]any) {
+	r.PublishedGroups = publishedGroups
+	r.require(ruleImportPayloadFieldPublishedGroups)
+}
+
+func (r *RuleImportPayload) UnmarshalJSON(data []byte) error {
+	type embed RuleImportPayload
+	var unmarshaler = struct {
+		embed
+		CreatedAt   *internal.DateTime `json:"createdAt,omitempty"`
+		UpdatedAt   *internal.DateTime `json:"updatedAt,omitempty"`
+		PublishedAt *internal.DateTime `json:"publishedAt,omitempty"`
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RuleImportPayload(unmarshaler.embed)
+	r.CreatedAt = unmarshaler.CreatedAt.TimePtr()
+	r.UpdatedAt = unmarshaler.UpdatedAt.TimePtr()
+	r.PublishedAt = unmarshaler.PublishedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleImportPayload) MarshalJSON() ([]byte, error) {
+	type embed RuleImportPayload
+	var marshaler = struct {
+		embed
+		CreatedAt   *internal.DateTime `json:"createdAt,omitempty"`
+		UpdatedAt   *internal.DateTime `json:"updatedAt,omitempty"`
+		PublishedAt *internal.DateTime `json:"publishedAt,omitempty"`
+	}{
+		embed:       embed(*r),
+		CreatedAt:   internal.NewOptionalDateTime(r.CreatedAt),
+		UpdatedAt:   internal.NewOptionalDateTime(r.UpdatedAt),
+		PublishedAt: internal.NewOptionalDateTime(r.PublishedAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RuleImportPayload) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// A request cell in a condition row.
+var (
+	ruleImportRequestCellFieldOp   = big.NewInt(1 << 0)
+	ruleImportRequestCellFieldArgs = big.NewInt(1 << 1)
+)
+
+type RuleImportRequestCell struct {
+	// Operator name for this request comparison.
+	Op string `json:"op" url:"op"`
+	// Operator arguments.
+	Args []any `json:"args" url:"args"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RuleImportRequestCell) GetOp() string {
+	if r == nil {
+		return ""
+	}
+	return r.Op
+}
+
+func (r *RuleImportRequestCell) GetArgs() []any {
+	if r == nil {
+		return nil
+	}
+	return r.Args
+}
+
+func (r *RuleImportRequestCell) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RuleImportRequestCell) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetOp sets the Op field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportRequestCell) SetOp(op string) {
+	r.Op = op
+	r.require(ruleImportRequestCellFieldOp)
+}
+
+// SetArgs sets the Args field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportRequestCell) SetArgs(args []any) {
+	r.Args = args
+	r.require(ruleImportRequestCellFieldArgs)
+}
+
+func (r *RuleImportRequestCell) UnmarshalJSON(data []byte) error {
+	type embed RuleImportRequestCell
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RuleImportRequestCell(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleImportRequestCell) MarshalJSON() ([]byte, error) {
+	type embed RuleImportRequestCell
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RuleImportRequestCell) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// A response cell in a condition row.
+var (
+	ruleImportResponseCellFieldValue = big.NewInt(1 << 0)
+)
+
+type RuleImportResponseCell struct {
+	Value any `json:"value" url:"value"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RuleImportResponseCell) GetValue() any {
+	if r == nil {
+		return nil
+	}
+	return r.Value
+}
+
+func (r *RuleImportResponseCell) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RuleImportResponseCell) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetValue sets the Value field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportResponseCell) SetValue(value any) {
+	r.Value = value
+	r.require(ruleImportResponseCellFieldValue)
+}
+
+func (r *RuleImportResponseCell) UnmarshalJSON(data []byte) error {
+	type embed RuleImportResponseCell
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RuleImportResponseCell(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleImportResponseCell) MarshalJSON() ([]byte, error) {
+	type embed RuleImportResponseCell
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RuleImportResponseCell) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Execution settings for a condition row.
+var (
+	ruleImportRowSettingsFieldEnabled  = big.NewInt(1 << 0)
+	ruleImportRowSettingsFieldGroupID  = big.NewInt(1 << 1)
+	ruleImportRowSettingsFieldPriority = big.NewInt(1 << 2)
+	ruleImportRowSettingsFieldSchedule = big.NewInt(1 << 3)
+	ruleImportRowSettingsFieldOr       = big.NewInt(1 << 4)
+)
+
+type RuleImportRowSettings struct {
+	// Whether this row is active.
+	Enabled bool `json:"enabled" url:"enabled"`
+	// Optional group ID for grouped aggregation.
+	GroupID *string `json:"groupId,omitempty" url:"groupId,omitempty"`
+	// Row priority when multiple rows match.
+	Priority float64 `json:"priority" url:"priority"`
+	// Optional schedule constraints for this row.
+	Schedule []map[string]any `json:"schedule" url:"schedule"`
+	// When true, request cells in this row are evaluated with OR semantics.
+	Or *bool `json:"or,omitempty" url:"or,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RuleImportRowSettings) GetEnabled() bool {
+	if r == nil {
+		return false
+	}
+	return r.Enabled
+}
+
+func (r *RuleImportRowSettings) GetGroupID() *string {
+	if r == nil {
+		return nil
+	}
+	return r.GroupID
+}
+
+func (r *RuleImportRowSettings) GetPriority() float64 {
+	if r == nil {
+		return 0
+	}
+	return r.Priority
+}
+
+func (r *RuleImportRowSettings) GetSchedule() []map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.Schedule
+}
+
+func (r *RuleImportRowSettings) GetOr() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.Or
+}
+
+func (r *RuleImportRowSettings) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RuleImportRowSettings) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetEnabled sets the Enabled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportRowSettings) SetEnabled(enabled bool) {
+	r.Enabled = enabled
+	r.require(ruleImportRowSettingsFieldEnabled)
+}
+
+// SetGroupID sets the GroupID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportRowSettings) SetGroupID(groupID *string) {
+	r.GroupID = groupID
+	r.require(ruleImportRowSettingsFieldGroupID)
+}
+
+// SetPriority sets the Priority field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportRowSettings) SetPriority(priority float64) {
+	r.Priority = priority
+	r.require(ruleImportRowSettingsFieldPriority)
+}
+
+// SetSchedule sets the Schedule field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportRowSettings) SetSchedule(schedule []map[string]any) {
+	r.Schedule = schedule
+	r.require(ruleImportRowSettingsFieldSchedule)
+}
+
+// SetOr sets the Or field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportRowSettings) SetOr(or *bool) {
+	r.Or = or
+	r.require(ruleImportRowSettingsFieldOr)
+}
+
+func (r *RuleImportRowSettings) UnmarshalJSON(data []byte) error {
+	type embed RuleImportRowSettings
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RuleImportRowSettings(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleImportRowSettings) MarshalJSON() ([]byte, error) {
+	type embed RuleImportRowSettings
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RuleImportRowSettings) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// A request or response schema field used when importing a rule.
+var (
+	ruleImportSchemaFieldFieldKey          = big.NewInt(1 << 0)
+	ruleImportSchemaFieldFieldShow         = big.NewInt(1 << 1)
+	ruleImportSchemaFieldFieldName         = big.NewInt(1 << 2)
+	ruleImportSchemaFieldFieldDescription  = big.NewInt(1 << 3)
+	ruleImportSchemaFieldFieldType         = big.NewInt(1 << 4)
+	ruleImportSchemaFieldFieldDefaultValue = big.NewInt(1 << 5)
+	ruleImportSchemaFieldFieldValuesOnly   = big.NewInt(1 << 6)
+	ruleImportSchemaFieldFieldValuesPrefix = big.NewInt(1 << 7)
+)
+
+type RuleImportSchemaField struct {
+	// Unique key for this field.
+	Key string `json:"key" url:"key"`
+	// Whether this field is shown in the editor table.
+	Show bool `json:"show" url:"show"`
+	// Display name for this field.
+	Name string `json:"name" url:"name"`
+	// Optional field description.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// Data type for this field.
+	Type RuleImportSchemaFieldType `json:"type" url:"type"`
+	// Optional default value for this field.
+	DefaultValue any `json:"defaultValue,omitempty" url:"defaultValue,omitempty"`
+	// When true, this field should only accept values from a value collection.
+	ValuesOnly *bool `json:"valuesOnly,omitempty" url:"valuesOnly,omitempty"`
+	// Prefix used to scope available dynamic values for this field.
+	ValuesPrefix *string `json:"valuesPrefix,omitempty" url:"valuesPrefix,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RuleImportSchemaField) GetKey() string {
+	if r == nil {
+		return ""
+	}
+	return r.Key
+}
+
+func (r *RuleImportSchemaField) GetShow() bool {
+	if r == nil {
+		return false
+	}
+	return r.Show
+}
+
+func (r *RuleImportSchemaField) GetName() string {
+	if r == nil {
+		return ""
+	}
+	return r.Name
+}
+
+func (r *RuleImportSchemaField) GetDescription() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Description
+}
+
+func (r *RuleImportSchemaField) GetType() RuleImportSchemaFieldType {
+	if r == nil {
+		return ""
+	}
+	return r.Type
+}
+
+func (r *RuleImportSchemaField) GetDefaultValue() any {
+	if r == nil {
+		return nil
+	}
+	return r.DefaultValue
+}
+
+func (r *RuleImportSchemaField) GetValuesOnly() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.ValuesOnly
+}
+
+func (r *RuleImportSchemaField) GetValuesPrefix() *string {
+	if r == nil {
+		return nil
+	}
+	return r.ValuesPrefix
+}
+
+func (r *RuleImportSchemaField) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RuleImportSchemaField) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportSchemaField) SetKey(key string) {
+	r.Key = key
+	r.require(ruleImportSchemaFieldFieldKey)
+}
+
+// SetShow sets the Show field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportSchemaField) SetShow(show bool) {
+	r.Show = show
+	r.require(ruleImportSchemaFieldFieldShow)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportSchemaField) SetName(name string) {
+	r.Name = name
+	r.require(ruleImportSchemaFieldFieldName)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportSchemaField) SetDescription(description *string) {
+	r.Description = description
+	r.require(ruleImportSchemaFieldFieldDescription)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportSchemaField) SetType(type_ RuleImportSchemaFieldType) {
+	r.Type = type_
+	r.require(ruleImportSchemaFieldFieldType)
+}
+
+// SetDefaultValue sets the DefaultValue field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportSchemaField) SetDefaultValue(defaultValue any) {
+	r.DefaultValue = defaultValue
+	r.require(ruleImportSchemaFieldFieldDefaultValue)
+}
+
+// SetValuesOnly sets the ValuesOnly field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportSchemaField) SetValuesOnly(valuesOnly *bool) {
+	r.ValuesOnly = valuesOnly
+	r.require(ruleImportSchemaFieldFieldValuesOnly)
+}
+
+// SetValuesPrefix sets the ValuesPrefix field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportSchemaField) SetValuesPrefix(valuesPrefix *string) {
+	r.ValuesPrefix = valuesPrefix
+	r.require(ruleImportSchemaFieldFieldValuesPrefix)
+}
+
+func (r *RuleImportSchemaField) UnmarshalJSON(data []byte) error {
+	type embed RuleImportSchemaField
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RuleImportSchemaField(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleImportSchemaField) MarshalJSON() ([]byte, error) {
+	type embed RuleImportSchemaField
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RuleImportSchemaField) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Data type for this field.
+type RuleImportSchemaFieldType string
+
+const (
+	RuleImportSchemaFieldTypeString   RuleImportSchemaFieldType = "string"
+	RuleImportSchemaFieldTypeNumber   RuleImportSchemaFieldType = "number"
+	RuleImportSchemaFieldTypeBoolean  RuleImportSchemaFieldType = "boolean"
+	RuleImportSchemaFieldTypeDate     RuleImportSchemaFieldType = "date"
+	RuleImportSchemaFieldTypeList     RuleImportSchemaFieldType = "list"
+	RuleImportSchemaFieldTypeObject   RuleImportSchemaFieldType = "object"
+	RuleImportSchemaFieldTypeFunction RuleImportSchemaFieldType = "function"
+)
+
+func NewRuleImportSchemaFieldTypeFromString(s string) (RuleImportSchemaFieldType, error) {
+	switch s {
+	case "string":
+		return RuleImportSchemaFieldTypeString, nil
+	case "number":
+		return RuleImportSchemaFieldTypeNumber, nil
+	case "boolean":
+		return RuleImportSchemaFieldTypeBoolean, nil
+	case "date":
+		return RuleImportSchemaFieldTypeDate, nil
+	case "list":
+		return RuleImportSchemaFieldTypeList, nil
+	case "object":
+		return RuleImportSchemaFieldTypeObject, nil
+	case "function":
+		return RuleImportSchemaFieldTypeFunction, nil
+	}
+	var t RuleImportSchemaFieldType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RuleImportSchemaFieldType) Ptr() *RuleImportSchemaFieldType {
+	return &r
+}
 
 type RuleListResponse = []*RuleDetail
 
@@ -4954,6 +6460,9 @@ func (s *SchemaField) GetTransform() *string {
 }
 
 func (s *SchemaField) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
 	return s.extraProperties
 }
 
@@ -5048,6 +6557,9 @@ func (s *SchemaField) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SchemaField) String() string {
+	if s == nil {
+		return "<nil>"
+	}
 	if len(s.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
@@ -5064,8 +6576,8 @@ type SchemaFieldDefaultValue struct {
 	String           string
 	Double           float64
 	Boolean          bool
-	StringUnknownMap map[string]interface{}
-	UnknownList      []interface{}
+	StringUnknownMap map[string]any
+	UnknownList      []any
 
 	typ string
 }
@@ -5091,14 +6603,14 @@ func (s *SchemaFieldDefaultValue) GetBoolean() bool {
 	return s.Boolean
 }
 
-func (s *SchemaFieldDefaultValue) GetStringUnknownMap() map[string]interface{} {
+func (s *SchemaFieldDefaultValue) GetStringUnknownMap() map[string]any {
 	if s == nil {
 		return nil
 	}
 	return s.StringUnknownMap
 }
 
-func (s *SchemaFieldDefaultValue) GetUnknownList() []interface{} {
+func (s *SchemaFieldDefaultValue) GetUnknownList() []any {
 	if s == nil {
 		return nil
 	}
@@ -5124,13 +6636,13 @@ func (s *SchemaFieldDefaultValue) UnmarshalJSON(data []byte) error {
 		s.Boolean = valueBoolean
 		return nil
 	}
-	var valueStringUnknownMap map[string]interface{}
+	var valueStringUnknownMap map[string]any
 	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
 		s.typ = "StringUnknownMap"
 		s.StringUnknownMap = valueStringUnknownMap
 		return nil
 	}
-	var valueUnknownList []interface{}
+	var valueUnknownList []any
 	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
 		s.typ = "UnknownList"
 		s.UnknownList = valueUnknownList
@@ -5162,8 +6674,8 @@ type SchemaFieldDefaultValueVisitor interface {
 	VisitString(string) error
 	VisitDouble(float64) error
 	VisitBoolean(bool) error
-	VisitStringUnknownMap(map[string]interface{}) error
-	VisitUnknownList([]interface{}) error
+	VisitStringUnknownMap(map[string]any) error
+	VisitUnknownList([]any) error
 }
 
 func (s *SchemaFieldDefaultValue) Accept(visitor SchemaFieldDefaultValueVisitor) error {
@@ -5240,6 +6752,9 @@ func (s *SuccessMessage) GetMessage() *string {
 }
 
 func (s *SuccessMessage) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
 	return s.extraProperties
 }
 
@@ -5285,6 +6800,9 @@ func (s *SuccessMessage) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SuccessMessage) String() string {
+	if s == nil {
+		return "<nil>"
+	}
 	if len(s.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
@@ -5314,9 +6832,9 @@ type Test struct {
 	// The name of the test.
 	Name string `json:"name" url:"name"`
 	// The request object for the test.
-	Request map[string]interface{} `json:"request" url:"request"`
+	Request map[string]any `json:"request" url:"request"`
 	// The expected response object for the test.
-	Response map[string]interface{} `json:"response" url:"response"`
+	Response map[string]any `json:"response" url:"response"`
 	// Indicates whether the test is critical.
 	Critical bool `json:"critical" url:"critical"`
 	// Indicates if the test resulted in an error. Null if test has not been executed.
@@ -5349,14 +6867,14 @@ func (t *Test) GetName() string {
 	return t.Name
 }
 
-func (t *Test) GetRequest() map[string]interface{} {
+func (t *Test) GetRequest() map[string]any {
 	if t == nil {
 		return nil
 	}
 	return t.Request
 }
 
-func (t *Test) GetResponse() map[string]interface{} {
+func (t *Test) GetResponse() map[string]any {
 	if t == nil {
 		return nil
 	}
@@ -5399,6 +6917,9 @@ func (t *Test) GetLastExecuted() *time.Time {
 }
 
 func (t *Test) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
 	return t.extraProperties
 }
 
@@ -5425,14 +6946,14 @@ func (t *Test) SetName(name string) {
 
 // SetRequest sets the Request field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (t *Test) SetRequest(request map[string]interface{}) {
+func (t *Test) SetRequest(request map[string]any) {
 	t.Request = request
 	t.require(testFieldRequest)
 }
 
 // SetResponse sets the Response field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (t *Test) SetResponse(response map[string]interface{}) {
+func (t *Test) SetResponse(response map[string]any) {
 	t.Response = response
 	t.require(testFieldResponse)
 }
@@ -5508,6 +7029,9 @@ func (t *Test) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Test) String() string {
+	if t == nil {
+		return "<nil>"
+	}
 	if len(t.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value
@@ -5535,8 +7059,8 @@ type TestTestState struct {
 	// Execution time in seconds
 	Duration *float64 `json:"duration,omitempty" url:"duration,omitempty"`
 	// Actual response returned
-	Response   map[string]interface{}   `json:"response,omitempty" url:"response,omitempty"`
-	Conditions []map[string]interface{} `json:"conditions,omitempty" url:"conditions,omitempty"`
+	Response   map[string]any   `json:"response,omitempty" url:"response,omitempty"`
+	Conditions []map[string]any `json:"conditions,omitempty" url:"conditions,omitempty"`
 	// HTTP status code returned
 	HTTPStatus  *int  `json:"http_status,omitempty" url:"http_status,omitempty"`
 	SuccessIdxs []int `json:"success_idxs,omitempty" url:"success_idxs,omitempty"`
@@ -5557,14 +7081,14 @@ func (t *TestTestState) GetDuration() *float64 {
 	return t.Duration
 }
 
-func (t *TestTestState) GetResponse() map[string]interface{} {
+func (t *TestTestState) GetResponse() map[string]any {
 	if t == nil {
 		return nil
 	}
 	return t.Response
 }
 
-func (t *TestTestState) GetConditions() []map[string]interface{} {
+func (t *TestTestState) GetConditions() []map[string]any {
 	if t == nil {
 		return nil
 	}
@@ -5593,6 +7117,9 @@ func (t *TestTestState) GetEvaluationError() *TestTestStateEvaluationError {
 }
 
 func (t *TestTestState) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
 	return t.extraProperties
 }
 
@@ -5612,14 +7139,14 @@ func (t *TestTestState) SetDuration(duration *float64) {
 
 // SetResponse sets the Response field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TestTestState) SetResponse(response map[string]interface{}) {
+func (t *TestTestState) SetResponse(response map[string]any) {
 	t.Response = response
 	t.require(testTestStateFieldResponse)
 }
 
 // SetConditions sets the Conditions field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (t *TestTestState) SetConditions(conditions []map[string]interface{}) {
+func (t *TestTestState) SetConditions(conditions []map[string]any) {
 	t.Conditions = conditions
 	t.require(testTestStateFieldConditions)
 }
@@ -5673,6 +7200,9 @@ func (t *TestTestState) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TestTestState) String() string {
+	if t == nil {
+		return "<nil>"
+	}
 	if len(t.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
 			return value
@@ -5801,6 +7331,9 @@ func (u *UpdateContextResponse) GetUpdatedAt() *time.Time {
 }
 
 func (u *UpdateContextResponse) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
 	return u.extraProperties
 }
 
@@ -5875,6 +7408,9 @@ func (u *UpdateContextResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UpdateContextResponse) String() string {
+	if u == nil {
+		return "<nil>"
+	}
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
@@ -5890,8 +7426,7 @@ var (
 	userGroupFieldID          = big.NewInt(1 << 0)
 	userGroupFieldName        = big.NewInt(1 << 1)
 	userGroupFieldDescription = big.NewInt(1 << 2)
-	userGroupFieldMembers     = big.NewInt(1 << 3)
-	userGroupFieldCreatedAt   = big.NewInt(1 << 4)
+	userGroupFieldCreatedAt   = big.NewInt(1 << 3)
 )
 
 type UserGroup struct {
@@ -5901,8 +7436,6 @@ type UserGroup struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Description of the user group.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
-	// List of member emails in the user group.
-	Members []string `json:"members,omitempty" url:"members,omitempty"`
 	// When the user group was created.
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
 
@@ -5934,13 +7467,6 @@ func (u *UserGroup) GetDescription() *string {
 	return u.Description
 }
 
-func (u *UserGroup) GetMembers() []string {
-	if u == nil {
-		return nil
-	}
-	return u.Members
-}
-
 func (u *UserGroup) GetCreatedAt() *time.Time {
 	if u == nil {
 		return nil
@@ -5949,6 +7475,9 @@ func (u *UserGroup) GetCreatedAt() *time.Time {
 }
 
 func (u *UserGroup) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
 	return u.extraProperties
 }
 
@@ -5978,13 +7507,6 @@ func (u *UserGroup) SetName(name *string) {
 func (u *UserGroup) SetDescription(description *string) {
 	u.Description = description
 	u.require(userGroupFieldDescription)
-}
-
-// SetMembers sets the Members field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UserGroup) SetMembers(members []string) {
-	u.Members = members
-	u.require(userGroupFieldMembers)
 }
 
 // SetCreatedAt sets the CreatedAt field and marks it as non-optional;
@@ -6030,6 +7552,9 @@ func (u *UserGroup) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UserGroup) String() string {
+	if u == nil {
+		return "<nil>"
+	}
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
@@ -6097,6 +7622,9 @@ func (v *ValueLimits) GetMaxKeyLength() *int {
 }
 
 func (v *ValueLimits) GetExtraProperties() map[string]interface{} {
+	if v == nil {
+		return nil
+	}
 	return v.extraProperties
 }
 
@@ -6163,6 +7691,9 @@ func (v *ValueLimits) MarshalJSON() ([]byte, error) {
 }
 
 func (v *ValueLimits) String() string {
+	if v == nil {
+		return "<nil>"
+	}
 	if len(v.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
 			return value

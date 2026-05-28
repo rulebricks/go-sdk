@@ -6,37 +6,38 @@ import (
 	bytes "bytes"
 	context "context"
 	json "encoding/json"
-	require "github.com/stretchr/testify/require"
 	http "net/http"
+	os "os"
 	sdk "sdk"
 	assets "sdk/assets"
 	client "sdk/client"
 	option "sdk/option"
 	testing "testing"
-)
 
-func ResetWireMockRequests(
-	t *testing.T,
-) {
-	WiremockAdminURL := "http://localhost:8080/__admin"
-	_, err := http.Post(WiremockAdminURL+"/requests/reset", "application/json", nil)
-	require.NoError(t, err)
-}
+	require "github.com/stretchr/testify/require"
+)
 
 func VerifyRequestCount(
 	t *testing.T,
+	testId string,
 	method string,
 	urlPath string,
-	queryParams map[string]string,
+	queryParams map[string]any,
 	expected int,
 ) {
-	WiremockAdminURL := "http://localhost:8080/__admin"
+	wiremockURL := os.Getenv("WIREMOCK_URL")
+	if wiremockURL == "" {
+		wiremockURL = "http://localhost:8080"
+	}
+	WiremockAdminURL := wiremockURL + "/__admin"
 	var reqBody bytes.Buffer
 	reqBody.WriteString(`{"method":"`)
 	reqBody.WriteString(method)
 	reqBody.WriteString(`","urlPath":"`)
 	reqBody.WriteString(urlPath)
-	reqBody.WriteString(`"}`)
+	reqBody.WriteString(`","headers":{"X-Test-Id":{"equalTo":"`)
+	reqBody.WriteString(testId)
+	reqBody.WriteString(`"}}`)
 	if len(queryParams) > 0 {
 		reqBody.WriteString(`,"queryParameters":{`)
 		first := true
@@ -46,13 +47,28 @@ func VerifyRequestCount(
 			}
 			reqBody.WriteString(`"`)
 			reqBody.WriteString(key)
-			reqBody.WriteString(`":{"equalTo":"`)
-			reqBody.WriteString(value)
-			reqBody.WriteString(`"}`)
+			switch v := value.(type) {
+			case string:
+				reqBody.WriteString(`":{"equalTo":"`)
+				reqBody.WriteString(v)
+				reqBody.WriteString(`"}`)
+			case []string:
+				reqBody.WriteString(`":{"hasExactly":[`)
+				for i, item := range v {
+					if i > 0 {
+						reqBody.WriteString(",")
+					}
+					reqBody.WriteString(`{"equalTo":"`)
+					reqBody.WriteString(item)
+					reqBody.WriteString(`"}`)
+				}
+				reqBody.WriteString(`]}`)
+			}
 			first = false
 		}
 		reqBody.WriteString("}")
 	}
+	reqBody.WriteString("}")
 	resp, err := http.Post(WiremockAdminURL+"/requests/find", "application/json", &reqBody)
 	require.NoError(t, err)
 	var result struct {
@@ -65,12 +81,13 @@ func VerifyRequestCount(
 func TestAssetsRulesDeleteWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &assets.DeleteRuleRequest{
 		ID: "2855f8da-2654-4df9-8903-8f797cbfe8eb",
@@ -78,21 +95,25 @@ func TestAssetsRulesDeleteWithWireMock(
 	_, invocationErr := client.Assets.Rules.Delete(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssetsRulesDeleteWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "DELETE", "/admin/rules/delete", nil, 1)
+	VerifyRequestCount(t, "TestAssetsRulesDeleteWithWireMock", "DELETE", "/admin/rules/delete", nil, 1)
 }
 
 func TestAssetsRulesPullWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &assets.PullRulesRequest{
 		ID: "2855f8da-2654-4df9-8903-8f797cbfe8eb",
@@ -100,46 +121,184 @@ func TestAssetsRulesPullWithWireMock(
 	_, invocationErr := client.Assets.Rules.Pull(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssetsRulesPullWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "GET", "/admin/rules/export", map[string]string{"id": "2855f8da-2654-4df9-8903-8f797cbfe8eb"}, 1)
+	VerifyRequestCount(t, "TestAssetsRulesPullWithWireMock", "GET", "/admin/rules/export", map[string]interface{}{"id": "2855f8da-2654-4df9-8903-8f797cbfe8eb"}, 1)
 }
 
 func TestAssetsRulesPushWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &assets.ImportRuleRequest{
-		Rule: map[string]any{
-			"name":        "Imported Rule",
-			"description": "A rule imported via API",
+		Rule: &sdk.RuleImportPayload{
+			Name: sdk.String(
+				"Basic Pricing Rule",
+			),
+			Description: sdk.String(
+				"",
+			),
+			CreatedAt: sdk.Time(
+				sdk.MustParseDateTime(
+					"2026-02-12T01:29:23.000Z",
+				),
+			),
+			UpdatedAt: sdk.Time(
+				sdk.MustParseDateTime(
+					"2026-02-12T01:29:23.000Z",
+				),
+			),
+			Published: sdk.Bool(
+				false,
+			),
+			RequestSchema: []*sdk.RuleImportSchemaField{
+				&sdk.RuleImportSchemaField{
+					Key:  "customer_tier",
+					Show: true,
+					Name: "Customer Tier",
+					Type: sdk.RuleImportSchemaFieldTypeString,
+				},
+				&sdk.RuleImportSchemaField{
+					Key:  "order_total",
+					Show: true,
+					Name: "Order Total",
+					Type: sdk.RuleImportSchemaFieldTypeNumber,
+				},
+				&sdk.RuleImportSchemaField{
+					Key:  "expedited",
+					Show: true,
+					Name: "Expedited",
+					Type: sdk.RuleImportSchemaFieldTypeBoolean,
+				},
+			},
+			ResponseSchema: []*sdk.RuleImportSchemaField{
+				&sdk.RuleImportSchemaField{
+					Key:  "discount_rate",
+					Show: true,
+					Name: "Discount Rate",
+					Type: sdk.RuleImportSchemaFieldTypeNumber,
+				},
+				&sdk.RuleImportSchemaField{
+					Key:  "approval_status",
+					Show: true,
+					Name: "Approval Status",
+					Type: sdk.RuleImportSchemaFieldTypeString,
+				},
+			},
+			SampleRequest: map[string]any{
+				"customer_tier": "STANDARD",
+				"expedited":     false,
+				"order_total":   250,
+			},
+			TestRequest: map[string]any{
+				"customer_tier": "STANDARD",
+				"expedited":     false,
+				"order_total":   250,
+			},
+			SampleResponse: map[string]any{
+				"approval_status": "standard",
+				"discount_rate":   0,
+			},
+			Conditions: []*sdk.RuleImportConditionRow{
+				&sdk.RuleImportConditionRow{
+					Request: map[string]*sdk.RuleImportRequestCell{
+						"customer_tier": &sdk.RuleImportRequestCell{
+							Op: "equals",
+							Args: []any{
+								"VIP",
+							},
+						},
+					},
+					Response: map[string]*sdk.RuleImportResponseCell{
+						"approval_status": &sdk.RuleImportResponseCell{
+							Value: "priority",
+						},
+						"discount_rate": &sdk.RuleImportResponseCell{
+							Value: 0.2,
+						},
+					},
+					Settings: &sdk.RuleImportRowSettings{
+						Enabled:  true,
+						Priority: 0,
+						Schedule: []map[string]any{},
+					},
+				},
+				&sdk.RuleImportConditionRow{
+					Request: map[string]*sdk.RuleImportRequestCell{
+						"expedited": &sdk.RuleImportRequestCell{
+							Op: "equals",
+							Args: []any{
+								true,
+							},
+						},
+					},
+					Response: map[string]*sdk.RuleImportResponseCell{
+						"approval_status": &sdk.RuleImportResponseCell{
+							Value: "expedited",
+						},
+						"discount_rate": &sdk.RuleImportResponseCell{
+							Value: 0.05,
+						},
+					},
+					Settings: &sdk.RuleImportRowSettings{
+						Enabled:  true,
+						Priority: 1,
+						Schedule: []map[string]any{},
+					},
+				},
+				&sdk.RuleImportConditionRow{
+					Request: map[string]*sdk.RuleImportRequestCell{},
+					Response: map[string]*sdk.RuleImportResponseCell{
+						"approval_status": &sdk.RuleImportResponseCell{
+							Value: "standard",
+						},
+						"discount_rate": &sdk.RuleImportResponseCell{
+							Value: 0,
+						},
+					},
+					Settings: &sdk.RuleImportRowSettings{
+						Enabled:  true,
+						Priority: 2,
+						Schedule: []map[string]any{},
+					},
+				},
+			},
+			History: []map[string]any{},
 		},
 	}
 	_, invocationErr := client.Assets.Rules.Push(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssetsRulesPushWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "POST", "/admin/rules/import", nil, 1)
+	VerifyRequestCount(t, "TestAssetsRulesPushWithWireMock", "POST", "/admin/rules/import", nil, 1)
 }
 
 func TestAssetsRulesListWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &assets.ListRulesRequest{
 		Folder: sdk.String(
@@ -149,8 +308,11 @@ func TestAssetsRulesListWithWireMock(
 	_, invocationErr := client.Assets.Rules.List(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssetsRulesListWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "GET", "/admin/rules/list", map[string]string{"folder": "Marketing Rules"}, 1)
+	VerifyRequestCount(t, "TestAssetsRulesListWithWireMock", "GET", "/admin/rules/list", map[string]interface{}{"folder": "Marketing Rules"}, 1)
 }

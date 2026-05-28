@@ -395,7 +395,7 @@ func (s *SubmitContextsRequest) MarshalJSON() ([]byte, error) {
 }
 
 // Optional request body for triggering a cascade. Currently no properties are used.
-type CascadeContextRequest = map[string]interface{}
+type CascadeContextRequest = map[string]any
 
 // Response after triggering a cascade re-evaluation of pending rules/flows.
 var (
@@ -431,6 +431,9 @@ func (c *CascadeContextResponse) GetCascaded() []*CascadeResult {
 }
 
 func (c *CascadeContextResponse) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -483,6 +486,9 @@ func (c *CascadeContextResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CascadeContextResponse) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -516,7 +522,7 @@ type CascadeResult struct {
 	// Whether the evaluation succeeded.
 	Status *CascadeResultStatus `json:"status,omitempty" url:"status,omitempty"`
 	// The evaluation output.
-	Result map[string]interface{} `json:"result,omitempty" url:"result,omitempty"`
+	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
 	// Whether this was auto-executed (true) or from a registered pending evaluation (false).
 	AutoExecuted *bool `json:"auto_executed,omitempty" url:"auto_executed,omitempty"`
 	// List of field keys written back to the context (for rule evaluations).
@@ -559,7 +565,7 @@ func (c *CascadeResult) GetStatus() *CascadeResultStatus {
 	return c.Status
 }
 
-func (c *CascadeResult) GetResult() map[string]interface{} {
+func (c *CascadeResult) GetResult() map[string]any {
 	if c == nil {
 		return nil
 	}
@@ -588,6 +594,9 @@ func (c *CascadeResult) GetError() *string {
 }
 
 func (c *CascadeResult) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -628,7 +637,7 @@ func (c *CascadeResult) SetStatus(status *CascadeResultStatus) {
 
 // SetResult sets the Result field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CascadeResult) SetResult(result map[string]interface{}) {
+func (c *CascadeResult) SetResult(result map[string]any) {
 	c.Result = result
 	c.require(cascadeResultFieldResult)
 }
@@ -682,6 +691,9 @@ func (c *CascadeResult) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CascadeResult) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -750,6 +762,9 @@ func (c *ContextInstanceHistory) GetHistory() map[string][]*ContextInstanceHisto
 }
 
 func (c *ContextInstanceHistory) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -802,6 +817,9 @@ func (c *ContextInstanceHistory) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextInstanceHistory) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -823,7 +841,7 @@ type ContextInstanceHistoryEntry struct {
 	// When this value was recorded.
 	Timestamp *time.Time `json:"timestamp,omitempty" url:"timestamp,omitempty"`
 	// The field value at this point in time.
-	Value interface{} `json:"value,omitempty" url:"value,omitempty"`
+	Value any `json:"value,omitempty" url:"value,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -839,7 +857,7 @@ func (c *ContextInstanceHistoryEntry) GetTimestamp() *time.Time {
 	return c.Timestamp
 }
 
-func (c *ContextInstanceHistoryEntry) GetValue() interface{} {
+func (c *ContextInstanceHistoryEntry) GetValue() any {
 	if c == nil {
 		return nil
 	}
@@ -847,6 +865,9 @@ func (c *ContextInstanceHistoryEntry) GetValue() interface{} {
 }
 
 func (c *ContextInstanceHistoryEntry) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -866,7 +887,7 @@ func (c *ContextInstanceHistoryEntry) SetTimestamp(timestamp *time.Time) {
 
 // SetValue sets the Value field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextInstanceHistoryEntry) SetValue(value interface{}) {
+func (c *ContextInstanceHistoryEntry) SetValue(value any) {
 	c.Value = value
 	c.require(contextInstanceHistoryEntryFieldValue)
 }
@@ -907,6 +928,9 @@ func (c *ContextInstanceHistoryEntry) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextInstanceHistoryEntry) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1012,6 +1036,9 @@ func (c *ContextInstancePendingEvaluation) GetExpiresAt() *time.Time {
 }
 
 func (c *ContextInstancePendingEvaluation) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1118,6 +1145,9 @@ func (c *ContextInstancePendingEvaluation) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextInstancePendingEvaluation) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1257,6 +1287,9 @@ func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetInstance() *stri
 }
 
 func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1316,6 +1349,9 @@ func (c *ContextInstancePendingEvaluationWaitingOnItemField) MarshalJSON() ([]by
 }
 
 func (c *ContextInstancePendingEvaluationWaitingOnItemField) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1351,6 +1387,9 @@ func (c *ContextInstancePendingResponse) GetPending() []*ContextInstancePendingE
 }
 
 func (c *ContextInstancePendingResponse) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1396,6 +1435,9 @@ func (c *ContextInstancePendingResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextInstancePendingResponse) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1424,9 +1466,9 @@ type ContextInstanceState struct {
 	// Combined identifier in format 'contextSlug:instanceId'.
 	Context *string `json:"context,omitempty" url:"context,omitempty"`
 	// The current base field values for this instance.
-	State map[string]interface{} `json:"state,omitempty" url:"state,omitempty"`
+	State map[string]any `json:"state,omitempty" url:"state,omitempty"`
 	// Computed/derived field values from bound rules.
-	Derived map[string]interface{} `json:"derived,omitempty" url:"derived,omitempty"`
+	Derived map[string]any `json:"derived,omitempty" url:"derived,omitempty"`
 	// Whether all required fields are present ('complete') or some are missing ('pending').
 	Status *ContextInstanceStateStatus `json:"status,omitempty" url:"status,omitempty"`
 	// List of field keys that are currently populated.
@@ -1454,14 +1496,14 @@ func (c *ContextInstanceState) GetContext() *string {
 	return c.Context
 }
 
-func (c *ContextInstanceState) GetState() map[string]interface{} {
+func (c *ContextInstanceState) GetState() map[string]any {
 	if c == nil {
 		return nil
 	}
 	return c.State
 }
 
-func (c *ContextInstanceState) GetDerived() map[string]interface{} {
+func (c *ContextInstanceState) GetDerived() map[string]any {
 	if c == nil {
 		return nil
 	}
@@ -1511,6 +1553,9 @@ func (c *ContextInstanceState) GetExpiresAt() *time.Time {
 }
 
 func (c *ContextInstanceState) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -1530,14 +1575,14 @@ func (c *ContextInstanceState) SetContext(context *string) {
 
 // SetState sets the State field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextInstanceState) SetState(state map[string]interface{}) {
+func (c *ContextInstanceState) SetState(state map[string]any) {
 	c.State = state
 	c.require(contextInstanceStateFieldState)
 }
 
 // SetDerived sets the Derived field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextInstanceState) SetDerived(derived map[string]interface{}) {
+func (c *ContextInstanceState) SetDerived(derived map[string]any) {
 	c.Derived = derived
 	c.require(contextInstanceStateFieldDerived)
 }
@@ -1628,6 +1673,9 @@ func (c *ContextInstanceState) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ContextInstanceState) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -1696,6 +1744,9 @@ func (d *DeleteContextInstanceResponse) GetPendingEvaluationsCancelled() *int {
 }
 
 func (d *DeleteContextInstanceResponse) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
 	return d.extraProperties
 }
 
@@ -1748,6 +1799,9 @@ func (d *DeleteContextInstanceResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DeleteContextInstanceResponse) String() string {
+	if d == nil {
+		return "<nil>"
+	}
 	if len(d.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
 			return value
@@ -1760,7 +1814,7 @@ func (d *DeleteContextInstanceResponse) String() string {
 }
 
 // Optional request body for executing a flow against context. The entire body is merged with instance state before flow execution.
-type SolveContextFlowRequest = map[string]interface{}
+type SolveContextFlowRequest = map[string]any
 
 // Response after executing a flow against a context instance.
 var (
@@ -1779,9 +1833,9 @@ type SolveContextFlowResponse struct {
 	// The slug of the flow that was executed.
 	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
 	// The flow execution output.
-	Result map[string]interface{} `json:"result,omitempty" url:"result,omitempty"`
+	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
 	// Resource usage information for the flow execution.
-	Usage map[string]interface{} `json:"usage,omitempty" url:"usage,omitempty"`
+	Usage map[string]any `json:"usage,omitempty" url:"usage,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1811,14 +1865,14 @@ func (s *SolveContextFlowResponse) GetFlow() *string {
 	return s.Flow
 }
 
-func (s *SolveContextFlowResponse) GetResult() map[string]interface{} {
+func (s *SolveContextFlowResponse) GetResult() map[string]any {
 	if s == nil {
 		return nil
 	}
 	return s.Result
 }
 
-func (s *SolveContextFlowResponse) GetUsage() map[string]interface{} {
+func (s *SolveContextFlowResponse) GetUsage() map[string]any {
 	if s == nil {
 		return nil
 	}
@@ -1826,6 +1880,9 @@ func (s *SolveContextFlowResponse) GetUsage() map[string]interface{} {
 }
 
 func (s *SolveContextFlowResponse) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
 	return s.extraProperties
 }
 
@@ -1859,14 +1916,14 @@ func (s *SolveContextFlowResponse) SetFlow(flow *string) {
 
 // SetResult sets the Result field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetResult(result map[string]interface{}) {
+func (s *SolveContextFlowResponse) SetResult(result map[string]any) {
 	s.Result = result
 	s.require(solveContextFlowResponseFieldResult)
 }
 
 // SetUsage sets the Usage field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetUsage(usage map[string]interface{}) {
+func (s *SolveContextFlowResponse) SetUsage(usage map[string]any) {
 	s.Usage = usage
 	s.require(solveContextFlowResponseFieldUsage)
 }
@@ -1899,6 +1956,9 @@ func (s *SolveContextFlowResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SolveContextFlowResponse) String() string {
+	if s == nil {
+		return "<nil>"
+	}
 	if len(s.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
@@ -1934,7 +1994,7 @@ func (s SolveContextFlowResponseStatus) Ptr() *SolveContextFlowResponseStatus {
 }
 
 // Optional request body for solving a rule against context. The entire body is merged with the instance state before rule evaluation.
-type SolveContextRuleRequest = map[string]interface{}
+type SolveContextRuleRequest = map[string]any
 
 // Response after solving a rule against a context instance.
 var (
@@ -1954,7 +2014,7 @@ type SolveContextRuleResponse struct {
 	// The slug of the rule that was executed.
 	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
 	// The rule evaluation result (output values).
-	Result map[string]interface{} `json:"result,omitempty" url:"result,omitempty"`
+	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
 	// List of field keys that were written back to the context instance.
 	WrittenToContext []string `json:"written_to_context,omitempty" url:"written_to_context,omitempty"`
 	// Results from any cascaded evaluations triggered by the rule outputs.
@@ -1988,7 +2048,7 @@ func (s *SolveContextRuleResponse) GetRule() *string {
 	return s.Rule
 }
 
-func (s *SolveContextRuleResponse) GetResult() map[string]interface{} {
+func (s *SolveContextRuleResponse) GetResult() map[string]any {
 	if s == nil {
 		return nil
 	}
@@ -2010,6 +2070,9 @@ func (s *SolveContextRuleResponse) GetCascaded() []*CascadeResult {
 }
 
 func (s *SolveContextRuleResponse) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
 	return s.extraProperties
 }
 
@@ -2043,7 +2106,7 @@ func (s *SolveContextRuleResponse) SetRule(rule *string) {
 
 // SetResult sets the Result field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetResult(result map[string]interface{}) {
+func (s *SolveContextRuleResponse) SetResult(result map[string]any) {
 	s.Result = result
 	s.require(solveContextRuleResponseFieldResult)
 }
@@ -2090,6 +2153,9 @@ func (s *SolveContextRuleResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SolveContextRuleResponse) String() string {
+	if s == nil {
+		return "<nil>"
+	}
 	if len(s.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value
@@ -2125,7 +2191,7 @@ func (s SolveContextRuleResponseStatus) Ptr() *SolveContextRuleResponseStatus {
 }
 
 // Data to submit to a context instance. Keys should match the context schema fields.
-type SubmitContextDataRequest = map[string]interface{}
+type SubmitContextDataRequest = map[string]any
 
 // Response after submitting data, including any auto-executed evaluations.
 var (
@@ -2143,7 +2209,7 @@ type SubmitContextDataResponse struct {
 	// Combined identifier in format 'contextSlug:instanceId'.
 	Context *string `json:"context,omitempty" url:"context,omitempty"`
 	// The merged state after submitting data and any auto-executed rules/flows.
-	State map[string]interface{} `json:"state,omitempty" url:"state,omitempty"`
+	State map[string]any `json:"state,omitempty" url:"state,omitempty"`
 	// Whether all required fields are present ('complete') or some are missing ('pending').
 	Status *SubmitContextDataResponseStatus `json:"status,omitempty" url:"status,omitempty"`
 	// List of field keys that are currently populated.
@@ -2171,7 +2237,7 @@ func (s *SubmitContextDataResponse) GetContext() *string {
 	return s.Context
 }
 
-func (s *SubmitContextDataResponse) GetState() map[string]interface{} {
+func (s *SubmitContextDataResponse) GetState() map[string]any {
 	if s == nil {
 		return nil
 	}
@@ -2221,6 +2287,9 @@ func (s *SubmitContextDataResponse) GetCascaded() []*CascadeResult {
 }
 
 func (s *SubmitContextDataResponse) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
 	return s.extraProperties
 }
 
@@ -2240,7 +2309,7 @@ func (s *SubmitContextDataResponse) SetContext(context *string) {
 
 // SetState sets the State field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SubmitContextDataResponse) SetState(state map[string]interface{}) {
+func (s *SubmitContextDataResponse) SetState(state map[string]any) {
 	s.State = state
 	s.require(submitContextDataResponseFieldState)
 }
@@ -2323,6 +2392,9 @@ func (s *SubmitContextDataResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SubmitContextDataResponse) String() string {
+	if s == nil {
+		return "<nil>"
+	}
 	if len(s.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
 			return value

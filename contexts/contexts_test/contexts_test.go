@@ -6,36 +6,37 @@ import (
 	bytes "bytes"
 	context "context"
 	json "encoding/json"
-	require "github.com/stretchr/testify/require"
 	http "net/http"
+	os "os"
 	sdk "sdk"
 	client "sdk/client"
 	option "sdk/option"
 	testing "testing"
-)
 
-func ResetWireMockRequests(
-	t *testing.T,
-) {
-	WiremockAdminURL := "http://localhost:8080/__admin"
-	_, err := http.Post(WiremockAdminURL+"/requests/reset", "application/json", nil)
-	require.NoError(t, err)
-}
+	require "github.com/stretchr/testify/require"
+)
 
 func VerifyRequestCount(
 	t *testing.T,
+	testId string,
 	method string,
 	urlPath string,
-	queryParams map[string]string,
+	queryParams map[string]any,
 	expected int,
 ) {
-	WiremockAdminURL := "http://localhost:8080/__admin"
+	wiremockURL := os.Getenv("WIREMOCK_URL")
+	if wiremockURL == "" {
+		wiremockURL = "http://localhost:8080"
+	}
+	WiremockAdminURL := wiremockURL + "/__admin"
 	var reqBody bytes.Buffer
 	reqBody.WriteString(`{"method":"`)
 	reqBody.WriteString(method)
 	reqBody.WriteString(`","urlPath":"`)
 	reqBody.WriteString(urlPath)
-	reqBody.WriteString(`"}`)
+	reqBody.WriteString(`","headers":{"X-Test-Id":{"equalTo":"`)
+	reqBody.WriteString(testId)
+	reqBody.WriteString(`"}}`)
 	if len(queryParams) > 0 {
 		reqBody.WriteString(`,"queryParameters":{`)
 		first := true
@@ -45,13 +46,28 @@ func VerifyRequestCount(
 			}
 			reqBody.WriteString(`"`)
 			reqBody.WriteString(key)
-			reqBody.WriteString(`":{"equalTo":"`)
-			reqBody.WriteString(value)
-			reqBody.WriteString(`"}`)
+			switch v := value.(type) {
+			case string:
+				reqBody.WriteString(`":{"equalTo":"`)
+				reqBody.WriteString(v)
+				reqBody.WriteString(`"}`)
+			case []string:
+				reqBody.WriteString(`":{"hasExactly":[`)
+				for i, item := range v {
+					if i > 0 {
+						reqBody.WriteString(",")
+					}
+					reqBody.WriteString(`{"equalTo":"`)
+					reqBody.WriteString(item)
+					reqBody.WriteString(`"}`)
+				}
+				reqBody.WriteString(`]}`)
+			}
 			first = false
 		}
 		reqBody.WriteString("}")
 	}
+	reqBody.WriteString("}")
 	resp, err := http.Post(WiremockAdminURL+"/requests/find", "application/json", &reqBody)
 	require.NoError(t, err)
 	var result struct {
@@ -64,12 +80,13 @@ func VerifyRequestCount(
 func TestContextsGetWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.GetContextsRequest{
 		Slug:     "customer",
@@ -78,48 +95,56 @@ func TestContextsGetWithWireMock(
 	_, invocationErr := client.Contexts.Get(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsGetWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "GET", "/contexts/customer/cust-12345", nil, 1)
+	VerifyRequestCount(t, "TestContextsGetWithWireMock", "GET", "/contexts/customer/cust-12345", nil, 1)
 }
 
 func TestContextsSubmitWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.SubmitContextsRequest{
 		Slug:     "customer",
 		Instance: "cust-12345",
 		Body: map[string]any{
-			"email": "customer@example.com",
 			"age":   30,
+			"email": "customer@example.com",
 		},
 	}
 	_, invocationErr := client.Contexts.Submit(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsSubmitWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "POST", "/contexts/customer/cust-12345", nil, 1)
+	VerifyRequestCount(t, "TestContextsSubmitWithWireMock", "POST", "/contexts/customer/cust-12345", nil, 1)
 }
 
 func TestContextsDeleteWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.DeleteContextsRequest{
 		Slug:     "customer",
@@ -128,21 +153,25 @@ func TestContextsDeleteWithWireMock(
 	_, invocationErr := client.Contexts.Delete(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsDeleteWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "DELETE", "/contexts/customer/cust-12345", nil, 1)
+	VerifyRequestCount(t, "TestContextsDeleteWithWireMock", "DELETE", "/contexts/customer/cust-12345", nil, 1)
 }
 
 func TestContextsGetHistoryWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.GetHistoryContextsRequest{
 		Slug:     "customer",
@@ -151,21 +180,25 @@ func TestContextsGetHistoryWithWireMock(
 	_, invocationErr := client.Contexts.GetHistory(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsGetHistoryWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "GET", "/contexts/customer/cust-12345/history", nil, 1)
+	VerifyRequestCount(t, "TestContextsGetHistoryWithWireMock", "GET", "/contexts/customer/cust-12345/history", nil, 1)
 }
 
 func TestContextsGetPendingWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.GetPendingContextsRequest{
 		Slug:     "customer",
@@ -174,21 +207,25 @@ func TestContextsGetPendingWithWireMock(
 	_, invocationErr := client.Contexts.GetPending(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsGetPendingWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "GET", "/contexts/customer/cust-12345/pending", nil, 1)
+	VerifyRequestCount(t, "TestContextsGetPendingWithWireMock", "GET", "/contexts/customer/cust-12345/pending", nil, 1)
 }
 
 func TestContextsSolveWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.SolveContextsRequest{
 		Slug:     "customer",
@@ -199,21 +236,25 @@ func TestContextsSolveWithWireMock(
 	_, invocationErr := client.Contexts.Solve(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsSolveWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "POST", "/contexts/customer/cust-12345/solve/eligibility-check", nil, 1)
+	VerifyRequestCount(t, "TestContextsSolveWithWireMock", "POST", "/contexts/customer/cust-12345/solve/eligibility-check", nil, 1)
 }
 
 func TestContextsCascadeWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.CascadeContextsRequest{
 		Slug:     "customer",
@@ -223,21 +264,25 @@ func TestContextsCascadeWithWireMock(
 	_, invocationErr := client.Contexts.Cascade(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsCascadeWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "POST", "/contexts/customer/cust-12345/cascade", nil, 1)
+	VerifyRequestCount(t, "TestContextsCascadeWithWireMock", "POST", "/contexts/customer/cust-12345/cascade", nil, 1)
 }
 
 func TestContextsExecuteWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.ExecuteContextsRequest{
 		Slug:     "customer",
@@ -248,8 +293,11 @@ func TestContextsExecuteWithWireMock(
 	_, invocationErr := client.Contexts.Execute(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsExecuteWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "POST", "/contexts/customer/cust-12345/flows/onboarding-flow", nil, 1)
+	VerifyRequestCount(t, "TestContextsExecuteWithWireMock", "POST", "/contexts/customer/cust-12345/flows/onboarding-flow", nil, 1)
 }

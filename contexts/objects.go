@@ -31,7 +31,7 @@ type CreateContextRequest struct {
 	// The description of the context.
 	Description *string `json:"description,omitempty" url:"-"`
 	// Initial schema fields for the context. At least one field must be defined.
-	Schema []*CreateContextRequestSchemaItem `json:"schema,omitempty" url:"-"`
+	Schema []*CreateContextRequestSchemaItem `json:"schema" url:"-"`
 	// The field key to use as the unique identifier for instances. Must be a key from the schema.
 	IdentityFact string `json:"identity_fact" url:"-"`
 	// When true (default), bound rules and flows automatically execute when their inputs are satisfied.
@@ -135,6 +135,27 @@ func (c *CreateContextRequest) SetWebhookOnExpire(webhookOnExpire *string) {
 	c.require(createContextRequestFieldWebhookOnExpire)
 }
 
+func (c *CreateContextRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateContextRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*c = CreateContextRequest(body)
+	return nil
+}
+
+func (c *CreateContextRequest) MarshalJSON() ([]byte, error) {
+	type embed CreateContextRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
 var (
 	deleteObjectsRequestFieldID = big.NewInt(1 << 0)
 )
@@ -218,10 +239,10 @@ var (
 )
 
 type CreateContextRequestSchemaItem struct {
-	Key          *string     `json:"key,omitempty" url:"key,omitempty"`
-	Name         *string     `json:"name,omitempty" url:"name,omitempty"`
-	Type         *string     `json:"type,omitempty" url:"type,omitempty"`
-	DefaultValue interface{} `json:"default_value,omitempty" url:"default_value,omitempty"`
+	Key          *string `json:"key,omitempty" url:"key,omitempty"`
+	Name         *string `json:"name,omitempty" url:"name,omitempty"`
+	Type         *string `json:"type,omitempty" url:"type,omitempty"`
+	DefaultValue any     `json:"default_value,omitempty" url:"default_value,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -251,7 +272,7 @@ func (c *CreateContextRequestSchemaItem) GetType() *string {
 	return c.Type
 }
 
-func (c *CreateContextRequestSchemaItem) GetDefaultValue() interface{} {
+func (c *CreateContextRequestSchemaItem) GetDefaultValue() any {
 	if c == nil {
 		return nil
 	}
@@ -259,6 +280,9 @@ func (c *CreateContextRequestSchemaItem) GetDefaultValue() interface{} {
 }
 
 func (c *CreateContextRequestSchemaItem) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -292,7 +316,7 @@ func (c *CreateContextRequestSchemaItem) SetType(type_ *string) {
 
 // SetDefaultValue sets the DefaultValue field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequestSchemaItem) SetDefaultValue(defaultValue interface{}) {
+func (c *CreateContextRequestSchemaItem) SetDefaultValue(defaultValue any) {
 	c.DefaultValue = defaultValue
 	c.require(createContextRequestSchemaItemFieldDefaultValue)
 }
@@ -325,6 +349,9 @@ func (c *CreateContextRequestSchemaItem) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CreateContextRequestSchemaItem) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -367,10 +394,10 @@ var (
 )
 
 type UpdateContextRequestSchemaItem struct {
-	Key          *string     `json:"key,omitempty" url:"key,omitempty"`
-	Name         *string     `json:"name,omitempty" url:"name,omitempty"`
-	Type         *string     `json:"type,omitempty" url:"type,omitempty"`
-	DefaultValue interface{} `json:"default_value,omitempty" url:"default_value,omitempty"`
+	Key          *string `json:"key,omitempty" url:"key,omitempty"`
+	Name         *string `json:"name,omitempty" url:"name,omitempty"`
+	Type         *string `json:"type,omitempty" url:"type,omitempty"`
+	DefaultValue any     `json:"default_value,omitempty" url:"default_value,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -400,7 +427,7 @@ func (u *UpdateContextRequestSchemaItem) GetType() *string {
 	return u.Type
 }
 
-func (u *UpdateContextRequestSchemaItem) GetDefaultValue() interface{} {
+func (u *UpdateContextRequestSchemaItem) GetDefaultValue() any {
 	if u == nil {
 		return nil
 	}
@@ -408,6 +435,9 @@ func (u *UpdateContextRequestSchemaItem) GetDefaultValue() interface{} {
 }
 
 func (u *UpdateContextRequestSchemaItem) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
 	return u.extraProperties
 }
 
@@ -441,7 +471,7 @@ func (u *UpdateContextRequestSchemaItem) SetType(type_ *string) {
 
 // SetDefaultValue sets the DefaultValue field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequestSchemaItem) SetDefaultValue(defaultValue interface{}) {
+func (u *UpdateContextRequestSchemaItem) SetDefaultValue(defaultValue any) {
 	u.DefaultValue = defaultValue
 	u.require(updateContextRequestSchemaItemFieldDefaultValue)
 }
@@ -474,6 +504,9 @@ func (u *UpdateContextRequestSchemaItem) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UpdateContextRequestSchemaItem) String() string {
+	if u == nil {
+		return "<nil>"
+	}
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
@@ -609,4 +642,25 @@ func (u *UpdateContextRequest) SetWebhookOnSolve(webhookOnSolve *string) {
 func (u *UpdateContextRequest) SetWebhookOnExpire(webhookOnExpire *string) {
 	u.WebhookOnExpire = webhookOnExpire
 	u.require(updateContextRequestFieldWebhookOnExpire)
+}
+
+func (u *UpdateContextRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateContextRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*u = UpdateContextRequest(body)
+	return nil
+}
+
+func (u *UpdateContextRequest) MarshalJSON() ([]byte, error) {
+	type embed UpdateContextRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }

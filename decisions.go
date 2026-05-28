@@ -142,8 +142,8 @@ type DecisionLog struct {
 	Request *DecisionLogRequest `json:"request,omitempty" url:"request,omitempty"`
 	// The response payload returned by the rule/flow. Can be an object for single responses or an array for bulk operations.
 	Response *DecisionLogResponse `json:"response,omitempty" url:"response,omitempty"`
-	// Decision details including matched conditions, rows, and evaluation metadata.
-	Decision map[string]interface{} `json:"decision,omitempty" url:"decision,omitempty"`
+	// Decision details including matched conditions, rows, and evaluation metadata. API-owned metadata keys are normalized to snake_case where known, such as `rule_id`, `rule_slug`, `rule_version`, `success_idxs`, `total_usage`, and `entity_count`; user-defined request/response schema keys are preserved.
+	Decision map[string]any `json:"decision,omitempty" url:"decision,omitempty"`
 	// Error message if the execution failed.
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
 	// Whether the request/response data was truncated due to size limits.
@@ -199,7 +199,7 @@ func (d *DecisionLog) GetResponse() *DecisionLogResponse {
 	return d.Response
 }
 
-func (d *DecisionLog) GetDecision() map[string]interface{} {
+func (d *DecisionLog) GetDecision() map[string]any {
 	if d == nil {
 		return nil
 	}
@@ -221,6 +221,9 @@ func (d *DecisionLog) GetAbbreviated() *bool {
 }
 
 func (d *DecisionLog) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
 	return d.ExtraProperties
 }
 
@@ -275,7 +278,7 @@ func (d *DecisionLog) SetResponse(response *DecisionLogResponse) {
 
 // SetDecision sets the Decision field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DecisionLog) SetDecision(decision map[string]interface{}) {
+func (d *DecisionLog) SetDecision(decision map[string]any) {
 	d.Decision = decision
 	d.require(decisionLogFieldDecision)
 }
@@ -330,6 +333,9 @@ func (d *DecisionLog) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DecisionLog) String() string {
+	if d == nil {
+		return "<nil>"
+	}
 	if len(d.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
 			return value
@@ -343,20 +349,20 @@ func (d *DecisionLog) String() string {
 
 // The request payload sent to the rule/flow. Can be an object for single requests or an array for bulk operations.
 type DecisionLogRequest struct {
-	StringUnknownMap     map[string]interface{}
-	StringUnknownMapList []map[string]interface{}
+	StringUnknownMap     map[string]any
+	StringUnknownMapList []map[string]any
 
 	typ string
 }
 
-func (d *DecisionLogRequest) GetStringUnknownMap() map[string]interface{} {
+func (d *DecisionLogRequest) GetStringUnknownMap() map[string]any {
 	if d == nil {
 		return nil
 	}
 	return d.StringUnknownMap
 }
 
-func (d *DecisionLogRequest) GetStringUnknownMapList() []map[string]interface{} {
+func (d *DecisionLogRequest) GetStringUnknownMapList() []map[string]any {
 	if d == nil {
 		return nil
 	}
@@ -364,13 +370,13 @@ func (d *DecisionLogRequest) GetStringUnknownMapList() []map[string]interface{} 
 }
 
 func (d *DecisionLogRequest) UnmarshalJSON(data []byte) error {
-	var valueStringUnknownMap map[string]interface{}
+	var valueStringUnknownMap map[string]any
 	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
 		d.typ = "StringUnknownMap"
 		d.StringUnknownMap = valueStringUnknownMap
 		return nil
 	}
-	var valueStringUnknownMapList []map[string]interface{}
+	var valueStringUnknownMapList []map[string]any
 	if err := json.Unmarshal(data, &valueStringUnknownMapList); err == nil {
 		d.typ = "StringUnknownMapList"
 		d.StringUnknownMapList = valueStringUnknownMapList
@@ -390,8 +396,8 @@ func (d DecisionLogRequest) MarshalJSON() ([]byte, error) {
 }
 
 type DecisionLogRequestVisitor interface {
-	VisitStringUnknownMap(map[string]interface{}) error
-	VisitStringUnknownMapList([]map[string]interface{}) error
+	VisitStringUnknownMap(map[string]any) error
+	VisitStringUnknownMapList([]map[string]any) error
 }
 
 func (d *DecisionLogRequest) Accept(visitor DecisionLogRequestVisitor) error {
@@ -448,6 +454,9 @@ func (d *DecisionLogResponse) GetCount() *int {
 }
 
 func (d *DecisionLogResponse) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
 	return d.extraProperties
 }
 
@@ -507,6 +516,9 @@ func (d *DecisionLogResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DecisionLogResponse) String() string {
+	if d == nil {
+		return "<nil>"
+	}
 	if len(d.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
 			return value

@@ -3,7 +3,9 @@
 package assets
 
 import (
+	json "encoding/json"
 	big "math/big"
+	internal "sdk/internal"
 )
 
 var (
@@ -30,6 +32,27 @@ func (d *DeleteFolderRequest) require(field *big.Int) {
 func (d *DeleteFolderRequest) SetID(id string) {
 	d.ID = id
 	d.require(deleteFolderRequestFieldID)
+}
+
+func (d *DeleteFolderRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteFolderRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*d = DeleteFolderRequest(body)
+	return nil
+}
+
+func (d *DeleteFolderRequest) MarshalJSON() ([]byte, error) {
+	type embed DeleteFolderRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }
 
 var (
@@ -76,4 +99,25 @@ func (u *UpsertFolderRequest) SetName(name string) {
 func (u *UpsertFolderRequest) SetDescription(description *string) {
 	u.Description = description
 	u.require(upsertFolderRequestFieldDescription)
+}
+
+func (u *UpsertFolderRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpsertFolderRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*u = UpsertFolderRequest(body)
+	return nil
+}
+
+func (u *UpsertFolderRequest) MarshalJSON() ([]byte, error) {
+	type embed UpsertFolderRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }

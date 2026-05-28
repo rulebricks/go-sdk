@@ -3,7 +3,10 @@
 package assets
 
 import (
+	json "encoding/json"
 	big "math/big"
+	sdk "sdk"
+	internal "sdk/internal"
 )
 
 var (
@@ -32,13 +35,37 @@ func (d *DeleteRuleRequest) SetID(id string) {
 	d.require(deleteRuleRequestFieldID)
 }
 
+func (d *DeleteRuleRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteRuleRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*d = DeleteRuleRequest(body)
+	return nil
+}
+
+func (d *DeleteRuleRequest) MarshalJSON() ([]byte, error) {
+	type embed DeleteRuleRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
 var (
-	listRulesRequestFieldFolder = big.NewInt(1 << 0)
+	listRulesRequestFieldFolder    = big.NewInt(1 << 0)
+	listRulesRequestFieldUserGroup = big.NewInt(1 << 1)
 )
 
 type ListRulesRequest struct {
 	// Filter rules by folder name or folder ID
 	Folder *string `json:"-" url:"folder,omitempty"`
+	// Filter rules by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+	UserGroup *string `json:"-" url:"user_group,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -56,6 +83,13 @@ func (l *ListRulesRequest) require(field *big.Int) {
 func (l *ListRulesRequest) SetFolder(folder *string) {
 	l.Folder = folder
 	l.require(listRulesRequestFieldFolder)
+}
+
+// SetUserGroup sets the UserGroup field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListRulesRequest) SetUserGroup(userGroup *string) {
+	l.UserGroup = userGroup
+	l.require(listRulesRequestFieldUserGroup)
 }
 
 var (
@@ -89,8 +123,7 @@ var (
 )
 
 type ImportRuleRequest struct {
-	// The rule data to import.
-	Rule map[string]interface{} `json:"rule,omitempty" url:"-"`
+	Rule *sdk.RuleImportPayload `json:"rule" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -105,7 +138,28 @@ func (i *ImportRuleRequest) require(field *big.Int) {
 
 // SetRule sets the Rule field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportRuleRequest) SetRule(rule map[string]interface{}) {
+func (i *ImportRuleRequest) SetRule(rule *sdk.RuleImportPayload) {
 	i.Rule = rule
 	i.require(importRuleRequestFieldRule)
+}
+
+func (i *ImportRuleRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportRuleRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*i = ImportRuleRequest(body)
+	return nil
+}
+
+func (i *ImportRuleRequest) MarshalJSON() ([]byte, error) {
+	type embed ImportRuleRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }

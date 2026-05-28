@@ -3,7 +3,9 @@
 package users
 
 import (
+	json "encoding/json"
 	big "math/big"
+	internal "sdk/internal"
 )
 
 var (
@@ -40,4 +42,25 @@ func (c *CreateUserGroupRequest) SetName(name string) {
 func (c *CreateUserGroupRequest) SetDescription(description *string) {
 	c.Description = description
 	c.require(createUserGroupRequestFieldDescription)
+}
+
+func (c *CreateUserGroupRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateUserGroupRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*c = CreateUserGroupRequest(body)
+	return nil
+}
+
+func (c *CreateUserGroupRequest) MarshalJSON() ([]byte, error) {
+	type embed CreateUserGroupRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }

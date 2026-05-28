@@ -18,13 +18,13 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
-	404: func(apiError *core.APIError) error {
-		return &NotFoundError{
+	403: func(apiError *core.APIError) error {
+		return &ForbiddenError{
 			APIError: apiError,
 		}
 	},
-	403: func(apiError *core.APIError) error {
-		return &ForbiddenError{
+	404: func(apiError *core.APIError) error {
+		return &NotFoundError{
 			APIError: apiError,
 		}
 	},

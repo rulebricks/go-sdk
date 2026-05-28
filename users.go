@@ -76,6 +76,27 @@ func (c *CreateUserRequest) SetUserGroups(userGroups []string) {
 	c.require(createUserRequestFieldUserGroups)
 }
 
+func (c *CreateUserRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateUserRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*c = CreateUserRequest(body)
+	return nil
+}
+
+func (c *CreateUserRequest) MarshalJSON() ([]byte, error) {
+	type embed CreateUserRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
 var (
 	userInviteRequestFieldEmail      = big.NewInt(1 << 0)
 	userInviteRequestFieldRole       = big.NewInt(1 << 1)
@@ -122,16 +143,34 @@ func (u *UserInviteRequest) SetUserGroups(userGroups []string) {
 	u.require(userInviteRequestFieldUserGroups)
 }
 
+func (u *UserInviteRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler UserInviteRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*u = UserInviteRequest(body)
+	return nil
+}
+
+func (u *UserInviteRequest) MarshalJSON() ([]byte, error) {
+	type embed UserInviteRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
 // Response after successfully creating a user.
 var (
-	createUserResponseFieldStatus  = big.NewInt(1 << 0)
-	createUserResponseFieldMessage = big.NewInt(1 << 1)
-	createUserResponseFieldUser    = big.NewInt(1 << 2)
+	createUserResponseFieldMessage = big.NewInt(1 << 0)
+	createUserResponseFieldUser    = big.NewInt(1 << 1)
 )
 
 type CreateUserResponse struct {
-	// Status of the operation.
-	Status *string `json:"status,omitempty" url:"status,omitempty"`
 	// Success message.
 	Message *string                 `json:"message,omitempty" url:"message,omitempty"`
 	User    *CreateUserResponseUser `json:"user,omitempty" url:"user,omitempty"`
@@ -141,13 +180,6 @@ type CreateUserResponse struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (c *CreateUserResponse) GetStatus() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Status
 }
 
 func (c *CreateUserResponse) GetMessage() *string {
@@ -165,6 +197,9 @@ func (c *CreateUserResponse) GetUser() *CreateUserResponseUser {
 }
 
 func (c *CreateUserResponse) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -173,13 +208,6 @@ func (c *CreateUserResponse) require(field *big.Int) {
 		c.explicitFields = big.NewInt(0)
 	}
 	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetStatus sets the Status field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateUserResponse) SetStatus(status *string) {
-	c.Status = status
-	c.require(createUserResponseFieldStatus)
 }
 
 // SetMessage sets the Message field and marks it as non-optional;
@@ -224,6 +252,9 @@ func (c *CreateUserResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CreateUserResponse) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -308,6 +339,9 @@ func (c *CreateUserResponseUser) GetAPIKey() *string {
 }
 
 func (c *CreateUserResponseUser) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
 	return c.extraProperties
 }
 
@@ -388,6 +422,9 @@ func (c *CreateUserResponseUser) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CreateUserResponseUser) String() string {
+	if c == nil {
+		return "<nil>"
+	}
 	if len(c.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
 			return value
@@ -483,6 +520,9 @@ func (u *UserDetail) GetJoinedAt() *time.Time {
 }
 
 func (u *UserDetail) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
 	return u.extraProperties
 }
 
@@ -578,6 +618,9 @@ func (u *UserDetail) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UserDetail) String() string {
+	if u == nil {
+		return "<nil>"
+	}
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
@@ -621,6 +664,9 @@ func (u *UserInviteResponse) GetUser() *UserInviteResponseUser {
 }
 
 func (u *UserInviteResponse) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
 	return u.extraProperties
 }
 
@@ -673,6 +719,9 @@ func (u *UserInviteResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UserInviteResponse) String() string {
+	if u == nil {
+		return "<nil>"
+	}
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
@@ -727,6 +776,9 @@ func (u *UserInviteResponseUser) GetUserGroups() []string {
 }
 
 func (u *UserInviteResponseUser) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
 	return u.extraProperties
 }
 
@@ -786,6 +838,9 @@ func (u *UserInviteResponseUser) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UserInviteResponseUser) String() string {
+	if u == nil {
+		return "<nil>"
+	}
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value

@@ -145,6 +145,9 @@ func (d *DynamicValue) GetUserGroups() []string {
 }
 
 func (d *DynamicValue) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
 	return d.extraProperties
 }
 
@@ -225,6 +228,9 @@ func (d *DynamicValue) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DynamicValue) String() string {
+	if d == nil {
+		return "<nil>"
+	}
 	if len(d.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
 			return value
@@ -243,8 +249,8 @@ type DynamicValueValue struct {
 	String           string
 	Double           float64
 	Boolean          bool
-	UnknownList      []interface{}
-	StringUnknownMap map[string]interface{}
+	UnknownList      []any
+	StringUnknownMap map[string]any
 
 	typ string
 }
@@ -270,14 +276,14 @@ func (d *DynamicValueValue) GetBoolean() bool {
 	return d.Boolean
 }
 
-func (d *DynamicValueValue) GetUnknownList() []interface{} {
+func (d *DynamicValueValue) GetUnknownList() []any {
 	if d == nil {
 		return nil
 	}
 	return d.UnknownList
 }
 
-func (d *DynamicValueValue) GetStringUnknownMap() map[string]interface{} {
+func (d *DynamicValueValue) GetStringUnknownMap() map[string]any {
 	if d == nil {
 		return nil
 	}
@@ -303,13 +309,13 @@ func (d *DynamicValueValue) UnmarshalJSON(data []byte) error {
 		d.Boolean = valueBoolean
 		return nil
 	}
-	var valueUnknownList []interface{}
+	var valueUnknownList []any
 	if err := json.Unmarshal(data, &valueUnknownList); err == nil {
 		d.typ = "UnknownList"
 		d.UnknownList = valueUnknownList
 		return nil
 	}
-	var valueStringUnknownMap map[string]interface{}
+	var valueStringUnknownMap map[string]any
 	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
 		d.typ = "StringUnknownMap"
 		d.StringUnknownMap = valueStringUnknownMap
@@ -341,8 +347,8 @@ type DynamicValueValueVisitor interface {
 	VisitString(string) error
 	VisitDouble(float64) error
 	VisitBoolean(bool) error
-	VisitUnknownList([]interface{}) error
-	VisitStringUnknownMap(map[string]interface{}) error
+	VisitUnknownList([]any) error
+	VisitStringUnknownMap(map[string]any) error
 }
 
 func (d *DynamicValueValue) Accept(visitor DynamicValueValueVisitor) error {
@@ -437,6 +443,9 @@ func (r *RuleUsage) GetUpdatedAt() *time.Time {
 }
 
 func (r *RuleUsage) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
 	return r.extraProperties
 }
 
@@ -525,6 +534,9 @@ func (r *RuleUsage) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RuleUsage) String() string {
+	if r == nil {
+		return "<nil>"
+	}
 	if len(r.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
 			return value
@@ -537,15 +549,18 @@ func (r *RuleUsage) String() string {
 }
 
 var (
-	updateValuesRequestFieldValues     = big.NewInt(1 << 0)
-	updateValuesRequestFieldUserGroups = big.NewInt(1 << 1)
+	updateValuesRequestFieldValues         = big.NewInt(1 << 0)
+	updateValuesRequestFieldUserGroups     = big.NewInt(1 << 1)
+	updateValuesRequestFieldMetadataByName = big.NewInt(1 << 2)
 )
 
 type UpdateValuesRequest struct {
 	// A dictionary of keys and values to update or add. Supports both flat key-value pairs and nested objects. Nested objects will be automatically flattened using dot notation with readable key names (e.g., 'user.contact_info.email' becomes 'User.Contact Info.Email').
-	Values map[string]interface{} `json:"values,omitempty" url:"-"`
+	Values map[string]any `json:"values" url:"-"`
 	// Optional array of user group names or IDs. If omitted and user belongs to user groups, values will be assigned to all user's user groups. Required if values should be restricted to specific user groups.
 	UserGroups []string `json:"user_groups,omitempty" url:"-"`
+	// Optional metadata keyed by dynamic value name. This is the canonical snake_case field; legacy clients may still send `metadataByName`.
+	MetadataByName map[string]map[string]any `json:"metadata_by_name,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -560,7 +575,7 @@ func (u *UpdateValuesRequest) require(field *big.Int) {
 
 // SetValues sets the Values field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateValuesRequest) SetValues(values map[string]interface{}) {
+func (u *UpdateValuesRequest) SetValues(values map[string]any) {
 	u.Values = values
 	u.require(updateValuesRequestFieldValues)
 }
@@ -570,4 +585,32 @@ func (u *UpdateValuesRequest) SetValues(values map[string]interface{}) {
 func (u *UpdateValuesRequest) SetUserGroups(userGroups []string) {
 	u.UserGroups = userGroups
 	u.require(updateValuesRequestFieldUserGroups)
+}
+
+// SetMetadataByName sets the MetadataByName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateValuesRequest) SetMetadataByName(metadataByName map[string]map[string]any) {
+	u.MetadataByName = metadataByName
+	u.require(updateValuesRequestFieldMetadataByName)
+}
+
+func (u *UpdateValuesRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateValuesRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*u = UpdateValuesRequest(body)
+	return nil
+}
+
+func (u *UpdateValuesRequest) MarshalJSON() ([]byte, error) {
+	type embed UpdateValuesRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }

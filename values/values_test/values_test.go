@@ -6,36 +6,37 @@ import (
 	bytes "bytes"
 	context "context"
 	json "encoding/json"
-	require "github.com/stretchr/testify/require"
 	http "net/http"
+	os "os"
 	sdk "sdk"
 	client "sdk/client"
 	option "sdk/option"
 	testing "testing"
-)
 
-func ResetWireMockRequests(
-	t *testing.T,
-) {
-	WiremockAdminURL := "http://localhost:8080/__admin"
-	_, err := http.Post(WiremockAdminURL+"/requests/reset", "application/json", nil)
-	require.NoError(t, err)
-}
+	require "github.com/stretchr/testify/require"
+)
 
 func VerifyRequestCount(
 	t *testing.T,
+	testId string,
 	method string,
 	urlPath string,
-	queryParams map[string]string,
+	queryParams map[string]any,
 	expected int,
 ) {
-	WiremockAdminURL := "http://localhost:8080/__admin"
+	wiremockURL := os.Getenv("WIREMOCK_URL")
+	if wiremockURL == "" {
+		wiremockURL = "http://localhost:8080"
+	}
+	WiremockAdminURL := wiremockURL + "/__admin"
 	var reqBody bytes.Buffer
 	reqBody.WriteString(`{"method":"`)
 	reqBody.WriteString(method)
 	reqBody.WriteString(`","urlPath":"`)
 	reqBody.WriteString(urlPath)
-	reqBody.WriteString(`"}`)
+	reqBody.WriteString(`","headers":{"X-Test-Id":{"equalTo":"`)
+	reqBody.WriteString(testId)
+	reqBody.WriteString(`"}}`)
 	if len(queryParams) > 0 {
 		reqBody.WriteString(`,"queryParameters":{`)
 		first := true
@@ -45,13 +46,28 @@ func VerifyRequestCount(
 			}
 			reqBody.WriteString(`"`)
 			reqBody.WriteString(key)
-			reqBody.WriteString(`":{"equalTo":"`)
-			reqBody.WriteString(value)
-			reqBody.WriteString(`"}`)
+			switch v := value.(type) {
+			case string:
+				reqBody.WriteString(`":{"equalTo":"`)
+				reqBody.WriteString(v)
+				reqBody.WriteString(`"}`)
+			case []string:
+				reqBody.WriteString(`":{"hasExactly":[`)
+				for i, item := range v {
+					if i > 0 {
+						reqBody.WriteString(",")
+					}
+					reqBody.WriteString(`{"equalTo":"`)
+					reqBody.WriteString(item)
+					reqBody.WriteString(`"}`)
+				}
+				reqBody.WriteString(`]}`)
+			}
 			first = false
 		}
 		reqBody.WriteString("}")
 	}
+	reqBody.WriteString("}")
 	resp, err := http.Post(WiremockAdminURL+"/requests/find", "application/json", &reqBody)
 	require.NoError(t, err)
 	var result struct {
@@ -64,12 +80,13 @@ func VerifyRequestCount(
 func TestValuesListWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.ListValuesRequest{
 		Include: sdk.String(
@@ -79,31 +96,35 @@ func TestValuesListWithWireMock(
 	_, invocationErr := client.Values.List(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestValuesListWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "GET", "/values", map[string]string{"include": "usage"}, 1)
+	VerifyRequestCount(t, "TestValuesListWithWireMock", "GET", "/values", map[string]interface{}{"include": "usage"}, 1)
 }
 
 func TestValuesUpdateWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.UpdateValuesRequest{
 		Values: map[string]any{
-			"Favorite Color": "blue",
 			"Age":            30,
-			"Is Student":     false,
+			"Favorite Color": "blue",
 			"Hobbies": []any{
 				"reading",
 				"cycling",
 			},
+			"Is Student": false,
 		},
 		UserGroups: []string{
 			"marketing",
@@ -113,21 +134,25 @@ func TestValuesUpdateWithWireMock(
 	_, invocationErr := client.Values.Update(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestValuesUpdateWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "POST", "/values", nil, 1)
+	VerifyRequestCount(t, "TestValuesUpdateWithWireMock", "POST", "/values", nil, 1)
 }
 
 func TestValuesDeleteWithWireMock(
 	t *testing.T,
 ) {
-	ResetWireMockRequests(t)
-	WireMockBaseURL := "http://localhost:8080"
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
 	client := client.NewClient(
-		option.WithBaseURL(
-			WireMockBaseURL,
-		),
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.DeleteValuesRequest{
 		ID: "id",
@@ -135,8 +160,11 @@ func TestValuesDeleteWithWireMock(
 	_, invocationErr := client.Values.Delete(
 		context.TODO(),
 		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestValuesDeleteWithWireMock"}},
+		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "DELETE", "/values", map[string]string{"id": "id"}, 1)
+	VerifyRequestCount(t, "TestValuesDeleteWithWireMock", "DELETE", "/values", map[string]interface{}{"id": "id"}, 1)
 }

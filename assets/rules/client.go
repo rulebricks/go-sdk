@@ -26,8 +26,9 @@ func NewClient(options *core.RequestOptions) *Client {
 		baseURL:         options.BaseURL,
 		caller: internal.NewCaller(
 			&internal.CallerParams{
-				Client:      options.HTTPClient,
-				MaxAttempts: options.MaxAttempts,
+				Client:         options.HTTPClient,
+				MaxAttempts:    options.MaxAttempts,
+				DisableRetries: options.DisableRetries,
 			},
 		),
 	}
@@ -50,7 +51,7 @@ func (c *Client) Delete(
 	return response.Body, nil
 }
 
-// Export a specific rule by its ID.
+// Export a specific rule by its ID. This response preserves the raw rule document casing (for example, `requestSchema`, `sampleRequest`, and `createdAt`) so it can round-trip through `/admin/rules/import` and `.rbm` workflows.
 func (c *Client) Pull(
 	ctx context.Context,
 	request *assets.PullRulesRequest,
@@ -67,7 +68,7 @@ func (c *Client) Pull(
 	return response.Body, nil
 }
 
-// Import a rule into the user's account.
+// Create or update a rule. If `id` is provided, the matching rule is partially updated (all other fields optional). If `id` is omitted, a new rule is created (`id` and `slug` are auto-generated; all other fields required).
 func (c *Client) Push(
 	ctx context.Context,
 	request *assets.ImportRuleRequest,
@@ -84,7 +85,7 @@ func (c *Client) Push(
 	return response.Body, nil
 }
 
-// List all rules in the organization. Optionally filter by folder name or ID.
+// List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, or by user group name or ID when the API key has access to that group.
 func (c *Client) List(
 	ctx context.Context,
 	request *assets.ListRulesRequest,

@@ -23,7 +23,7 @@ type ExportManifestRequest struct {
 	// The type of root asset to export. All dependencies will be included.
 	RootType ExportManifestRequestRootType `json:"root_type" url:"-"`
 	// Array of IDs for the root assets to export. Dependencies are automatically resolved.
-	RootIDs []string `json:"root_ids,omitempty" url:"-"`
+	RootIDs []string `json:"root_ids" url:"-"`
 	// For context exports, whether to include rules and flows bound to the context.
 	IncludeDownstream *bool `json:"include_downstream,omitempty" url:"-"`
 	// Optional name for the exported manifest.
@@ -86,6 +86,27 @@ func (e *ExportManifestRequest) SetPreviewOnly(previewOnly *bool) {
 	e.require(exportManifestRequestFieldPreviewOnly)
 }
 
+func (e *ExportManifestRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExportManifestRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*e = ExportManifestRequest(body)
+	return nil
+}
+
+func (e *ExportManifestRequest) MarshalJSON() ([]byte, error) {
+	type embed ExportManifestRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*e),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, e.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
 var (
 	importManifestRequestFieldManifest          = big.NewInt(1 << 0)
 	importManifestRequestFieldConflictStrategy  = big.NewInt(1 << 1)
@@ -94,8 +115,8 @@ var (
 )
 
 type ImportManifestRequest struct {
-	// The RBM manifest object containing assets to import.
-	Manifest *ImportManifestRequestManifest `json:"manifest,omitempty" url:"-"`
+	// The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads.
+	Manifest *ImportManifestRequestManifest `json:"manifest" url:"-"`
 	// How to handle conflicts with existing assets. 'update' overwrites, 'skip' ignores, 'error' fails.
 	ConflictStrategy *ImportManifestRequestConflictStrategy `json:"conflict_strategy,omitempty" url:"-"`
 	// Optional folder name to place imported assets into. Created if it doesn't exist.
@@ -142,6 +163,27 @@ func (i *ImportManifestRequest) SetLegacyRuleMapping(legacyRuleMapping map[strin
 	i.require(importManifestRequestFieldLegacyRuleMapping)
 }
 
+func (i *ImportManifestRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportManifestRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*i = ImportManifestRequest(body)
+	return nil
+}
+
+func (i *ImportManifestRequest) MarshalJSON() ([]byte, error) {
+	type embed ImportManifestRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
 var (
 	exportManifestPreviewResponseFieldSuccess = big.NewInt(1 << 0)
 	exportManifestPreviewResponseFieldPreview = big.NewInt(1 << 1)
@@ -151,7 +193,7 @@ var (
 type ExportManifestPreviewResponse struct {
 	// Whether the preview completed successfully.
 	Success *bool `json:"success,omitempty" url:"success,omitempty"`
-	// Preview of assets that would be exported.
+	// Preview of assets that would be exported. The preview wrapper uses snake_case, while asset items intentionally preserve `.rbm`/database casing (for example, `valueType` and `updatedAt`) because the same items feed manifest preview/import UI.
 	Preview *ExportManifestPreviewResponsePreview `json:"preview,omitempty" url:"preview,omitempty"`
 	// Error message if preview failed.
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
@@ -185,6 +227,9 @@ func (e *ExportManifestPreviewResponse) GetError() *string {
 }
 
 func (e *ExportManifestPreviewResponse) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -244,6 +289,9 @@ func (e *ExportManifestPreviewResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (e *ExportManifestPreviewResponse) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -255,7 +303,7 @@ func (e *ExportManifestPreviewResponse) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
-// Preview of assets that would be exported.
+// Preview of assets that would be exported. The preview wrapper uses snake_case, while asset items intentionally preserve `.rbm`/database casing (for example, `valueType` and `updatedAt`) because the same items feed manifest preview/import UI.
 var (
 	exportManifestPreviewResponsePreviewFieldCounts = big.NewInt(1 << 0)
 	exportManifestPreviewResponsePreviewFieldItems  = big.NewInt(1 << 1)
@@ -287,6 +335,9 @@ func (e *ExportManifestPreviewResponsePreview) GetItems() *ExportManifestPreview
 }
 
 func (e *ExportManifestPreviewResponsePreview) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -339,6 +390,9 @@ func (e *ExportManifestPreviewResponsePreview) MarshalJSON() ([]byte, error) {
 }
 
 func (e *ExportManifestPreviewResponsePreview) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -399,6 +453,9 @@ func (e *ExportManifestPreviewResponsePreviewCounts) GetValues() *int {
 }
 
 func (e *ExportManifestPreviewResponsePreviewCounts) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -465,6 +522,9 @@ func (e *ExportManifestPreviewResponsePreviewCounts) MarshalJSON() ([]byte, erro
 }
 
 func (e *ExportManifestPreviewResponsePreviewCounts) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -525,6 +585,9 @@ func (e *ExportManifestPreviewResponsePreviewItems) GetValues() []*ExportManifes
 }
 
 func (e *ExportManifestPreviewResponsePreviewItems) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -591,6 +654,9 @@ func (e *ExportManifestPreviewResponsePreviewItems) MarshalJSON() ([]byte, error
 }
 
 func (e *ExportManifestPreviewResponsePreviewItems) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -642,6 +708,9 @@ func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) GetSlug() *strin
 }
 
 func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -701,6 +770,9 @@ func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) MarshalJSON() ([
 }
 
 func (e *ExportManifestPreviewResponsePreviewItemsContextsItem) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -752,6 +824,9 @@ func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) GetSlug() *string {
 }
 
 func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -811,6 +886,9 @@ func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) MarshalJSON() ([]by
 }
 
 func (e *ExportManifestPreviewResponsePreviewItemsFlowsItem) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -862,6 +940,9 @@ func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) GetSlug() *string {
 }
 
 func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -921,6 +1002,9 @@ func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) MarshalJSON() ([]by
 }
 
 func (e *ExportManifestPreviewResponsePreviewItemsRulesItem) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -963,6 +1047,9 @@ func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) GetName() *string 
 }
 
 func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -1015,6 +1102,9 @@ func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) MarshalJSON() ([]b
 }
 
 func (e *ExportManifestPreviewResponsePreviewItemsValuesItem) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -1035,7 +1125,7 @@ var (
 type ExportManifestResponse struct {
 	// Whether the export completed successfully.
 	Success *bool `json:"success,omitempty" url:"success,omitempty"`
-	// The exported manifest data.
+	// The exported manifest data. The wrapper uses snake_case, while asset objects inside `contexts`, `values`, `rules`, and `flows` intentionally preserve `.rbm`/database casing for round-trip compatibility.
 	Manifest *ExportManifestResponseManifest `json:"manifest,omitempty" url:"manifest,omitempty"`
 	// Error message if export failed.
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
@@ -1069,6 +1159,9 @@ func (e *ExportManifestResponse) GetError() *string {
 }
 
 func (e *ExportManifestResponse) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -1128,6 +1221,9 @@ func (e *ExportManifestResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (e *ExportManifestResponse) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -1139,7 +1235,7 @@ func (e *ExportManifestResponse) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
-// The exported manifest data.
+// The exported manifest data. The wrapper uses snake_case, while asset objects inside `contexts`, `values`, `rules`, and `flows` intentionally preserve `.rbm`/database casing for round-trip compatibility.
 var (
 	exportManifestResponseManifestFieldVersion     = big.NewInt(1 << 0)
 	exportManifestResponseManifestFieldName        = big.NewInt(1 << 1)
@@ -1160,13 +1256,13 @@ type ExportManifestResponseManifest struct {
 	Description *string    `json:"description,omitempty" url:"description,omitempty"`
 	ExportedAt  *time.Time `json:"exported_at,omitempty" url:"exported_at,omitempty"`
 	// Exported contexts.
-	Contexts []map[string]interface{} `json:"contexts,omitempty" url:"contexts,omitempty"`
+	Contexts []map[string]any `json:"contexts,omitempty" url:"contexts,omitempty"`
 	// Exported dynamic values.
-	Values []map[string]interface{} `json:"values,omitempty" url:"values,omitempty"`
+	Values []map[string]any `json:"values,omitempty" url:"values,omitempty"`
 	// Exported rules.
-	Rules []map[string]interface{} `json:"rules,omitempty" url:"rules,omitempty"`
+	Rules []map[string]any `json:"rules,omitempty" url:"rules,omitempty"`
 	// Exported flows.
-	Flows []map[string]interface{} `json:"flows,omitempty" url:"flows,omitempty"`
+	Flows []map[string]any `json:"flows,omitempty" url:"flows,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1203,28 +1299,28 @@ func (e *ExportManifestResponseManifest) GetExportedAt() *time.Time {
 	return e.ExportedAt
 }
 
-func (e *ExportManifestResponseManifest) GetContexts() []map[string]interface{} {
+func (e *ExportManifestResponseManifest) GetContexts() []map[string]any {
 	if e == nil {
 		return nil
 	}
 	return e.Contexts
 }
 
-func (e *ExportManifestResponseManifest) GetValues() []map[string]interface{} {
+func (e *ExportManifestResponseManifest) GetValues() []map[string]any {
 	if e == nil {
 		return nil
 	}
 	return e.Values
 }
 
-func (e *ExportManifestResponseManifest) GetRules() []map[string]interface{} {
+func (e *ExportManifestResponseManifest) GetRules() []map[string]any {
 	if e == nil {
 		return nil
 	}
 	return e.Rules
 }
 
-func (e *ExportManifestResponseManifest) GetFlows() []map[string]interface{} {
+func (e *ExportManifestResponseManifest) GetFlows() []map[string]any {
 	if e == nil {
 		return nil
 	}
@@ -1232,6 +1328,9 @@ func (e *ExportManifestResponseManifest) GetFlows() []map[string]interface{} {
 }
 
 func (e *ExportManifestResponseManifest) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
 	return e.extraProperties
 }
 
@@ -1272,28 +1371,28 @@ func (e *ExportManifestResponseManifest) SetExportedAt(exportedAt *time.Time) {
 
 // SetContexts sets the Contexts field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponseManifest) SetContexts(contexts []map[string]interface{}) {
+func (e *ExportManifestResponseManifest) SetContexts(contexts []map[string]any) {
 	e.Contexts = contexts
 	e.require(exportManifestResponseManifestFieldContexts)
 }
 
 // SetValues sets the Values field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponseManifest) SetValues(values []map[string]interface{}) {
+func (e *ExportManifestResponseManifest) SetValues(values []map[string]any) {
 	e.Values = values
 	e.require(exportManifestResponseManifestFieldValues)
 }
 
 // SetRules sets the Rules field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponseManifest) SetRules(rules []map[string]interface{}) {
+func (e *ExportManifestResponseManifest) SetRules(rules []map[string]any) {
 	e.Rules = rules
 	e.require(exportManifestResponseManifestFieldRules)
 }
 
 // SetFlows sets the Flows field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponseManifest) SetFlows(flows []map[string]interface{}) {
+func (e *ExportManifestResponseManifest) SetFlows(flows []map[string]any) {
 	e.Flows = flows
 	e.require(exportManifestResponseManifestFieldFlows)
 }
@@ -1334,6 +1433,9 @@ func (e *ExportManifestResponseManifest) MarshalJSON() ([]byte, error) {
 }
 
 func (e *ExportManifestResponseManifest) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if len(e.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
 			return value
@@ -1428,6 +1530,9 @@ func (i *ImportManifestResponse) GetOrganizationCreated() *ImportManifestRespons
 }
 
 func (i *ImportManifestResponse) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
 	return i.extraProperties
 }
 
@@ -1515,6 +1620,9 @@ func (i *ImportManifestResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (i *ImportManifestResponse) String() string {
+	if i == nil {
+		return "<nil>"
+	}
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -1579,6 +1687,9 @@ func (i *ImportManifestResponseCreatedItem) GetStatus() *string {
 }
 
 func (i *ImportManifestResponseCreatedItem) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
 	return i.extraProperties
 }
 
@@ -1645,6 +1756,9 @@ func (i *ImportManifestResponseCreatedItem) MarshalJSON() ([]byte, error) {
 }
 
 func (i *ImportManifestResponseCreatedItem) String() string {
+	if i == nil {
+		return "<nil>"
+	}
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -1705,6 +1819,9 @@ func (i *ImportManifestResponseErrorsItem) GetReason() *string {
 }
 
 func (i *ImportManifestResponseErrorsItem) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
 	return i.extraProperties
 }
 
@@ -1771,6 +1888,9 @@ func (i *ImportManifestResponseErrorsItem) MarshalJSON() ([]byte, error) {
 }
 
 func (i *ImportManifestResponseErrorsItem) String() string {
+	if i == nil {
+		return "<nil>"
+	}
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -1823,6 +1943,9 @@ func (i *ImportManifestResponseOrganizationCreated) GetFlowTagID() *string {
 }
 
 func (i *ImportManifestResponseOrganizationCreated) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
 	return i.extraProperties
 }
 
@@ -1882,6 +2005,9 @@ func (i *ImportManifestResponseOrganizationCreated) MarshalJSON() ([]byte, error
 }
 
 func (i *ImportManifestResponseOrganizationCreated) String() string {
+	if i == nil {
+		return "<nil>"
+	}
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -1942,6 +2068,9 @@ func (i *ImportManifestResponseSkippedItem) GetReason() *string {
 }
 
 func (i *ImportManifestResponseSkippedItem) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
 	return i.extraProperties
 }
 
@@ -2008,6 +2137,9 @@ func (i *ImportManifestResponseSkippedItem) MarshalJSON() ([]byte, error) {
 }
 
 func (i *ImportManifestResponseSkippedItem) String() string {
+	if i == nil {
+		return "<nil>"
+	}
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -2068,6 +2200,9 @@ func (i *ImportManifestResponseUpdatedItem) GetStatus() *string {
 }
 
 func (i *ImportManifestResponseUpdatedItem) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
 	return i.extraProperties
 }
 
@@ -2134,6 +2269,9 @@ func (i *ImportManifestResponseUpdatedItem) MarshalJSON() ([]byte, error) {
 }
 
 func (i *ImportManifestResponseUpdatedItem) String() string {
+	if i == nil {
+		return "<nil>"
+	}
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -2248,6 +2386,9 @@ func (u *UsageStatistics) GetDailyAverageUsage() *float64 {
 }
 
 func (u *UsageStatistics) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
 	return u.extraProperties
 }
 
@@ -2349,6 +2490,9 @@ func (u *UsageStatistics) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UsageStatistics) String() string {
+	if u == nil {
+		return "<nil>"
+	}
 	if len(u.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
 			return value
@@ -2508,6 +2652,9 @@ func (i *ImportManifestRequestLegacyRuleMappingValue) GetRuleID() *string {
 }
 
 func (i *ImportManifestRequestLegacyRuleMappingValue) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
 	return i.extraProperties
 }
 
@@ -2560,6 +2707,9 @@ func (i *ImportManifestRequestLegacyRuleMappingValue) MarshalJSON() ([]byte, err
 }
 
 func (i *ImportManifestRequestLegacyRuleMappingValue) String() string {
+	if i == nil {
+		return "<nil>"
+	}
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value
@@ -2593,7 +2743,7 @@ func (i ImportManifestRequestLegacyRuleMappingValueAction) Ptr() *ImportManifest
 	return &i
 }
 
-// The RBM manifest object containing assets to import.
+// The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads.
 var (
 	importManifestRequestManifestFieldVersion  = big.NewInt(1 << 0)
 	importManifestRequestManifestFieldRules    = big.NewInt(1 << 1)
@@ -2606,13 +2756,13 @@ type ImportManifestRequestManifest struct {
 	// Manifest format version.
 	Version *string `json:"version,omitempty" url:"version,omitempty"`
 	// Rules to import.
-	Rules []map[string]interface{} `json:"rules,omitempty" url:"rules,omitempty"`
+	Rules []map[string]any `json:"rules,omitempty" url:"rules,omitempty"`
 	// Flows to import.
-	Flows []map[string]interface{} `json:"flows,omitempty" url:"flows,omitempty"`
+	Flows []map[string]any `json:"flows,omitempty" url:"flows,omitempty"`
 	// Contexts to import.
-	Entities []map[string]interface{} `json:"entities,omitempty" url:"entities,omitempty"`
+	Entities []map[string]any `json:"entities,omitempty" url:"entities,omitempty"`
 	// Dynamic values to import.
-	Values []map[string]interface{} `json:"values,omitempty" url:"values,omitempty"`
+	Values []map[string]any `json:"values,omitempty" url:"values,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2628,28 +2778,28 @@ func (i *ImportManifestRequestManifest) GetVersion() *string {
 	return i.Version
 }
 
-func (i *ImportManifestRequestManifest) GetRules() []map[string]interface{} {
+func (i *ImportManifestRequestManifest) GetRules() []map[string]any {
 	if i == nil {
 		return nil
 	}
 	return i.Rules
 }
 
-func (i *ImportManifestRequestManifest) GetFlows() []map[string]interface{} {
+func (i *ImportManifestRequestManifest) GetFlows() []map[string]any {
 	if i == nil {
 		return nil
 	}
 	return i.Flows
 }
 
-func (i *ImportManifestRequestManifest) GetEntities() []map[string]interface{} {
+func (i *ImportManifestRequestManifest) GetEntities() []map[string]any {
 	if i == nil {
 		return nil
 	}
 	return i.Entities
 }
 
-func (i *ImportManifestRequestManifest) GetValues() []map[string]interface{} {
+func (i *ImportManifestRequestManifest) GetValues() []map[string]any {
 	if i == nil {
 		return nil
 	}
@@ -2657,6 +2807,9 @@ func (i *ImportManifestRequestManifest) GetValues() []map[string]interface{} {
 }
 
 func (i *ImportManifestRequestManifest) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
 	return i.extraProperties
 }
 
@@ -2676,28 +2829,28 @@ func (i *ImportManifestRequestManifest) SetVersion(version *string) {
 
 // SetRules sets the Rules field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestRequestManifest) SetRules(rules []map[string]interface{}) {
+func (i *ImportManifestRequestManifest) SetRules(rules []map[string]any) {
 	i.Rules = rules
 	i.require(importManifestRequestManifestFieldRules)
 }
 
 // SetFlows sets the Flows field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestRequestManifest) SetFlows(flows []map[string]interface{}) {
+func (i *ImportManifestRequestManifest) SetFlows(flows []map[string]any) {
 	i.Flows = flows
 	i.require(importManifestRequestManifestFieldFlows)
 }
 
 // SetEntities sets the Entities field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestRequestManifest) SetEntities(entities []map[string]interface{}) {
+func (i *ImportManifestRequestManifest) SetEntities(entities []map[string]any) {
 	i.Entities = entities
 	i.require(importManifestRequestManifestFieldEntities)
 }
 
 // SetValues sets the Values field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestRequestManifest) SetValues(values []map[string]interface{}) {
+func (i *ImportManifestRequestManifest) SetValues(values []map[string]any) {
 	i.Values = values
 	i.require(importManifestRequestManifestFieldValues)
 }
@@ -2730,6 +2883,9 @@ func (i *ImportManifestRequestManifest) MarshalJSON() ([]byte, error) {
 }
 
 func (i *ImportManifestRequestManifest) String() string {
+	if i == nil {
+		return "<nil>"
+	}
 	if len(i.rawJSON) > 0 {
 		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
 			return value

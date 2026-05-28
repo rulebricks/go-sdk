@@ -30,11 +30,9 @@ Executes a single rule identified by a unique slug. The request and response for
 request := &sdk.SolveRulesRequest{
         Slug: "slug",
         Body: map[string]any{
-            "body": map[string]any{
-                "name": "Alice Johnson",
-                "age": 28,
-                "email": "alice.johnson@example.com",
-            },
+            "age": 30,
+            "email": "jdoe@acme.co",
+            "name": "John Doe",
         },
     }
 client.Rules.Solve(
@@ -107,14 +105,14 @@ request := &sdk.BulkSolveRulesRequest{
         Slug: "slug",
         Body: []sdk.DynamicRequestPayload{
             map[string]any{
-                "name": "John Doe",
                 "age": 30,
                 "email": "jdoe@acme.co",
+                "name": "John Doe",
             },
             map[string]any{
-                "name": "Jane Doe",
                 "age": 28,
                 "email": "jane@example.com",
+                "name": "Jane Doe",
             },
         },
     }
@@ -185,7 +183,16 @@ Executes multiple rules or flows in parallel based on a provided mapping of rule
 
 ```go
 request := map[string]*sdk.ParallelSolveRequestValue{
-        "body": &sdk.ParallelSolveRequestValue{},
+        "eligibility": &sdk.ParallelSolveRequestValue{
+            Rule: sdk.String(
+                "1ef03ms",
+            ),
+        },
+        "offers": &sdk.ParallelSolveRequestValue{
+            Flow: sdk.String(
+                "OvmsYwn",
+            ),
+        },
     }
 client.Rules.ParallelSolve(
         context.TODO(),
@@ -249,11 +256,9 @@ Execute a flow by its slug.
 request := &sdk.ExecuteFlowsRequest{
         Slug: "slug",
         Body: map[string]any{
-            "body": map[string]any{
-                "name": "Alice Johnson",
-                "age": 28,
-                "email": "alice.johnson@example.com",
-            },
+            "age": 30,
+            "email": "jdoe@acme.co",
+            "name": "John Doe",
         },
     }
 client.Flows.Execute(
@@ -769,7 +774,7 @@ client.Assets.ImportRbm(
 <dl>
 <dd>
 
-**manifest:** `*sdk.ImportManifestRequestManifest` — The RBM manifest object containing assets to import.
+**manifest:** `*sdk.ImportManifestRequestManifest` — The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads.
     
 </dd>
 </dl>
@@ -1014,13 +1019,13 @@ Update existing dynamic values or add new ones for the authenticated user. Suppo
 ```go
 request := &sdk.UpdateValuesRequest{
         Values: map[string]any{
-            "Favorite Color": "blue",
             "Age": 30,
-            "Is Student": false,
+            "Favorite Color": "blue",
             "Hobbies": []any{
                 "reading",
                 "cycling",
             },
+            "Is Student": false,
         },
         UserGroups: []string{
             "marketing",
@@ -1055,6 +1060,14 @@ client.Values.Update(
 <dd>
 
 **userGroups:** `[]string` — Optional array of user group names or IDs. If omitted and user belongs to user groups, values will be assigned to all user's user groups. Required if values should be restricted to specific user groups.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadataByName:** `map[string]map[string]any` — Optional metadata keyed by dynamic value name. This is the canonical snake_case field; legacy clients may still send `metadataByName`.
     
 </dd>
 </dl>
@@ -1229,8 +1242,8 @@ request := &sdk.SubmitContextsRequest{
         Slug: "customer",
         Instance: "cust-12345",
         Body: map[string]any{
-            "email": "customer@example.com",
             "age": 30,
+            "email": "customer@example.com",
         },
     }
 client.Contexts.Submit(
@@ -1835,7 +1848,7 @@ client.Assets.Rules.Delete(
 <dl>
 <dd>
 
-Export a specific rule by its ID.
+Export a specific rule by its ID. This response preserves the raw rule document casing (for example, `requestSchema`, `sampleRequest`, and `createdAt`) so it can round-trip through `/admin/rules/import` and `.rbm` workflows.
 </dd>
 </dl>
 </dd>
@@ -1896,7 +1909,7 @@ client.Assets.Rules.Pull(
 <dl>
 <dd>
 
-Import a rule into the user's account.
+Create or update a rule. If `id` is provided, the matching rule is partially updated (all other fields optional). If `id` is omitted, a new rule is created (`id` and `slug` are auto-generated; all other fields required).
 </dd>
 </dl>
 </dd>
@@ -1912,9 +1925,139 @@ Import a rule into the user's account.
 
 ```go
 request := &assets.ImportRuleRequest{
-        Rule: map[string]any{
-            "name": "Imported Rule",
-            "description": "A rule imported via API",
+        Rule: &sdk.RuleImportPayload{
+            Name: sdk.String(
+                "Basic Pricing Rule",
+            ),
+            Description: sdk.String(
+                "",
+            ),
+            CreatedAt: sdk.Time(
+                sdk.MustParseDateTime(
+                    "2026-02-12T01:29:23.000Z",
+                ),
+            ),
+            UpdatedAt: sdk.Time(
+                sdk.MustParseDateTime(
+                    "2026-02-12T01:29:23.000Z",
+                ),
+            ),
+            Published: sdk.Bool(
+                false,
+            ),
+            RequestSchema: []*sdk.RuleImportSchemaField{
+                &sdk.RuleImportSchemaField{
+                    Key: "customer_tier",
+                    Show: true,
+                    Name: "Customer Tier",
+                    Type: sdk.RuleImportSchemaFieldTypeString,
+                },
+                &sdk.RuleImportSchemaField{
+                    Key: "order_total",
+                    Show: true,
+                    Name: "Order Total",
+                    Type: sdk.RuleImportSchemaFieldTypeNumber,
+                },
+                &sdk.RuleImportSchemaField{
+                    Key: "expedited",
+                    Show: true,
+                    Name: "Expedited",
+                    Type: sdk.RuleImportSchemaFieldTypeBoolean,
+                },
+            },
+            ResponseSchema: []*sdk.RuleImportSchemaField{
+                &sdk.RuleImportSchemaField{
+                    Key: "discount_rate",
+                    Show: true,
+                    Name: "Discount Rate",
+                    Type: sdk.RuleImportSchemaFieldTypeNumber,
+                },
+                &sdk.RuleImportSchemaField{
+                    Key: "approval_status",
+                    Show: true,
+                    Name: "Approval Status",
+                    Type: sdk.RuleImportSchemaFieldTypeString,
+                },
+            },
+            SampleRequest: map[string]any{
+                "customer_tier": "STANDARD",
+                "expedited": false,
+                "order_total": 250,
+            },
+            TestRequest: map[string]any{
+                "customer_tier": "STANDARD",
+                "expedited": false,
+                "order_total": 250,
+            },
+            SampleResponse: map[string]any{
+                "approval_status": "standard",
+                "discount_rate": 0,
+            },
+            Conditions: []*sdk.RuleImportConditionRow{
+                &sdk.RuleImportConditionRow{
+                    Request: map[string]*sdk.RuleImportRequestCell{
+                        "customer_tier": &sdk.RuleImportRequestCell{
+                            Op: "equals",
+                            Args: []any{
+                                "VIP",
+                            },
+                        },
+                    },
+                    Response: map[string]*sdk.RuleImportResponseCell{
+                        "approval_status": &sdk.RuleImportResponseCell{
+                            Value: "priority",
+                        },
+                        "discount_rate": &sdk.RuleImportResponseCell{
+                            Value: 0.2,
+                        },
+                    },
+                    Settings: &sdk.RuleImportRowSettings{
+                        Enabled: true,
+                        Priority: 0,
+                        Schedule: []map[string]any{},
+                    },
+                },
+                &sdk.RuleImportConditionRow{
+                    Request: map[string]*sdk.RuleImportRequestCell{
+                        "expedited": &sdk.RuleImportRequestCell{
+                            Op: "equals",
+                            Args: []any{
+                                true,
+                            },
+                        },
+                    },
+                    Response: map[string]*sdk.RuleImportResponseCell{
+                        "approval_status": &sdk.RuleImportResponseCell{
+                            Value: "expedited",
+                        },
+                        "discount_rate": &sdk.RuleImportResponseCell{
+                            Value: 0.05,
+                        },
+                    },
+                    Settings: &sdk.RuleImportRowSettings{
+                        Enabled: true,
+                        Priority: 1,
+                        Schedule: []map[string]any{},
+                    },
+                },
+                &sdk.RuleImportConditionRow{
+                    Request: map[string]*sdk.RuleImportRequestCell{},
+                    Response: map[string]*sdk.RuleImportResponseCell{
+                        "approval_status": &sdk.RuleImportResponseCell{
+                            Value: "standard",
+                        },
+                        "discount_rate": &sdk.RuleImportResponseCell{
+                            Value: 0,
+                        },
+                    },
+                    Settings: &sdk.RuleImportRowSettings{
+                        Enabled: true,
+                        Priority: 2,
+                        Schedule: []map[string]any{},
+                    },
+                },
+            },
+            History: []map[string]any{},
         },
     }
 client.Assets.Rules.Push(
@@ -1936,7 +2079,7 @@ client.Assets.Rules.Push(
 <dl>
 <dd>
 
-**rule:** `map[string]any` — The rule data to import.
+**rule:** `*sdk.RuleImportPayload` 
     
 </dd>
 </dl>
@@ -1960,7 +2103,7 @@ client.Assets.Rules.Push(
 <dl>
 <dd>
 
-List all rules in the organization. Optionally filter by folder name or ID.
+List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, or by user group name or ID when the API key has access to that group.
 </dd>
 </dl>
 </dd>
@@ -2000,6 +2143,14 @@ client.Assets.Rules.List(
 <dd>
 
 **folder:** `*string` — Filter rules by folder name or folder ID
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userGroup:** `*string` — Filter rules by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
     
 </dd>
 </dl>
@@ -3494,3 +3645,4 @@ client.Users.Groups.Create(
 </dd>
 </dl>
 </details>
+

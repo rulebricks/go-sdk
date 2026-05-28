@@ -6,6 +6,7 @@ import (
 	context "context"
 	http "net/http"
 	sdk "sdk"
+	assets "sdk/assets"
 	core "sdk/core"
 	internal "sdk/internal"
 	option "sdk/option"
@@ -23,8 +24,9 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 		baseURL: options.BaseURL,
 		caller: internal.NewCaller(
 			&internal.CallerParams{
-				Client:      options.HTTPClient,
-				MaxAttempts: options.MaxAttempts,
+				Client:         options.HTTPClient,
+				MaxAttempts:    options.MaxAttempts,
+				DisableRetries: options.DisableRetries,
 			},
 		),
 	}
@@ -53,11 +55,12 @@ func (r *RawClient) List(
 			Method:          http.MethodGet,
 			Headers:         headers,
 			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
 			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
+			ErrorDecoder:    internal.NewErrorDecoder(assets.ErrorCodes),
 		},
 	)
 	if err != nil {
