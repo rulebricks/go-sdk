@@ -31,7 +31,7 @@ func (b *BadRequestError) Unwrap() error {
 	return b.APIError
 }
 
-// The sync run already completed (send a fresh sync_id for a new run) or a pure finalize call targeted a run with nothing staged.
+// Conflict - The publish conflicted with a concurrent publish of the same rule (retry the request), or the import attempted to change the slug of an already-published rule (slugs are immutable after publish).
 type ConflictError struct {
 	*core.APIError
 	Body *Error
@@ -197,4 +197,28 @@ func (s *ServiceUnavailableError) MarshalJSON() ([]byte, error) {
 
 func (s *ServiceUnavailableError) Unwrap() error {
 	return s.APIError
+}
+
+// Unprocessable Entity - The rule could not be published because critical tests are failing.
+type UnprocessableEntityError struct {
+	*core.APIError
+	Body *Error
+}
+
+func (u *UnprocessableEntityError) UnmarshalJSON(data []byte) error {
+	var body *Error
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	u.StatusCode = 422
+	u.Body = body
+	return nil
+}
+
+func (u *UnprocessableEntityError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u.Body)
+}
+
+func (u *UnprocessableEntityError) Unwrap() error {
+	return u.APIError
 }

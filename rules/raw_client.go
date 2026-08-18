@@ -42,9 +42,14 @@ func (r *RawClient) Solve(
 		r.baseURL,
 		"https%3A%2F%2Frulebricks.com/api/v1",
 	)
+	_Version := request.Version
+	if _Version == "" {
+		_Version = "latest"
+	}
 	endpointURL := internal.EncodeURL(
-		baseURL+"/solve/%v",
+		baseURL+"/solve/%v/%v",
 		request.Slug,
+		_Version,
 	)
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
@@ -89,9 +94,14 @@ func (r *RawClient) BulkSolve(
 		r.baseURL,
 		"https%3A%2F%2Frulebricks.com/api/v1",
 	)
+	_Version := request.Version
+	if _Version == "" {
+		_Version = "latest"
+	}
 	endpointURL := internal.EncodeURL(
-		baseURL+"/bulk-solve/%v",
+		baseURL+"/bulk-solve/%v/%v",
 		request.Slug,
+		_Version,
 	)
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),

@@ -29,4 +29,14 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
+	409: func(apiError *core.APIError) error {
+		return &sdk.ConflictError{
+			APIError: apiError,
+		}
+	},
+	422: func(apiError *core.APIError) error {
+		return &sdk.UnprocessableEntityError{
+			APIError: apiError,
+		}
+	},
 }

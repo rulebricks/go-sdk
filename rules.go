@@ -10,13 +10,16 @@ import (
 )
 
 var (
-	bulkSolveRulesRequestFieldSlug = big.NewInt(1 << 0)
+	bulkSolveRulesRequestFieldSlug    = big.NewInt(1 << 0)
+	bulkSolveRulesRequestFieldVersion = big.NewInt(1 << 1)
 )
 
 type BulkSolveRulesRequest struct {
 	// The unique identifier for the resource.
-	Slug string                  `json:"-" url:"-"`
-	Body []DynamicRequestPayload `json:"-" url:"-"`
+	Slug string `json:"-" url:"-"`
+	// The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
+	Version string                  `json:"-" url:"-"`
+	Body    []DynamicRequestPayload `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -36,6 +39,13 @@ func (b *BulkSolveRulesRequest) SetSlug(slug string) {
 	b.require(bulkSolveRulesRequestFieldSlug)
 }
 
+// SetVersion sets the Version field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BulkSolveRulesRequest) SetVersion(version string) {
+	b.Version = version
+	b.require(bulkSolveRulesRequestFieldVersion)
+}
+
 func (b *BulkSolveRulesRequest) UnmarshalJSON(data []byte) error {
 	var body []DynamicRequestPayload
 	if err := json.Unmarshal(data, &body); err != nil {
@@ -50,13 +60,16 @@ func (b *BulkSolveRulesRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	solveRulesRequestFieldSlug = big.NewInt(1 << 0)
+	solveRulesRequestFieldSlug    = big.NewInt(1 << 0)
+	solveRulesRequestFieldVersion = big.NewInt(1 << 1)
 )
 
 type SolveRulesRequest struct {
 	// The unique identifier for the resource.
-	Slug string                `json:"-" url:"-"`
-	Body DynamicRequestPayload `json:"-" url:"-"`
+	Slug string `json:"-" url:"-"`
+	// The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
+	Version string                `json:"-" url:"-"`
+	Body    DynamicRequestPayload `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -74,6 +87,13 @@ func (s *SolveRulesRequest) require(field *big.Int) {
 func (s *SolveRulesRequest) SetSlug(slug string) {
 	s.Slug = slug
 	s.require(solveRulesRequestFieldSlug)
+}
+
+// SetVersion sets the Version field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveRulesRequest) SetVersion(version string) {
+	s.Version = version
+	s.require(solveRulesRequestFieldVersion)
 }
 
 func (s *SolveRulesRequest) UnmarshalJSON(data []byte) error {
@@ -246,9 +266,9 @@ var (
 )
 
 type ParallelSolveRequestValue struct {
-	// Slug of the rule to execute
+	// Slug of the rule to execute, optionally suffixed with a published version number or release environment slug (e.g. `my-rule`, `my-rule/3`, or `my-rule/production`). A bare slug executes the current published version.
 	Rule *string `json:"$rule,omitempty" url:"$rule,omitempty"`
-	// Slug of the flow to execute
+	// Slug of the flow to execute, optionally suffixed with a published version number or release environment slug (e.g. `my-flow`, `my-flow/3`, or `my-flow/production`). A bare slug executes the current published version.
 	Flow *string `json:"$flow,omitempty" url:"$flow,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

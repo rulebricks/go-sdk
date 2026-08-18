@@ -33,7 +33,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Executes a single rule identified by a unique slug. The request and response formats are dynamic, dependent on the rule configuration.
+// Executes a single rule identified by a unique slug. The request and response formats are dynamic, dependent on the rule configuration. Optionally target a specific published version (e.g. `3`) or a release environment (e.g. `production`) via the `version` path segment; `latest` (the default) executes the current published version.
 func (c *Client) Solve(
 	ctx context.Context,
 	request *sdk.SolveRulesRequest,
@@ -50,7 +50,7 @@ func (c *Client) Solve(
 	return response.Body, nil
 }
 
-// Executes a particular rule against multiple request data payloads provided in a list.
+// Executes a particular rule against multiple request data payloads provided in a list. Optionally target a specific published version (e.g. `3`) or a release environment (e.g. `production`) via the `version` path segment; `latest` (the default) executes the current published version.
 func (c *Client) BulkSolve(
 	ctx context.Context,
 	request *sdk.BulkSolveRulesRequest,

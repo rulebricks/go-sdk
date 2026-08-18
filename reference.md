@@ -1,6 +1,6 @@
 # Reference
 ## Rules
-<details><summary><code>client.Rules.Solve(Slug, request) -> sdk.DynamicResponsePayload</code></summary>
+<details><summary><code>client.Rules.Solve(Slug, Version, request) -> sdk.DynamicResponsePayload</code></summary>
 <dl>
 <dd>
 
@@ -12,7 +12,7 @@
 <dl>
 <dd>
 
-Executes a single rule identified by a unique slug. The request and response formats are dynamic, dependent on the rule configuration.
+Executes a single rule identified by a unique slug. The request and response formats are dynamic, dependent on the rule configuration. Optionally target a specific published version (e.g. `3`) or a release environment (e.g. `production`) via the `version` path segment; `latest` (the default) executes the current published version.
 </dd>
 </dl>
 </dd>
@@ -29,6 +29,7 @@ Executes a single rule identified by a unique slug. The request and response for
 ```go
 request := &sdk.SolveRulesRequest{
         Slug: "slug",
+        Version: "version",
         Body: map[string]any{
             "age": 30,
             "email": "jdoe@acme.co",
@@ -62,6 +63,14 @@ client.Rules.Solve(
 <dl>
 <dd>
 
+**version:** `string` — The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **request:** `sdk.DynamicRequestPayload` 
     
 </dd>
@@ -74,7 +83,7 @@ client.Rules.Solve(
 </dl>
 </details>
 
-<details><summary><code>client.Rules.BulkSolve(Slug, request) -> []*sdk.BulkRuleResponseItem</code></summary>
+<details><summary><code>client.Rules.BulkSolve(Slug, Version, request) -> []*sdk.BulkRuleResponseItem</code></summary>
 <dl>
 <dd>
 
@@ -86,7 +95,7 @@ client.Rules.Solve(
 <dl>
 <dd>
 
-Executes a particular rule against multiple request data payloads provided in a list.
+Executes a particular rule against multiple request data payloads provided in a list. Optionally target a specific published version (e.g. `3`) or a release environment (e.g. `production`) via the `version` path segment; `latest` (the default) executes the current published version.
 </dd>
 </dl>
 </dd>
@@ -103,6 +112,7 @@ Executes a particular rule against multiple request data payloads provided in a 
 ```go
 request := &sdk.BulkSolveRulesRequest{
         Slug: "slug",
+        Version: "version",
         Body: []sdk.DynamicRequestPayload{
             map[string]any{
                 "age": 30,
@@ -136,6 +146,14 @@ client.Rules.BulkSolve(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**version:** `string` — The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
     
 </dd>
 </dl>
@@ -311,7 +329,7 @@ client.Infra.Scale(
 </details>
 
 ## Flows
-<details><summary><code>client.Flows.Execute(Slug, request) -> sdk.DynamicResponsePayload</code></summary>
+<details><summary><code>client.Flows.Execute(Slug, Version, request) -> sdk.DynamicResponsePayload</code></summary>
 <dl>
 <dd>
 
@@ -323,7 +341,7 @@ client.Infra.Scale(
 <dl>
 <dd>
 
-Execute a flow by its slug.
+Execute a flow by its slug. Optionally target a specific published version (e.g. `3`) or a release environment (e.g. `production`) via the `version` path segment; `latest` (the default) executes the current published version.
 </dd>
 </dl>
 </dd>
@@ -340,6 +358,7 @@ Execute a flow by its slug.
 ```go
 request := &sdk.ExecuteFlowsRequest{
         Slug: "slug",
+        Version: "version",
         Body: map[string]any{
             "age": 30,
             "email": "jdoe@acme.co",
@@ -366,6 +385,14 @@ client.Flows.Execute(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**version:** `string` — The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
     
 </dd>
 </dl>
@@ -4199,7 +4226,7 @@ client.Tests.Rules.Delete(
 <dl>
 <dd>
 
-Executes every test in the rule's test suite (or only the critical tests when `critical_only` is true) and returns a summary of which passed, which failed, and whether any CRITICAL test failed. Use the `critical_failure` flag as the signal for whether a release should be blocked.
+Executes every test in the rule's test suite (or only the critical tests when `critical_only` is true) and returns a summary of which passed, which failed, and whether any CRITICAL test failed. Use the `critical_failure` flag as the signal for whether a release should be blocked. Tests always run against the latest draft of the rule; version targeting does not apply.
 </dd>
 </dl>
 </dd>
@@ -4484,7 +4511,7 @@ client.Tests.Flows.Delete(
 <dl>
 <dd>
 
-Executes every test in the flow's test suite (or only the critical tests when `critical_only` is true) against the flow's current graph and returns a summary of which passed, which failed, and whether any CRITICAL test failed.
+Executes every test in the flow's test suite (or only the critical tests when `critical_only` is true) against the flow's current graph and returns a summary of which passed, which failed, and whether any CRITICAL test failed. Tests always run against the latest draft of the flow; version targeting does not apply.
 </dd>
 </dl>
 </dd>

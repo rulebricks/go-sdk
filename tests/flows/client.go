@@ -85,7 +85,7 @@ func (c *Client) Delete(
 	return response.Body, nil
 }
 
-// Executes every test in the flow's test suite (or only the critical tests when `critical_only` is true) against the flow's current graph and returns a summary of which passed, which failed, and whether any CRITICAL test failed.
+// Executes every test in the flow's test suite (or only the critical tests when `critical_only` is true) against the flow's current graph and returns a summary of which passed, which failed, and whether any CRITICAL test failed. Tests always run against the latest draft of the flow; version targeting does not apply.
 func (c *Client) Run(
 	ctx context.Context,
 	request *tests.RunFlowsRequest,

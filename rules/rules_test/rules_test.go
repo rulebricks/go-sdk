@@ -89,7 +89,8 @@ func TestRulesSolveWithWireMock(
 		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.SolveRulesRequest{
-		Slug: "slug",
+		Slug:    "slug",
+		Version: "version",
 		Body: map[string]any{
 			"age":   30,
 			"email": "jdoe@acme.co",
@@ -105,7 +106,7 @@ func TestRulesSolveWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestRulesSolveWithWireMock", "POST", "/solve/slug", nil, 1)
+	VerifyRequestCount(t, "TestRulesSolveWithWireMock", "POST", "/solve/slug/version", nil, 1)
 }
 
 func TestRulesBulkSolveWithWireMock(
@@ -120,7 +121,8 @@ func TestRulesBulkSolveWithWireMock(
 		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.BulkSolveRulesRequest{
-		Slug: "slug",
+		Slug:    "slug",
+		Version: "version",
 		Body: []sdk.DynamicRequestPayload{
 			map[string]any{
 				"age":   30,
@@ -143,7 +145,7 @@ func TestRulesBulkSolveWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestRulesBulkSolveWithWireMock", "POST", "/bulk-solve/slug", nil, 1)
+	VerifyRequestCount(t, "TestRulesBulkSolveWithWireMock", "POST", "/bulk-solve/slug/version", nil, 1)
 }
 
 func TestRulesParallelSolveWithWireMock(

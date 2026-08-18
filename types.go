@@ -609,19 +609,22 @@ func (c *ContextDetail) String() string {
 }
 
 var (
-	contextDetailBoundFlowsItemFieldID         = big.NewInt(1 << 0)
-	contextDetailBoundFlowsItemFieldName       = big.NewInt(1 << 1)
-	contextDetailBoundFlowsItemFieldSlug       = big.NewInt(1 << 2)
-	contextDetailBoundFlowsItemFieldPublished  = big.NewInt(1 << 3)
-	contextDetailBoundFlowsItemFieldOriginRule = big.NewInt(1 << 4)
+	contextDetailBoundFlowsItemFieldID             = big.NewInt(1 << 0)
+	contextDetailBoundFlowsItemFieldName           = big.NewInt(1 << 1)
+	contextDetailBoundFlowsItemFieldSlug           = big.NewInt(1 << 2)
+	contextDetailBoundFlowsItemFieldPublished      = big.NewInt(1 << 3)
+	contextDetailBoundFlowsItemFieldContextVersion = big.NewInt(1 << 4)
+	contextDetailBoundFlowsItemFieldOriginRule     = big.NewInt(1 << 5)
 )
 
 type ContextDetailBoundFlowsItem struct {
-	ID         *string                                `json:"id,omitempty" url:"id,omitempty"`
-	Name       *string                                `json:"name,omitempty" url:"name,omitempty"`
-	Slug       *string                                `json:"slug,omitempty" url:"slug,omitempty"`
-	Published  *bool                                  `json:"published,omitempty" url:"published,omitempty"`
-	OriginRule *ContextDetailBoundFlowsItemOriginRule `json:"origin_rule,omitempty" url:"origin_rule,omitempty"`
+	ID        *string `json:"id,omitempty" url:"id,omitempty"`
+	Name      *string `json:"name,omitempty" url:"name,omitempty"`
+	Slug      *string `json:"slug,omitempty" url:"slug,omitempty"`
+	Published *bool   `json:"published,omitempty" url:"published,omitempty"`
+	// Version target for this binding: `null` or `latest` follows the current published version, a version number (e.g. `3`) pins that published version, and any other value is a release environment slug resolved at execution time.
+	ContextVersion *string                                `json:"context_version,omitempty" url:"context_version,omitempty"`
+	OriginRule     *ContextDetailBoundFlowsItemOriginRule `json:"origin_rule,omitempty" url:"origin_rule,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -656,6 +659,13 @@ func (c *ContextDetailBoundFlowsItem) GetPublished() *bool {
 		return nil
 	}
 	return c.Published
+}
+
+func (c *ContextDetailBoundFlowsItem) GetContextVersion() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ContextVersion
 }
 
 func (c *ContextDetailBoundFlowsItem) GetOriginRule() *ContextDetailBoundFlowsItemOriginRule {
@@ -705,6 +715,13 @@ func (c *ContextDetailBoundFlowsItem) SetSlug(slug *string) {
 func (c *ContextDetailBoundFlowsItem) SetPublished(published *bool) {
 	c.Published = published
 	c.require(contextDetailBoundFlowsItemFieldPublished)
+}
+
+// SetContextVersion sets the ContextVersion field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDetailBoundFlowsItem) SetContextVersion(contextVersion *string) {
+	c.ContextVersion = contextVersion
+	c.require(contextDetailBoundFlowsItemFieldContextVersion)
 }
 
 // SetOriginRule sets the OriginRule field and marks it as non-optional;
@@ -873,10 +890,11 @@ func (c *ContextDetailBoundFlowsItemOriginRule) String() string {
 }
 
 var (
-	contextDetailBoundRulesItemFieldID        = big.NewInt(1 << 0)
-	contextDetailBoundRulesItemFieldName      = big.NewInt(1 << 1)
-	contextDetailBoundRulesItemFieldSlug      = big.NewInt(1 << 2)
-	contextDetailBoundRulesItemFieldPublished = big.NewInt(1 << 3)
+	contextDetailBoundRulesItemFieldID             = big.NewInt(1 << 0)
+	contextDetailBoundRulesItemFieldName           = big.NewInt(1 << 1)
+	contextDetailBoundRulesItemFieldSlug           = big.NewInt(1 << 2)
+	contextDetailBoundRulesItemFieldPublished      = big.NewInt(1 << 3)
+	contextDetailBoundRulesItemFieldContextVersion = big.NewInt(1 << 4)
 )
 
 type ContextDetailBoundRulesItem struct {
@@ -884,6 +902,8 @@ type ContextDetailBoundRulesItem struct {
 	Name      *string `json:"name,omitempty" url:"name,omitempty"`
 	Slug      *string `json:"slug,omitempty" url:"slug,omitempty"`
 	Published *bool   `json:"published,omitempty" url:"published,omitempty"`
+	// Version target for this binding: `null` or `latest` follows the current published version, a version number (e.g. `3`) pins that published version, and any other value is a release environment slug resolved at execution time.
+	ContextVersion *string `json:"context_version,omitempty" url:"context_version,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -918,6 +938,13 @@ func (c *ContextDetailBoundRulesItem) GetPublished() *bool {
 		return nil
 	}
 	return c.Published
+}
+
+func (c *ContextDetailBoundRulesItem) GetContextVersion() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ContextVersion
 }
 
 func (c *ContextDetailBoundRulesItem) GetExtraProperties() map[string]interface{} {
@@ -960,6 +987,13 @@ func (c *ContextDetailBoundRulesItem) SetSlug(slug *string) {
 func (c *ContextDetailBoundRulesItem) SetPublished(published *bool) {
 	c.Published = published
 	c.require(contextDetailBoundRulesItemFieldPublished)
+}
+
+// SetContextVersion sets the ContextVersion field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDetailBoundRulesItem) SetContextVersion(contextVersion *string) {
+	c.ContextVersion = contextVersion
+	c.require(contextDetailBoundRulesItemFieldContextVersion)
 }
 
 func (c *ContextDetailBoundRulesItem) UnmarshalJSON(data []byte) error {

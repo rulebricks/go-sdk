@@ -89,7 +89,8 @@ func TestFlowsExecuteWithWireMock(
 		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.ExecuteFlowsRequest{
-		Slug: "slug",
+		Slug:    "slug",
+		Version: "version",
 		Body: map[string]any{
 			"age":   30,
 			"email": "jdoe@acme.co",
@@ -105,5 +106,5 @@ func TestFlowsExecuteWithWireMock(
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestFlowsExecuteWithWireMock", "POST", "/flows/slug", nil, 1)
+	VerifyRequestCount(t, "TestFlowsExecuteWithWireMock", "POST", "/flows/slug/version", nil, 1)
 }

@@ -8,13 +8,16 @@ import (
 )
 
 var (
-	executeFlowsRequestFieldSlug = big.NewInt(1 << 0)
+	executeFlowsRequestFieldSlug    = big.NewInt(1 << 0)
+	executeFlowsRequestFieldVersion = big.NewInt(1 << 1)
 )
 
 type ExecuteFlowsRequest struct {
 	// The unique identifier for the resource.
-	Slug string                `json:"-" url:"-"`
-	Body DynamicRequestPayload `json:"-" url:"-"`
+	Slug string `json:"-" url:"-"`
+	// The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
+	Version string                `json:"-" url:"-"`
+	Body    DynamicRequestPayload `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -32,6 +35,13 @@ func (e *ExecuteFlowsRequest) require(field *big.Int) {
 func (e *ExecuteFlowsRequest) SetSlug(slug string) {
 	e.Slug = slug
 	e.require(executeFlowsRequestFieldSlug)
+}
+
+// SetVersion sets the Version field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExecuteFlowsRequest) SetVersion(version string) {
+	e.Version = version
+	e.require(executeFlowsRequestFieldVersion)
 }
 
 func (e *ExecuteFlowsRequest) UnmarshalJSON(data []byte) error {

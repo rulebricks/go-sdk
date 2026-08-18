@@ -33,7 +33,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Execute a flow by its slug.
+// Execute a flow by its slug. Optionally target a specific published version (e.g. `3`) or a release environment (e.g. `production`) via the `version` path segment; `latest` (the default) executes the current published version.
 func (c *Client) Execute(
 	ctx context.Context,
 	request *sdk.ExecuteFlowsRequest,
