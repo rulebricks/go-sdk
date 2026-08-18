@@ -6,46 +6,38 @@ import (
 	json "encoding/json"
 	fmt "fmt"
 	big "math/big"
+	sdk "sdk"
 	internal "sdk/internal"
 )
 
 var (
 	createContextRequestFieldName                 = big.NewInt(1 << 0)
-	createContextRequestFieldSlug                 = big.NewInt(1 << 1)
-	createContextRequestFieldDescription          = big.NewInt(1 << 2)
-	createContextRequestFieldSchema               = big.NewInt(1 << 3)
-	createContextRequestFieldIdentityFact         = big.NewInt(1 << 4)
-	createContextRequestFieldAutoExecuteDecisions = big.NewInt(1 << 5)
-	createContextRequestFieldTTLSeconds           = big.NewInt(1 << 6)
-	createContextRequestFieldHistoryLimit         = big.NewInt(1 << 7)
-	createContextRequestFieldOnSchemaMismatch     = big.NewInt(1 << 8)
-	createContextRequestFieldWebhookOnSolve       = big.NewInt(1 << 9)
-	createContextRequestFieldWebhookOnExpire      = big.NewInt(1 << 10)
+	createContextRequestFieldDescription          = big.NewInt(1 << 1)
+	createContextRequestFieldSchema               = big.NewInt(1 << 2)
+	createContextRequestFieldIdentityFact         = big.NewInt(1 << 3)
+	createContextRequestFieldAutoExecuteDecisions = big.NewInt(1 << 4)
+	createContextRequestFieldTTLSeconds           = big.NewInt(1 << 5)
+	createContextRequestFieldHistoryLimit         = big.NewInt(1 << 6)
+	createContextRequestFieldOnSchemaMismatch     = big.NewInt(1 << 7)
 )
 
 type CreateContextRequest struct {
-	// The name of the context.
+	// The name of the context. The context's slug is generated from it (suffixed on collision).
 	Name string `json:"name" url:"-"`
-	// Optional custom slug. Auto-generated if not provided.
-	Slug *string `json:"slug,omitempty" url:"-"`
 	// The description of the context.
 	Description *string `json:"description,omitempty" url:"-"`
-	// Initial schema fields for the context. At least one field must be defined.
-	Schema []*CreateContextRequestSchemaItem `json:"schema" url:"-"`
-	// The field key to use as the unique identifier for instances. Must be a key from the schema.
+	// The context's schema: an object with `base` (stored facts; at least one required) and optional `derived` (expression-computed facts) field arrays.
+	Schema *sdk.ContextSchema `json:"schema" url:"-"`
+	// The fact key to use as the unique identifier for instances. Must be a key from schema.base.
 	IdentityFact string `json:"identity_fact" url:"-"`
 	// When true (default), bound rules and flows automatically execute when their inputs are satisfied.
 	AutoExecuteDecisions *bool `json:"auto_execute_decisions,omitempty" url:"-"`
-	// Time-to-live in seconds for live context instances. Instances expire after this duration.
+	// Time-to-live in seconds for live context instances (60 seconds to 30 days). Instances expire after this duration; each write extends the expiry.
 	TTLSeconds *int `json:"ttl_seconds,omitempty" url:"-"`
 	// Maximum number of history entries to retain per field.
 	HistoryLimit *int `json:"history_limit,omitempty" url:"-"`
-	// How to handle fields that don't match the schema.
+	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
 	OnSchemaMismatch *CreateContextRequestOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"-"`
-	// Webhook URL called when a rule or flow successfully solves.
-	WebhookOnSolve *string `json:"webhook_on_solve,omitempty" url:"-"`
-	// Webhook URL called when a live context expires due to TTL.
-	WebhookOnExpire *string `json:"webhook_on_expire,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -65,13 +57,6 @@ func (c *CreateContextRequest) SetName(name string) {
 	c.require(createContextRequestFieldName)
 }
 
-// SetSlug sets the Slug field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequest) SetSlug(slug *string) {
-	c.Slug = slug
-	c.require(createContextRequestFieldSlug)
-}
-
 // SetDescription sets the Description field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CreateContextRequest) SetDescription(description *string) {
@@ -81,7 +66,7 @@ func (c *CreateContextRequest) SetDescription(description *string) {
 
 // SetSchema sets the Schema field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequest) SetSchema(schema []*CreateContextRequestSchemaItem) {
+func (c *CreateContextRequest) SetSchema(schema *sdk.ContextSchema) {
 	c.Schema = schema
 	c.require(createContextRequestFieldSchema)
 }
@@ -119,20 +104,6 @@ func (c *CreateContextRequest) SetHistoryLimit(historyLimit *int) {
 func (c *CreateContextRequest) SetOnSchemaMismatch(onSchemaMismatch *CreateContextRequestOnSchemaMismatch) {
 	c.OnSchemaMismatch = onSchemaMismatch
 	c.require(createContextRequestFieldOnSchemaMismatch)
-}
-
-// SetWebhookOnSolve sets the WebhookOnSolve field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequest) SetWebhookOnSolve(webhookOnSolve *string) {
-	c.WebhookOnSolve = webhookOnSolve
-	c.require(createContextRequestFieldWebhookOnSolve)
-}
-
-// SetWebhookOnExpire sets the WebhookOnExpire field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequest) SetWebhookOnExpire(webhookOnExpire *string) {
-	c.WebhookOnExpire = webhookOnExpire
-	c.require(createContextRequestFieldWebhookOnExpire)
 }
 
 func (c *CreateContextRequest) UnmarshalJSON(data []byte) error {
@@ -208,12 +179,59 @@ func (g *GetObjectsRequest) SetID(id string) {
 	g.require(getObjectsRequestFieldID)
 }
 
-// How to handle fields that don't match the schema.
+var (
+	listObjectsRequestFieldFolder    = big.NewInt(1 << 0)
+	listObjectsRequestFieldUserGroup = big.NewInt(1 << 1)
+	listObjectsRequestFieldName      = big.NewInt(1 << 2)
+)
+
+type ListObjectsRequest struct {
+	// Filter results by folder name or folder ID.
+	Folder *string `json:"-" url:"folder,omitempty"`
+	// Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+	UserGroup *string `json:"-" url:"user_group,omitempty"`
+	// Filter results by name using a case-insensitive substring match.
+	Name *string `json:"-" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (l *ListObjectsRequest) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
+	}
+	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetFolder sets the Folder field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListObjectsRequest) SetFolder(folder *string) {
+	l.Folder = folder
+	l.require(listObjectsRequestFieldFolder)
+}
+
+// SetUserGroup sets the UserGroup field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListObjectsRequest) SetUserGroup(userGroup *string) {
+	l.UserGroup = userGroup
+	l.require(listObjectsRequestFieldUserGroup)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListObjectsRequest) SetName(name *string) {
+	l.Name = name
+	l.require(listObjectsRequestFieldName)
+}
+
+// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
 type CreateContextRequestOnSchemaMismatch string
 
 const (
 	CreateContextRequestOnSchemaMismatchIgnore CreateContextRequestOnSchemaMismatch = "ignore"
 	CreateContextRequestOnSchemaMismatchReject CreateContextRequestOnSchemaMismatch = "reject"
+	CreateContextRequestOnSchemaMismatchStore  CreateContextRequestOnSchemaMismatch = "store"
 )
 
 func NewCreateContextRequestOnSchemaMismatchFromString(s string) (CreateContextRequestOnSchemaMismatch, error) {
@@ -222,6 +240,8 @@ func NewCreateContextRequestOnSchemaMismatchFromString(s string) (CreateContextR
 		return CreateContextRequestOnSchemaMismatchIgnore, nil
 	case "reject":
 		return CreateContextRequestOnSchemaMismatchReject, nil
+	case "store":
+		return CreateContextRequestOnSchemaMismatchStore, nil
 	}
 	var t CreateContextRequestOnSchemaMismatch
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -231,144 +251,13 @@ func (c CreateContextRequestOnSchemaMismatch) Ptr() *CreateContextRequestOnSchem
 	return &c
 }
 
-var (
-	createContextRequestSchemaItemFieldKey          = big.NewInt(1 << 0)
-	createContextRequestSchemaItemFieldName         = big.NewInt(1 << 1)
-	createContextRequestSchemaItemFieldType         = big.NewInt(1 << 2)
-	createContextRequestSchemaItemFieldDefaultValue = big.NewInt(1 << 3)
-)
-
-type CreateContextRequestSchemaItem struct {
-	Key          *string `json:"key,omitempty" url:"key,omitempty"`
-	Name         *string `json:"name,omitempty" url:"name,omitempty"`
-	Type         *string `json:"type,omitempty" url:"type,omitempty"`
-	DefaultValue any     `json:"default_value,omitempty" url:"default_value,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *CreateContextRequestSchemaItem) GetKey() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Key
-}
-
-func (c *CreateContextRequestSchemaItem) GetName() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Name
-}
-
-func (c *CreateContextRequestSchemaItem) GetType() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Type
-}
-
-func (c *CreateContextRequestSchemaItem) GetDefaultValue() any {
-	if c == nil {
-		return nil
-	}
-	return c.DefaultValue
-}
-
-func (c *CreateContextRequestSchemaItem) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *CreateContextRequestSchemaItem) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetKey sets the Key field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequestSchemaItem) SetKey(key *string) {
-	c.Key = key
-	c.require(createContextRequestSchemaItemFieldKey)
-}
-
-// SetName sets the Name field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequestSchemaItem) SetName(name *string) {
-	c.Name = name
-	c.require(createContextRequestSchemaItemFieldName)
-}
-
-// SetType sets the Type field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequestSchemaItem) SetType(type_ *string) {
-	c.Type = type_
-	c.require(createContextRequestSchemaItemFieldType)
-}
-
-// SetDefaultValue sets the DefaultValue field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CreateContextRequestSchemaItem) SetDefaultValue(defaultValue any) {
-	c.DefaultValue = defaultValue
-	c.require(createContextRequestSchemaItemFieldDefaultValue)
-}
-
-func (c *CreateContextRequestSchemaItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler CreateContextRequestSchemaItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = CreateContextRequestSchemaItem(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *CreateContextRequestSchemaItem) MarshalJSON() ([]byte, error) {
-	type embed CreateContextRequestSchemaItem
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *CreateContextRequestSchemaItem) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-// How to handle fields that don't match the schema.
+// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
 type UpdateContextRequestOnSchemaMismatch string
 
 const (
 	UpdateContextRequestOnSchemaMismatchIgnore UpdateContextRequestOnSchemaMismatch = "ignore"
 	UpdateContextRequestOnSchemaMismatchReject UpdateContextRequestOnSchemaMismatch = "reject"
+	UpdateContextRequestOnSchemaMismatchStore  UpdateContextRequestOnSchemaMismatch = "store"
 )
 
 func NewUpdateContextRequestOnSchemaMismatchFromString(s string) (UpdateContextRequestOnSchemaMismatch, error) {
@@ -377,6 +266,8 @@ func NewUpdateContextRequestOnSchemaMismatchFromString(s string) (UpdateContextR
 		return UpdateContextRequestOnSchemaMismatchIgnore, nil
 	case "reject":
 		return UpdateContextRequestOnSchemaMismatchReject, nil
+	case "store":
+		return UpdateContextRequestOnSchemaMismatchStore, nil
 	}
 	var t UpdateContextRequestOnSchemaMismatch
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -387,174 +278,36 @@ func (u UpdateContextRequestOnSchemaMismatch) Ptr() *UpdateContextRequestOnSchem
 }
 
 var (
-	updateContextRequestSchemaItemFieldKey          = big.NewInt(1 << 0)
-	updateContextRequestSchemaItemFieldName         = big.NewInt(1 << 1)
-	updateContextRequestSchemaItemFieldType         = big.NewInt(1 << 2)
-	updateContextRequestSchemaItemFieldDefaultValue = big.NewInt(1 << 3)
-)
-
-type UpdateContextRequestSchemaItem struct {
-	Key          *string `json:"key,omitempty" url:"key,omitempty"`
-	Name         *string `json:"name,omitempty" url:"name,omitempty"`
-	Type         *string `json:"type,omitempty" url:"type,omitempty"`
-	DefaultValue any     `json:"default_value,omitempty" url:"default_value,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (u *UpdateContextRequestSchemaItem) GetKey() *string {
-	if u == nil {
-		return nil
-	}
-	return u.Key
-}
-
-func (u *UpdateContextRequestSchemaItem) GetName() *string {
-	if u == nil {
-		return nil
-	}
-	return u.Name
-}
-
-func (u *UpdateContextRequestSchemaItem) GetType() *string {
-	if u == nil {
-		return nil
-	}
-	return u.Type
-}
-
-func (u *UpdateContextRequestSchemaItem) GetDefaultValue() any {
-	if u == nil {
-		return nil
-	}
-	return u.DefaultValue
-}
-
-func (u *UpdateContextRequestSchemaItem) GetExtraProperties() map[string]interface{} {
-	if u == nil {
-		return nil
-	}
-	return u.extraProperties
-}
-
-func (u *UpdateContextRequestSchemaItem) require(field *big.Int) {
-	if u.explicitFields == nil {
-		u.explicitFields = big.NewInt(0)
-	}
-	u.explicitFields.Or(u.explicitFields, field)
-}
-
-// SetKey sets the Key field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequestSchemaItem) SetKey(key *string) {
-	u.Key = key
-	u.require(updateContextRequestSchemaItemFieldKey)
-}
-
-// SetName sets the Name field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequestSchemaItem) SetName(name *string) {
-	u.Name = name
-	u.require(updateContextRequestSchemaItemFieldName)
-}
-
-// SetType sets the Type field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequestSchemaItem) SetType(type_ *string) {
-	u.Type = type_
-	u.require(updateContextRequestSchemaItemFieldType)
-}
-
-// SetDefaultValue sets the DefaultValue field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequestSchemaItem) SetDefaultValue(defaultValue any) {
-	u.DefaultValue = defaultValue
-	u.require(updateContextRequestSchemaItemFieldDefaultValue)
-}
-
-func (u *UpdateContextRequestSchemaItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler UpdateContextRequestSchemaItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*u = UpdateContextRequestSchemaItem(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *u)
-	if err != nil {
-		return err
-	}
-	u.extraProperties = extraProperties
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u *UpdateContextRequestSchemaItem) MarshalJSON() ([]byte, error) {
-	type embed UpdateContextRequestSchemaItem
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*u),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (u *UpdateContextRequestSchemaItem) String() string {
-	if u == nil {
-		return "<nil>"
-	}
-	if len(u.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
-}
-
-var (
 	updateContextRequestFieldID                   = big.NewInt(1 << 0)
 	updateContextRequestFieldName                 = big.NewInt(1 << 1)
-	updateContextRequestFieldSlug                 = big.NewInt(1 << 2)
-	updateContextRequestFieldDescription          = big.NewInt(1 << 3)
-	updateContextRequestFieldSchema               = big.NewInt(1 << 4)
+	updateContextRequestFieldDescription          = big.NewInt(1 << 2)
+	updateContextRequestFieldSchema               = big.NewInt(1 << 3)
+	updateContextRequestFieldIdentityFact         = big.NewInt(1 << 4)
 	updateContextRequestFieldAutoExecuteDecisions = big.NewInt(1 << 5)
 	updateContextRequestFieldTTLSeconds           = big.NewInt(1 << 6)
 	updateContextRequestFieldHistoryLimit         = big.NewInt(1 << 7)
 	updateContextRequestFieldOnSchemaMismatch     = big.NewInt(1 << 8)
-	updateContextRequestFieldWebhookOnSolve       = big.NewInt(1 << 9)
-	updateContextRequestFieldWebhookOnExpire      = big.NewInt(1 << 10)
 )
 
 type UpdateContextRequest struct {
 	// The unique identifier for the context.
 	ID string `json:"-" url:"-"`
-	// The name of the context.
+	// The name of the context. Changing it regenerates the context's slug.
 	Name *string `json:"name,omitempty" url:"-"`
-	// The slug of the context.
-	Slug *string `json:"slug,omitempty" url:"-"`
 	// The description of the context.
 	Description *string `json:"description,omitempty" url:"-"`
-	// Updated schema fields for the context.
-	Schema []*UpdateContextRequestSchemaItem `json:"schema,omitempty" url:"-"`
+	// Updated schema for the context: an object with `base` and optional `derived` field arrays.
+	Schema *sdk.ContextSchema `json:"schema,omitempty" url:"-"`
+	// The fact key to use as the unique identifier for instances. Must be a key from schema.base. Caution: changing this on a context with live instances changes how future writes resolve instances.
+	IdentityFact *string `json:"identity_fact,omitempty" url:"-"`
 	// When true, bound rules and flows automatically execute when their inputs are satisfied.
 	AutoExecuteDecisions *bool `json:"auto_execute_decisions,omitempty" url:"-"`
-	// Time-to-live in seconds for live context instances. Instances expire after this duration.
+	// Time-to-live in seconds for live context instances (60 seconds to 30 days). Instances expire after this duration.
 	TTLSeconds *int `json:"ttl_seconds,omitempty" url:"-"`
 	// Maximum number of history entries to retain per field.
 	HistoryLimit *int `json:"history_limit,omitempty" url:"-"`
-	// How to handle fields that don't match the schema.
+	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
 	OnSchemaMismatch *UpdateContextRequestOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"-"`
-	// Webhook URL called when a rule or flow successfully solves.
-	WebhookOnSolve *string `json:"webhook_on_solve,omitempty" url:"-"`
-	// Webhook URL called when a live context expires due to TTL.
-	WebhookOnExpire *string `json:"webhook_on_expire,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -581,13 +334,6 @@ func (u *UpdateContextRequest) SetName(name *string) {
 	u.require(updateContextRequestFieldName)
 }
 
-// SetSlug sets the Slug field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequest) SetSlug(slug *string) {
-	u.Slug = slug
-	u.require(updateContextRequestFieldSlug)
-}
-
 // SetDescription sets the Description field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (u *UpdateContextRequest) SetDescription(description *string) {
@@ -597,9 +343,16 @@ func (u *UpdateContextRequest) SetDescription(description *string) {
 
 // SetSchema sets the Schema field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequest) SetSchema(schema []*UpdateContextRequestSchemaItem) {
+func (u *UpdateContextRequest) SetSchema(schema *sdk.ContextSchema) {
 	u.Schema = schema
 	u.require(updateContextRequestFieldSchema)
+}
+
+// SetIdentityFact sets the IdentityFact field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextRequest) SetIdentityFact(identityFact *string) {
+	u.IdentityFact = identityFact
+	u.require(updateContextRequestFieldIdentityFact)
 }
 
 // SetAutoExecuteDecisions sets the AutoExecuteDecisions field and marks it as non-optional;
@@ -628,20 +381,6 @@ func (u *UpdateContextRequest) SetHistoryLimit(historyLimit *int) {
 func (u *UpdateContextRequest) SetOnSchemaMismatch(onSchemaMismatch *UpdateContextRequestOnSchemaMismatch) {
 	u.OnSchemaMismatch = onSchemaMismatch
 	u.require(updateContextRequestFieldOnSchemaMismatch)
-}
-
-// SetWebhookOnSolve sets the WebhookOnSolve field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequest) SetWebhookOnSolve(webhookOnSolve *string) {
-	u.WebhookOnSolve = webhookOnSolve
-	u.require(updateContextRequestFieldWebhookOnSolve)
-}
-
-// SetWebhookOnExpire sets the WebhookOnExpire field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UpdateContextRequest) SetWebhookOnExpire(webhookOnExpire *string) {
-	u.WebhookOnExpire = webhookOnExpire
-	u.require(updateContextRequestFieldWebhookOnExpire)
 }
 
 func (u *UpdateContextRequest) UnmarshalJSON(data []byte) error {

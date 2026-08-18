@@ -11,6 +11,56 @@ import (
 )
 
 var (
+	bulkIngestContextsRequestFieldSlug    = big.NewInt(1 << 0)
+	bulkIngestContextsRequestFieldInclude = big.NewInt(1 << 1)
+)
+
+type BulkIngestContextsRequest struct {
+	// The unique slug for the context.
+	Slug string `json:"-" url:"-"`
+	// Comma-separated list of per-instance fields to include in results (instance_id is always present). Omit to include everything. Valid fields: positions, is_new, status, have, need, state, expires_at, executions, executed, triggered, reason. Useful for keeping response size proportional to outcomes rather than data volume, e.g. include=status,executed.
+	Include *string                 `json:"-" url:"include,omitempty"`
+	Body    []DynamicRequestPayload `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (b *BulkIngestContextsRequest) require(field *big.Int) {
+	if b.explicitFields == nil {
+		b.explicitFields = big.NewInt(0)
+	}
+	b.explicitFields.Or(b.explicitFields, field)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BulkIngestContextsRequest) SetSlug(slug string) {
+	b.Slug = slug
+	b.require(bulkIngestContextsRequestFieldSlug)
+}
+
+// SetInclude sets the Include field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BulkIngestContextsRequest) SetInclude(include *string) {
+	b.Include = include
+	b.require(bulkIngestContextsRequestFieldInclude)
+}
+
+func (b *BulkIngestContextsRequest) UnmarshalJSON(data []byte) error {
+	var body []DynamicRequestPayload
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	b.Body = body
+	return nil
+}
+
+func (b *BulkIngestContextsRequest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(b.Body)
+}
+
+var (
 	cascadeContextsRequestFieldSlug     = big.NewInt(1 << 0)
 	cascadeContextsRequestFieldInstance = big.NewInt(1 << 1)
 )
@@ -97,68 +147,9 @@ func (d *DeleteContextsRequest) SetInstance(instance string) {
 }
 
 var (
-	executeContextsRequestFieldSlug     = big.NewInt(1 << 0)
-	executeContextsRequestFieldInstance = big.NewInt(1 << 1)
-	executeContextsRequestFieldFlowSlug = big.NewInt(1 << 2)
-)
-
-type ExecuteContextsRequest struct {
-	// The unique slug for the context.
-	Slug string `json:"-" url:"-"`
-	// The unique identifier for the context instance.
-	Instance string `json:"-" url:"-"`
-	// The unique slug for the flow.
-	FlowSlug string                  `json:"-" url:"-"`
-	Body     SolveContextFlowRequest `json:"-" url:"-"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-}
-
-func (e *ExecuteContextsRequest) require(field *big.Int) {
-	if e.explicitFields == nil {
-		e.explicitFields = big.NewInt(0)
-	}
-	e.explicitFields.Or(e.explicitFields, field)
-}
-
-// SetSlug sets the Slug field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExecuteContextsRequest) SetSlug(slug string) {
-	e.Slug = slug
-	e.require(executeContextsRequestFieldSlug)
-}
-
-// SetInstance sets the Instance field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExecuteContextsRequest) SetInstance(instance string) {
-	e.Instance = instance
-	e.require(executeContextsRequestFieldInstance)
-}
-
-// SetFlowSlug sets the FlowSlug field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExecuteContextsRequest) SetFlowSlug(flowSlug string) {
-	e.FlowSlug = flowSlug
-	e.require(executeContextsRequestFieldFlowSlug)
-}
-
-func (e *ExecuteContextsRequest) UnmarshalJSON(data []byte) error {
-	var body SolveContextFlowRequest
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	e.Body = body
-	return nil
-}
-
-func (e *ExecuteContextsRequest) MarshalJSON() ([]byte, error) {
-	return json.Marshal(e.Body)
-}
-
-var (
-	getContextsRequestFieldSlug     = big.NewInt(1 << 0)
-	getContextsRequestFieldInstance = big.NewInt(1 << 1)
+	getContextsRequestFieldSlug             = big.NewInt(1 << 0)
+	getContextsRequestFieldInstance         = big.NewInt(1 << 1)
+	getContextsRequestFieldIncludeRelations = big.NewInt(1 << 2)
 )
 
 type GetContextsRequest struct {
@@ -166,6 +157,8 @@ type GetContextsRequest struct {
 	Slug string `json:"-" url:"-"`
 	// The unique identifier for the context instance.
 	Instance string `json:"-" url:"-"`
+	// Comma-separated relationship names to include in the response under a 'relations' key (has_many relations return a list of related instance states; has_one/belongs_to return a single state or null). Use '*' for all relationships. Omitted by default - related instances are never fetched into the payload unrequested.
+	IncludeRelations *string `json:"-" url:"include_relations,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -190,6 +183,13 @@ func (g *GetContextsRequest) SetSlug(slug string) {
 func (g *GetContextsRequest) SetInstance(instance string) {
 	g.Instance = instance
 	g.require(getContextsRequestFieldInstance)
+}
+
+// SetIncludeRelations sets the IncludeRelations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GetContextsRequest) SetIncludeRelations(includeRelations *string) {
+	g.IncludeRelations = includeRelations
+	g.require(getContextsRequestFieldIncludeRelations)
 }
 
 var (
@@ -282,66 +282,6 @@ func (g *GetPendingContextsRequest) SetSlug(slug string) {
 func (g *GetPendingContextsRequest) SetInstance(instance string) {
 	g.Instance = instance
 	g.require(getPendingContextsRequestFieldInstance)
-}
-
-var (
-	solveContextsRequestFieldSlug     = big.NewInt(1 << 0)
-	solveContextsRequestFieldInstance = big.NewInt(1 << 1)
-	solveContextsRequestFieldRuleSlug = big.NewInt(1 << 2)
-)
-
-type SolveContextsRequest struct {
-	// The unique slug for the context.
-	Slug string `json:"-" url:"-"`
-	// The unique identifier for the context instance.
-	Instance string `json:"-" url:"-"`
-	// The unique slug for the rule.
-	RuleSlug string                  `json:"-" url:"-"`
-	Body     SolveContextRuleRequest `json:"-" url:"-"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-}
-
-func (s *SolveContextsRequest) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
-	}
-	s.explicitFields.Or(s.explicitFields, field)
-}
-
-// SetSlug sets the Slug field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextsRequest) SetSlug(slug string) {
-	s.Slug = slug
-	s.require(solveContextsRequestFieldSlug)
-}
-
-// SetInstance sets the Instance field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextsRequest) SetInstance(instance string) {
-	s.Instance = instance
-	s.require(solveContextsRequestFieldInstance)
-}
-
-// SetRuleSlug sets the RuleSlug field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextsRequest) SetRuleSlug(ruleSlug string) {
-	s.RuleSlug = ruleSlug
-	s.require(solveContextsRequestFieldRuleSlug)
-}
-
-func (s *SolveContextsRequest) UnmarshalJSON(data []byte) error {
-	var body SolveContextRuleRequest
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	s.Body = body
-	return nil
-}
-
-func (s *SolveContextsRequest) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.Body)
 }
 
 var (
@@ -510,6 +450,10 @@ var (
 	cascadeResultFieldAutoExecuted     = big.NewInt(1 << 5)
 	cascadeResultFieldWrittenToContext = big.NewInt(1 << 6)
 	cascadeResultFieldError            = big.NewInt(1 << 7)
+	cascadeResultFieldRateLimited      = big.NewInt(1 << 8)
+	cascadeResultFieldUsageLimited     = big.NewInt(1 << 9)
+	cascadeResultFieldNeed             = big.NewInt(1 << 10)
+	cascadeResultFieldCascaded         = big.NewInt(1 << 11)
 )
 
 type CascadeResult struct {
@@ -519,16 +463,24 @@ type CascadeResult struct {
 	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
 	// The flow slug (if this was a flow evaluation).
 	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
-	// Whether the evaluation succeeded.
+	// Whether the evaluation succeeded, failed, remains pending, or was skipped because the same inputs already completed successfully.
 	Status *CascadeResultStatus `json:"status,omitempty" url:"status,omitempty"`
 	// The evaluation output.
 	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
-	// Whether this was auto-executed (true) or from a registered pending evaluation (false).
+	// True for context auto-execution. Omitted for registered pending evaluations.
 	AutoExecuted *bool `json:"auto_executed,omitempty" url:"auto_executed,omitempty"`
 	// List of field keys written back to the context (for rule evaluations).
 	WrittenToContext []string `json:"written_to_context,omitempty" url:"written_to_context,omitempty"`
 	// Error message if the evaluation failed.
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
+	// True when execution stopped at a rate limit.
+	RateLimited *bool `json:"rate_limited,omitempty" url:"rate_limited,omitempty"`
+	// True when execution stopped at a plan usage limit.
+	UsageLimited *bool `json:"usage_limited,omitempty" url:"usage_limited,omitempty"`
+	// Dependencies still missing when the evaluation remains pending.
+	Need []string `json:"need,omitempty" url:"need,omitempty"`
+	// Nested pending evaluations triggered by this rule's writeback.
+	Cascaded []*CascadeResult `json:"cascaded,omitempty" url:"cascaded,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -591,6 +543,34 @@ func (c *CascadeResult) GetError() *string {
 		return nil
 	}
 	return c.Error
+}
+
+func (c *CascadeResult) GetRateLimited() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.RateLimited
+}
+
+func (c *CascadeResult) GetUsageLimited() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.UsageLimited
+}
+
+func (c *CascadeResult) GetNeed() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Need
+}
+
+func (c *CascadeResult) GetCascaded() []*CascadeResult {
+	if c == nil {
+		return nil
+	}
+	return c.Cascaded
 }
 
 func (c *CascadeResult) GetExtraProperties() map[string]interface{} {
@@ -663,6 +643,34 @@ func (c *CascadeResult) SetError(error_ *string) {
 	c.require(cascadeResultFieldError)
 }
 
+// SetRateLimited sets the RateLimited field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CascadeResult) SetRateLimited(rateLimited *bool) {
+	c.RateLimited = rateLimited
+	c.require(cascadeResultFieldRateLimited)
+}
+
+// SetUsageLimited sets the UsageLimited field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CascadeResult) SetUsageLimited(usageLimited *bool) {
+	c.UsageLimited = usageLimited
+	c.require(cascadeResultFieldUsageLimited)
+}
+
+// SetNeed sets the Need field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CascadeResult) SetNeed(need []string) {
+	c.Need = need
+	c.require(cascadeResultFieldNeed)
+}
+
+// SetCascaded sets the Cascaded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CascadeResult) SetCascaded(cascaded []*CascadeResult) {
+	c.Cascaded = cascaded
+	c.require(cascadeResultFieldCascaded)
+}
+
 func (c *CascadeResult) UnmarshalJSON(data []byte) error {
 	type unmarshaler CascadeResult
 	var value unmarshaler
@@ -705,12 +713,14 @@ func (c *CascadeResult) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Whether the evaluation succeeded.
+// Whether the evaluation succeeded, failed, remains pending, or was skipped because the same inputs already completed successfully.
 type CascadeResultStatus string
 
 const (
-	CascadeResultStatusSolved CascadeResultStatus = "solved"
-	CascadeResultStatusError  CascadeResultStatus = "error"
+	CascadeResultStatusSolved            CascadeResultStatus = "solved"
+	CascadeResultStatusError             CascadeResultStatus = "error"
+	CascadeResultStatusPending           CascadeResultStatus = "pending"
+	CascadeResultStatusSkippedAlreadyRun CascadeResultStatus = "skipped_already_run"
 )
 
 func NewCascadeResultStatusFromString(s string) (CascadeResultStatus, error) {
@@ -719,6 +729,10 @@ func NewCascadeResultStatusFromString(s string) (CascadeResultStatus, error) {
 		return CascadeResultStatusSolved, nil
 	case "error":
 		return CascadeResultStatusError, nil
+	case "pending":
+		return CascadeResultStatusPending, nil
+	case "skipped_already_run":
+		return CascadeResultStatusSkippedAlreadyRun, nil
 	}
 	var t CascadeResultStatus
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -726,6 +740,1205 @@ func NewCascadeResultStatusFromString(s string) (CascadeResultStatus, error) {
 
 func (c CascadeResultStatus) Ptr() *CascadeResultStatus {
 	return &c
+}
+
+// Response from a context batch: admission counts, per-record rejections, execution outcomes, and the resolved state of every touched instance.
+var (
+	contextBatchResponseFieldContext           = big.NewInt(1 << 0)
+	contextBatchResponseFieldTraceID           = big.NewInt(1 << 1)
+	contextBatchResponseFieldAccepted          = big.NewInt(1 << 2)
+	contextBatchResponseFieldRejected          = big.NewInt(1 << 3)
+	contextBatchResponseFieldExecuted          = big.NewInt(1 << 4)
+	contextBatchResponseFieldExecutionDegraded = big.NewInt(1 << 5)
+	contextBatchResponseFieldCascaded          = big.NewInt(1 << 6)
+	contextBatchResponseFieldTimings           = big.NewInt(1 << 7)
+	contextBatchResponseFieldRejections        = big.NewInt(1 << 8)
+	contextBatchResponseFieldResults           = big.NewInt(1 << 9)
+)
+
+type ContextBatchResponse struct {
+	// The context slug.
+	Context *string `json:"context,omitempty" url:"context,omitempty"`
+	// Trace ID for the batch request (join key into decision logs when tracing is enabled; always null on the cloud platform).
+	TraceID *string `json:"trace_id,omitempty" url:"trace_id,omitempty"`
+	// Number of distinct instances written (duplicate identities within the batch fold into one).
+	Accepted *int `json:"accepted,omitempty" url:"accepted,omitempty"`
+	// Number of records rejected by validation.
+	Rejected *int `json:"rejected,omitempty" url:"rejected,omitempty"`
+	// Number of successful bound-asset executions.
+	Executed *int `json:"executed,omitempty" url:"executed,omitempty"`
+	// Present when data was committed but execution could not run or complete (e.g. queue processing unavailable). Retrying the same chunk once healthy converges.
+	ExecutionDegraded *string `json:"execution_degraded,omitempty" url:"execution_degraded,omitempty"`
+	// Present when the batch re-evaluated dependent contexts through relationships (one level). Dependents with auto-execution disabled run only previously registered pending work. Each entry summarizes one dependent context's re-evaluation.
+	Cascaded []*ContextCascadeSummary     `json:"cascaded,omitempty" url:"cascaded,omitempty"`
+	Timings  *ContextBatchResponseTimings `json:"timings,omitempty" url:"timings,omitempty"`
+	// Per-record validation failures, referencing positions in the submitted array.
+	Rejections []*ContextBatchResponseRejectionsItem `json:"rejections,omitempty" url:"rejections,omitempty"`
+	// One entry per touched instance. Fields beyond instance_id can be narrowed with the include query parameter.
+	Results []*ContextBatchResponseResultsItem `json:"results,omitempty" url:"results,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextBatchResponse) GetContext() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Context
+}
+
+func (c *ContextBatchResponse) GetTraceID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.TraceID
+}
+
+func (c *ContextBatchResponse) GetAccepted() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Accepted
+}
+
+func (c *ContextBatchResponse) GetRejected() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Rejected
+}
+
+func (c *ContextBatchResponse) GetExecuted() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Executed
+}
+
+func (c *ContextBatchResponse) GetExecutionDegraded() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ExecutionDegraded
+}
+
+func (c *ContextBatchResponse) GetCascaded() []*ContextCascadeSummary {
+	if c == nil {
+		return nil
+	}
+	return c.Cascaded
+}
+
+func (c *ContextBatchResponse) GetTimings() *ContextBatchResponseTimings {
+	if c == nil {
+		return nil
+	}
+	return c.Timings
+}
+
+func (c *ContextBatchResponse) GetRejections() []*ContextBatchResponseRejectionsItem {
+	if c == nil {
+		return nil
+	}
+	return c.Rejections
+}
+
+func (c *ContextBatchResponse) GetResults() []*ContextBatchResponseResultsItem {
+	if c == nil {
+		return nil
+	}
+	return c.Results
+}
+
+func (c *ContextBatchResponse) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextBatchResponse) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetContext sets the Context field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetContext(context *string) {
+	c.Context = context
+	c.require(contextBatchResponseFieldContext)
+}
+
+// SetTraceID sets the TraceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetTraceID(traceID *string) {
+	c.TraceID = traceID
+	c.require(contextBatchResponseFieldTraceID)
+}
+
+// SetAccepted sets the Accepted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetAccepted(accepted *int) {
+	c.Accepted = accepted
+	c.require(contextBatchResponseFieldAccepted)
+}
+
+// SetRejected sets the Rejected field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetRejected(rejected *int) {
+	c.Rejected = rejected
+	c.require(contextBatchResponseFieldRejected)
+}
+
+// SetExecuted sets the Executed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetExecuted(executed *int) {
+	c.Executed = executed
+	c.require(contextBatchResponseFieldExecuted)
+}
+
+// SetExecutionDegraded sets the ExecutionDegraded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetExecutionDegraded(executionDegraded *string) {
+	c.ExecutionDegraded = executionDegraded
+	c.require(contextBatchResponseFieldExecutionDegraded)
+}
+
+// SetCascaded sets the Cascaded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetCascaded(cascaded []*ContextCascadeSummary) {
+	c.Cascaded = cascaded
+	c.require(contextBatchResponseFieldCascaded)
+}
+
+// SetTimings sets the Timings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetTimings(timings *ContextBatchResponseTimings) {
+	c.Timings = timings
+	c.require(contextBatchResponseFieldTimings)
+}
+
+// SetRejections sets the Rejections field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetRejections(rejections []*ContextBatchResponseRejectionsItem) {
+	c.Rejections = rejections
+	c.require(contextBatchResponseFieldRejections)
+}
+
+// SetResults sets the Results field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponse) SetResults(results []*ContextBatchResponseResultsItem) {
+	c.Results = results
+	c.require(contextBatchResponseFieldResults)
+}
+
+func (c *ContextBatchResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextBatchResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextBatchResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextBatchResponse) MarshalJSON() ([]byte, error) {
+	type embed ContextBatchResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextBatchResponse) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contextBatchResponseRejectionsItemFieldPosition = big.NewInt(1 << 0)
+	contextBatchResponseRejectionsItemFieldError    = big.NewInt(1 << 1)
+)
+
+type ContextBatchResponseRejectionsItem struct {
+	Position *int    `json:"position,omitempty" url:"position,omitempty"`
+	Error    *string `json:"error,omitempty" url:"error,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextBatchResponseRejectionsItem) GetPosition() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Position
+}
+
+func (c *ContextBatchResponseRejectionsItem) GetError() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Error
+}
+
+func (c *ContextBatchResponseRejectionsItem) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextBatchResponseRejectionsItem) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetPosition sets the Position field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseRejectionsItem) SetPosition(position *int) {
+	c.Position = position
+	c.require(contextBatchResponseRejectionsItemFieldPosition)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseRejectionsItem) SetError(error_ *string) {
+	c.Error = error_
+	c.require(contextBatchResponseRejectionsItemFieldError)
+}
+
+func (c *ContextBatchResponseRejectionsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextBatchResponseRejectionsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextBatchResponseRejectionsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextBatchResponseRejectionsItem) MarshalJSON() ([]byte, error) {
+	type embed ContextBatchResponseRejectionsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextBatchResponseRejectionsItem) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contextBatchResponseResultsItemFieldInstanceID = big.NewInt(1 << 0)
+	contextBatchResponseResultsItemFieldPositions  = big.NewInt(1 << 1)
+	contextBatchResponseResultsItemFieldIsNew      = big.NewInt(1 << 2)
+	contextBatchResponseResultsItemFieldStatus     = big.NewInt(1 << 3)
+	contextBatchResponseResultsItemFieldHave       = big.NewInt(1 << 4)
+	contextBatchResponseResultsItemFieldNeed       = big.NewInt(1 << 5)
+	contextBatchResponseResultsItemFieldState      = big.NewInt(1 << 6)
+	contextBatchResponseResultsItemFieldExpiresAt  = big.NewInt(1 << 7)
+	contextBatchResponseResultsItemFieldExecutions = big.NewInt(1 << 8)
+	contextBatchResponseResultsItemFieldExecuted   = big.NewInt(1 << 9)
+	contextBatchResponseResultsItemFieldTriggered  = big.NewInt(1 << 10)
+	contextBatchResponseResultsItemFieldReason     = big.NewInt(1 << 11)
+)
+
+type ContextBatchResponseResultsItem struct {
+	InstanceID *string `json:"instance_id,omitempty" url:"instance_id,omitempty"`
+	// Positions in the submitted array that folded into this instance.
+	Positions []int                                  `json:"positions,omitempty" url:"positions,omitempty"`
+	IsNew     *bool                                  `json:"is_new,omitempty" url:"is_new,omitempty"`
+	Status    *ContextBatchResponseResultsItemStatus `json:"status,omitempty" url:"status,omitempty"`
+	Have      []string                               `json:"have,omitempty" url:"have,omitempty"`
+	Need      []string                               `json:"need,omitempty" url:"need,omitempty"`
+	// Resolved instance state after merging and any executions, including computed facts.
+	State     map[string]any `json:"state,omitempty" url:"state,omitempty"`
+	ExpiresAt *time.Time     `json:"expires_at,omitempty" url:"expires_at,omitempty"`
+	// Per-asset record of the last run: input hash, status, timestamp, trace IDs, error.
+	Executions map[string]any `json:"executions,omitempty" url:"executions,omitempty"`
+	// Assets evaluated for this instance in this request.
+	Executed []*ContextBatchResponseResultsItemExecutedItem `json:"executed,omitempty" url:"executed,omitempty"`
+	// True when at least one bound asset was considered for this instance - including assets that settled as skipped_already_run. False (with a reason) when nothing was attempted.
+	Triggered *bool `json:"triggered,omitempty" url:"triggered,omitempty"`
+	// Present when triggered is false (executed is empty): not_ready = required facts still missing; inputs_unchanged = the instance is complete but no bound asset had satisfiable inputs to attempt; no_bound_assets = the context has no published bound rules or flows; auto_execute_disabled = the context's auto_execute_decisions is off; execution_unavailable = the execution backend was unreachable. Note: assets whose inputs are unchanged since their last successful run appear as executed entries with status skipped_already_run and leave triggered true.
+	Reason *ContextBatchResponseResultsItemReason `json:"reason,omitempty" url:"reason,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextBatchResponseResultsItem) GetInstanceID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.InstanceID
+}
+
+func (c *ContextBatchResponseResultsItem) GetPositions() []int {
+	if c == nil {
+		return nil
+	}
+	return c.Positions
+}
+
+func (c *ContextBatchResponseResultsItem) GetIsNew() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.IsNew
+}
+
+func (c *ContextBatchResponseResultsItem) GetStatus() *ContextBatchResponseResultsItemStatus {
+	if c == nil {
+		return nil
+	}
+	return c.Status
+}
+
+func (c *ContextBatchResponseResultsItem) GetHave() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Have
+}
+
+func (c *ContextBatchResponseResultsItem) GetNeed() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Need
+}
+
+func (c *ContextBatchResponseResultsItem) GetState() map[string]any {
+	if c == nil {
+		return nil
+	}
+	return c.State
+}
+
+func (c *ContextBatchResponseResultsItem) GetExpiresAt() *time.Time {
+	if c == nil {
+		return nil
+	}
+	return c.ExpiresAt
+}
+
+func (c *ContextBatchResponseResultsItem) GetExecutions() map[string]any {
+	if c == nil {
+		return nil
+	}
+	return c.Executions
+}
+
+func (c *ContextBatchResponseResultsItem) GetExecuted() []*ContextBatchResponseResultsItemExecutedItem {
+	if c == nil {
+		return nil
+	}
+	return c.Executed
+}
+
+func (c *ContextBatchResponseResultsItem) GetTriggered() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.Triggered
+}
+
+func (c *ContextBatchResponseResultsItem) GetReason() *ContextBatchResponseResultsItemReason {
+	if c == nil {
+		return nil
+	}
+	return c.Reason
+}
+
+func (c *ContextBatchResponseResultsItem) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextBatchResponseResultsItem) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetInstanceID sets the InstanceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetInstanceID(instanceID *string) {
+	c.InstanceID = instanceID
+	c.require(contextBatchResponseResultsItemFieldInstanceID)
+}
+
+// SetPositions sets the Positions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetPositions(positions []int) {
+	c.Positions = positions
+	c.require(contextBatchResponseResultsItemFieldPositions)
+}
+
+// SetIsNew sets the IsNew field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetIsNew(isNew *bool) {
+	c.IsNew = isNew
+	c.require(contextBatchResponseResultsItemFieldIsNew)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetStatus(status *ContextBatchResponseResultsItemStatus) {
+	c.Status = status
+	c.require(contextBatchResponseResultsItemFieldStatus)
+}
+
+// SetHave sets the Have field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetHave(have []string) {
+	c.Have = have
+	c.require(contextBatchResponseResultsItemFieldHave)
+}
+
+// SetNeed sets the Need field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetNeed(need []string) {
+	c.Need = need
+	c.require(contextBatchResponseResultsItemFieldNeed)
+}
+
+// SetState sets the State field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetState(state map[string]any) {
+	c.State = state
+	c.require(contextBatchResponseResultsItemFieldState)
+}
+
+// SetExpiresAt sets the ExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetExpiresAt(expiresAt *time.Time) {
+	c.ExpiresAt = expiresAt
+	c.require(contextBatchResponseResultsItemFieldExpiresAt)
+}
+
+// SetExecutions sets the Executions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetExecutions(executions map[string]any) {
+	c.Executions = executions
+	c.require(contextBatchResponseResultsItemFieldExecutions)
+}
+
+// SetExecuted sets the Executed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetExecuted(executed []*ContextBatchResponseResultsItemExecutedItem) {
+	c.Executed = executed
+	c.require(contextBatchResponseResultsItemFieldExecuted)
+}
+
+// SetTriggered sets the Triggered field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetTriggered(triggered *bool) {
+	c.Triggered = triggered
+	c.require(contextBatchResponseResultsItemFieldTriggered)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItem) SetReason(reason *ContextBatchResponseResultsItemReason) {
+	c.Reason = reason
+	c.require(contextBatchResponseResultsItemFieldReason)
+}
+
+func (c *ContextBatchResponseResultsItem) UnmarshalJSON(data []byte) error {
+	type embed ContextBatchResponseResultsItem
+	var unmarshaler = struct {
+		embed
+		ExpiresAt *internal.DateTime `json:"expires_at,omitempty"`
+	}{
+		embed: embed(*c),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*c = ContextBatchResponseResultsItem(unmarshaler.embed)
+	c.ExpiresAt = unmarshaler.ExpiresAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextBatchResponseResultsItem) MarshalJSON() ([]byte, error) {
+	type embed ContextBatchResponseResultsItem
+	var marshaler = struct {
+		embed
+		ExpiresAt *internal.DateTime `json:"expires_at,omitempty"`
+	}{
+		embed:     embed(*c),
+		ExpiresAt: internal.NewOptionalDateTime(c.ExpiresAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextBatchResponseResultsItem) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	contextBatchResponseResultsItemExecutedItemFieldType             = big.NewInt(1 << 0)
+	contextBatchResponseResultsItemExecutedItemFieldSlug             = big.NewInt(1 << 1)
+	contextBatchResponseResultsItemExecutedItemFieldStatus           = big.NewInt(1 << 2)
+	contextBatchResponseResultsItemExecutedItemFieldError            = big.NewInt(1 << 3)
+	contextBatchResponseResultsItemExecutedItemFieldWrittenToContext = big.NewInt(1 << 4)
+)
+
+type ContextBatchResponseResultsItemExecutedItem struct {
+	Type             *ContextBatchResponseResultsItemExecutedItemType   `json:"type,omitempty" url:"type,omitempty"`
+	Slug             *string                                            `json:"slug,omitempty" url:"slug,omitempty"`
+	Status           *ContextBatchResponseResultsItemExecutedItemStatus `json:"status,omitempty" url:"status,omitempty"`
+	Error            *string                                            `json:"error,omitempty" url:"error,omitempty"`
+	WrittenToContext []string                                           `json:"written_to_context,omitempty" url:"written_to_context,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) GetType() *ContextBatchResponseResultsItemExecutedItemType {
+	if c == nil {
+		return nil
+	}
+	return c.Type
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) GetSlug() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Slug
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) GetStatus() *ContextBatchResponseResultsItemExecutedItemStatus {
+	if c == nil {
+		return nil
+	}
+	return c.Status
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) GetError() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Error
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) GetWrittenToContext() []string {
+	if c == nil {
+		return nil
+	}
+	return c.WrittenToContext
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItemExecutedItem) SetType(type_ *ContextBatchResponseResultsItemExecutedItemType) {
+	c.Type = type_
+	c.require(contextBatchResponseResultsItemExecutedItemFieldType)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItemExecutedItem) SetSlug(slug *string) {
+	c.Slug = slug
+	c.require(contextBatchResponseResultsItemExecutedItemFieldSlug)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItemExecutedItem) SetStatus(status *ContextBatchResponseResultsItemExecutedItemStatus) {
+	c.Status = status
+	c.require(contextBatchResponseResultsItemExecutedItemFieldStatus)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItemExecutedItem) SetError(error_ *string) {
+	c.Error = error_
+	c.require(contextBatchResponseResultsItemExecutedItemFieldError)
+}
+
+// SetWrittenToContext sets the WrittenToContext field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItemExecutedItem) SetWrittenToContext(writtenToContext []string) {
+	c.WrittenToContext = writtenToContext
+	c.require(contextBatchResponseResultsItemExecutedItemFieldWrittenToContext)
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextBatchResponseResultsItemExecutedItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextBatchResponseResultsItemExecutedItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) MarshalJSON() ([]byte, error) {
+	type embed ContextBatchResponseResultsItemExecutedItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type ContextBatchResponseResultsItemExecutedItemStatus string
+
+const (
+	ContextBatchResponseResultsItemExecutedItemStatusSuccess             ContextBatchResponseResultsItemExecutedItemStatus = "success"
+	ContextBatchResponseResultsItemExecutedItemStatusEvaluationError     ContextBatchResponseResultsItemExecutedItemStatus = "evaluation_error"
+	ContextBatchResponseResultsItemExecutedItemStatusInfrastructureError ContextBatchResponseResultsItemExecutedItemStatus = "infrastructure_error"
+	ContextBatchResponseResultsItemExecutedItemStatusSkippedAlreadyRun   ContextBatchResponseResultsItemExecutedItemStatus = "skipped_already_run"
+)
+
+func NewContextBatchResponseResultsItemExecutedItemStatusFromString(s string) (ContextBatchResponseResultsItemExecutedItemStatus, error) {
+	switch s {
+	case "success":
+		return ContextBatchResponseResultsItemExecutedItemStatusSuccess, nil
+	case "evaluation_error":
+		return ContextBatchResponseResultsItemExecutedItemStatusEvaluationError, nil
+	case "infrastructure_error":
+		return ContextBatchResponseResultsItemExecutedItemStatusInfrastructureError, nil
+	case "skipped_already_run":
+		return ContextBatchResponseResultsItemExecutedItemStatusSkippedAlreadyRun, nil
+	}
+	var t ContextBatchResponseResultsItemExecutedItemStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c ContextBatchResponseResultsItemExecutedItemStatus) Ptr() *ContextBatchResponseResultsItemExecutedItemStatus {
+	return &c
+}
+
+type ContextBatchResponseResultsItemExecutedItemType string
+
+const (
+	ContextBatchResponseResultsItemExecutedItemTypeRule ContextBatchResponseResultsItemExecutedItemType = "rule"
+	ContextBatchResponseResultsItemExecutedItemTypeFlow ContextBatchResponseResultsItemExecutedItemType = "flow"
+)
+
+func NewContextBatchResponseResultsItemExecutedItemTypeFromString(s string) (ContextBatchResponseResultsItemExecutedItemType, error) {
+	switch s {
+	case "rule":
+		return ContextBatchResponseResultsItemExecutedItemTypeRule, nil
+	case "flow":
+		return ContextBatchResponseResultsItemExecutedItemTypeFlow, nil
+	}
+	var t ContextBatchResponseResultsItemExecutedItemType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c ContextBatchResponseResultsItemExecutedItemType) Ptr() *ContextBatchResponseResultsItemExecutedItemType {
+	return &c
+}
+
+// Present when triggered is false (executed is empty): not_ready = required facts still missing; inputs_unchanged = the instance is complete but no bound asset had satisfiable inputs to attempt; no_bound_assets = the context has no published bound rules or flows; auto_execute_disabled = the context's auto_execute_decisions is off; execution_unavailable = the execution backend was unreachable. Note: assets whose inputs are unchanged since their last successful run appear as executed entries with status skipped_already_run and leave triggered true.
+type ContextBatchResponseResultsItemReason string
+
+const (
+	ContextBatchResponseResultsItemReasonNotReady             ContextBatchResponseResultsItemReason = "not_ready"
+	ContextBatchResponseResultsItemReasonInputsUnchanged      ContextBatchResponseResultsItemReason = "inputs_unchanged"
+	ContextBatchResponseResultsItemReasonNoBoundAssets        ContextBatchResponseResultsItemReason = "no_bound_assets"
+	ContextBatchResponseResultsItemReasonAutoExecuteDisabled  ContextBatchResponseResultsItemReason = "auto_execute_disabled"
+	ContextBatchResponseResultsItemReasonExecutionUnavailable ContextBatchResponseResultsItemReason = "execution_unavailable"
+)
+
+func NewContextBatchResponseResultsItemReasonFromString(s string) (ContextBatchResponseResultsItemReason, error) {
+	switch s {
+	case "not_ready":
+		return ContextBatchResponseResultsItemReasonNotReady, nil
+	case "inputs_unchanged":
+		return ContextBatchResponseResultsItemReasonInputsUnchanged, nil
+	case "no_bound_assets":
+		return ContextBatchResponseResultsItemReasonNoBoundAssets, nil
+	case "auto_execute_disabled":
+		return ContextBatchResponseResultsItemReasonAutoExecuteDisabled, nil
+	case "execution_unavailable":
+		return ContextBatchResponseResultsItemReasonExecutionUnavailable, nil
+	}
+	var t ContextBatchResponseResultsItemReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c ContextBatchResponseResultsItemReason) Ptr() *ContextBatchResponseResultsItemReason {
+	return &c
+}
+
+type ContextBatchResponseResultsItemStatus string
+
+const (
+	ContextBatchResponseResultsItemStatusComplete ContextBatchResponseResultsItemStatus = "complete"
+	ContextBatchResponseResultsItemStatusPending  ContextBatchResponseResultsItemStatus = "pending"
+)
+
+func NewContextBatchResponseResultsItemStatusFromString(s string) (ContextBatchResponseResultsItemStatus, error) {
+	switch s {
+	case "complete":
+		return ContextBatchResponseResultsItemStatusComplete, nil
+	case "pending":
+		return ContextBatchResponseResultsItemStatusPending, nil
+	}
+	var t ContextBatchResponseResultsItemStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c ContextBatchResponseResultsItemStatus) Ptr() *ContextBatchResponseResultsItemStatus {
+	return &c
+}
+
+var (
+	contextBatchResponseTimingsFieldTotalMs  = big.NewInt(1 << 0)
+	contextBatchResponseTimingsFieldIngestMs = big.NewInt(1 << 1)
+)
+
+type ContextBatchResponseTimings struct {
+	TotalMs  *int `json:"total_ms,omitempty" url:"total_ms,omitempty"`
+	IngestMs *int `json:"ingest_ms,omitempty" url:"ingest_ms,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextBatchResponseTimings) GetTotalMs() *int {
+	if c == nil {
+		return nil
+	}
+	return c.TotalMs
+}
+
+func (c *ContextBatchResponseTimings) GetIngestMs() *int {
+	if c == nil {
+		return nil
+	}
+	return c.IngestMs
+}
+
+func (c *ContextBatchResponseTimings) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextBatchResponseTimings) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetTotalMs sets the TotalMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseTimings) SetTotalMs(totalMs *int) {
+	c.TotalMs = totalMs
+	c.require(contextBatchResponseTimingsFieldTotalMs)
+}
+
+// SetIngestMs sets the IngestMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseTimings) SetIngestMs(ingestMs *int) {
+	c.IngestMs = ingestMs
+	c.require(contextBatchResponseTimingsFieldIngestMs)
+}
+
+func (c *ContextBatchResponseTimings) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextBatchResponseTimings
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextBatchResponseTimings(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextBatchResponseTimings) MarshalJSON() ([]byte, error) {
+	type embed ContextBatchResponseTimings
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextBatchResponseTimings) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// Summary of one dependent context re-evaluated through a relationship.
+var (
+	contextCascadeSummaryFieldContext              = big.NewInt(1 << 0)
+	contextCascadeSummaryFieldRelation             = big.NewInt(1 << 1)
+	contextCascadeSummaryFieldInstances            = big.NewInt(1 << 2)
+	contextCascadeSummaryFieldExecuted             = big.NewInt(1 << 3)
+	contextCascadeSummaryFieldEvaluationErrors     = big.NewInt(1 << 4)
+	contextCascadeSummaryFieldInfrastructureErrors = big.NewInt(1 << 5)
+	contextCascadeSummaryFieldSkipped              = big.NewInt(1 << 6)
+	contextCascadeSummaryFieldTruncated            = big.NewInt(1 << 7)
+	contextCascadeSummaryFieldExecutionDegraded    = big.NewInt(1 << 8)
+	contextCascadeSummaryFieldError                = big.NewInt(1 << 9)
+)
+
+type ContextCascadeSummary struct {
+	// The dependent context slug.
+	Context *string `json:"context,omitempty" url:"context,omitempty"`
+	// The relationship that linked the contexts.
+	Relation *string `json:"relation,omitempty" url:"relation,omitempty"`
+	// Distinct existing dependent instances re-evaluated.
+	Instances            *int `json:"instances,omitempty" url:"instances,omitempty"`
+	Executed             *int `json:"executed,omitempty" url:"executed,omitempty"`
+	EvaluationErrors     *int `json:"evaluation_errors,omitempty" url:"evaluation_errors,omitempty"`
+	InfrastructureErrors *int `json:"infrastructure_errors,omitempty" url:"infrastructure_errors,omitempty"`
+	Skipped              *int `json:"skipped,omitempty" url:"skipped,omitempty"`
+	// True when the affected instances exceeded the bounded cascade limit.
+	Truncated *bool `json:"truncated,omitempty" url:"truncated,omitempty"`
+	// Present when dependent data was committed but execution was unavailable.
+	ExecutionDegraded *string `json:"execution_degraded,omitempty" url:"execution_degraded,omitempty"`
+	// Present when the dependent relationship lookup or cascade failed.
+	Error *string `json:"error,omitempty" url:"error,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextCascadeSummary) GetContext() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Context
+}
+
+func (c *ContextCascadeSummary) GetRelation() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Relation
+}
+
+func (c *ContextCascadeSummary) GetInstances() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Instances
+}
+
+func (c *ContextCascadeSummary) GetExecuted() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Executed
+}
+
+func (c *ContextCascadeSummary) GetEvaluationErrors() *int {
+	if c == nil {
+		return nil
+	}
+	return c.EvaluationErrors
+}
+
+func (c *ContextCascadeSummary) GetInfrastructureErrors() *int {
+	if c == nil {
+		return nil
+	}
+	return c.InfrastructureErrors
+}
+
+func (c *ContextCascadeSummary) GetSkipped() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Skipped
+}
+
+func (c *ContextCascadeSummary) GetTruncated() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.Truncated
+}
+
+func (c *ContextCascadeSummary) GetExecutionDegraded() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ExecutionDegraded
+}
+
+func (c *ContextCascadeSummary) GetError() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Error
+}
+
+func (c *ContextCascadeSummary) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextCascadeSummary) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetContext sets the Context field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetContext(context *string) {
+	c.Context = context
+	c.require(contextCascadeSummaryFieldContext)
+}
+
+// SetRelation sets the Relation field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetRelation(relation *string) {
+	c.Relation = relation
+	c.require(contextCascadeSummaryFieldRelation)
+}
+
+// SetInstances sets the Instances field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetInstances(instances *int) {
+	c.Instances = instances
+	c.require(contextCascadeSummaryFieldInstances)
+}
+
+// SetExecuted sets the Executed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetExecuted(executed *int) {
+	c.Executed = executed
+	c.require(contextCascadeSummaryFieldExecuted)
+}
+
+// SetEvaluationErrors sets the EvaluationErrors field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetEvaluationErrors(evaluationErrors *int) {
+	c.EvaluationErrors = evaluationErrors
+	c.require(contextCascadeSummaryFieldEvaluationErrors)
+}
+
+// SetInfrastructureErrors sets the InfrastructureErrors field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetInfrastructureErrors(infrastructureErrors *int) {
+	c.InfrastructureErrors = infrastructureErrors
+	c.require(contextCascadeSummaryFieldInfrastructureErrors)
+}
+
+// SetSkipped sets the Skipped field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetSkipped(skipped *int) {
+	c.Skipped = skipped
+	c.require(contextCascadeSummaryFieldSkipped)
+}
+
+// SetTruncated sets the Truncated field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetTruncated(truncated *bool) {
+	c.Truncated = truncated
+	c.require(contextCascadeSummaryFieldTruncated)
+}
+
+// SetExecutionDegraded sets the ExecutionDegraded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetExecutionDegraded(executionDegraded *string) {
+	c.ExecutionDegraded = executionDegraded
+	c.require(contextCascadeSummaryFieldExecutionDegraded)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextCascadeSummary) SetError(error_ *string) {
+	c.Error = error_
+	c.require(contextCascadeSummaryFieldError)
+}
+
+func (c *ContextCascadeSummary) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextCascadeSummary
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextCascadeSummary(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextCascadeSummary) MarshalJSON() ([]byte, error) {
+	type embed ContextCascadeSummary
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextCascadeSummary) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 // Historical values for context instance fields.
@@ -965,8 +2178,8 @@ type ContextInstancePendingEvaluation struct {
 	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
 	// The flow ID (if type is 'flow').
 	FlowID *string `json:"flow_id,omitempty" url:"flow_id,omitempty"`
-	// List of field keys or dependency objects this evaluation is waiting for. Can contain simple strings for direct fields or objects for relationship dependencies.
-	WaitingOn []*ContextInstancePendingEvaluationWaitingOnItem `json:"waiting_on,omitempty" url:"waiting_on,omitempty"`
+	// Structured fact and relationship dependencies this evaluation is waiting for.
+	WaitingOn []*ContextWaitingOn `json:"waiting_on,omitempty" url:"waiting_on,omitempty"`
 	// When this pending evaluation was registered.
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
 	// When this pending evaluation will expire.
@@ -1014,7 +2227,7 @@ func (c *ContextInstancePendingEvaluation) GetFlowID() *string {
 	return c.FlowID
 }
 
-func (c *ContextInstancePendingEvaluation) GetWaitingOn() []*ContextInstancePendingEvaluationWaitingOnItem {
+func (c *ContextInstancePendingEvaluation) GetWaitingOn() []*ContextWaitingOn {
 	if c == nil {
 		return nil
 	}
@@ -1086,7 +2299,7 @@ func (c *ContextInstancePendingEvaluation) SetFlowID(flowID *string) {
 
 // SetWaitingOn sets the WaitingOn field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextInstancePendingEvaluation) SetWaitingOn(waitingOn []*ContextInstancePendingEvaluationWaitingOnItem) {
+func (c *ContextInstancePendingEvaluation) SetWaitingOn(waitingOn []*ContextWaitingOn) {
 	c.WaitingOn = waitingOn
 	c.require(contextInstancePendingEvaluationFieldWaitingOn)
 }
@@ -1182,187 +2395,6 @@ func (c ContextInstancePendingEvaluationType) Ptr() *ContextInstancePendingEvalu
 	return &c
 }
 
-type ContextInstancePendingEvaluationWaitingOnItem struct {
-	String                                             string
-	ContextInstancePendingEvaluationWaitingOnItemField *ContextInstancePendingEvaluationWaitingOnItemField
-
-	typ string
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItem) GetString() string {
-	if c == nil {
-		return ""
-	}
-	return c.String
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItem) GetContextInstancePendingEvaluationWaitingOnItemField() *ContextInstancePendingEvaluationWaitingOnItemField {
-	if c == nil {
-		return nil
-	}
-	return c.ContextInstancePendingEvaluationWaitingOnItemField
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItem) UnmarshalJSON(data []byte) error {
-	var valueString string
-	if err := json.Unmarshal(data, &valueString); err == nil {
-		c.typ = "String"
-		c.String = valueString
-		return nil
-	}
-	valueContextInstancePendingEvaluationWaitingOnItemField := new(ContextInstancePendingEvaluationWaitingOnItemField)
-	if err := json.Unmarshal(data, &valueContextInstancePendingEvaluationWaitingOnItemField); err == nil {
-		c.typ = "ContextInstancePendingEvaluationWaitingOnItemField"
-		c.ContextInstancePendingEvaluationWaitingOnItemField = valueContextInstancePendingEvaluationWaitingOnItemField
-		return nil
-	}
-	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
-}
-
-func (c ContextInstancePendingEvaluationWaitingOnItem) MarshalJSON() ([]byte, error) {
-	if c.typ == "String" || c.String != "" {
-		return json.Marshal(c.String)
-	}
-	if c.typ == "ContextInstancePendingEvaluationWaitingOnItemField" || c.ContextInstancePendingEvaluationWaitingOnItemField != nil {
-		return json.Marshal(c.ContextInstancePendingEvaluationWaitingOnItemField)
-	}
-	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-type ContextInstancePendingEvaluationWaitingOnItemVisitor interface {
-	VisitString(string) error
-	VisitContextInstancePendingEvaluationWaitingOnItemField(*ContextInstancePendingEvaluationWaitingOnItemField) error
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItem) Accept(visitor ContextInstancePendingEvaluationWaitingOnItemVisitor) error {
-	if c.typ == "String" || c.String != "" {
-		return visitor.VisitString(c.String)
-	}
-	if c.typ == "ContextInstancePendingEvaluationWaitingOnItemField" || c.ContextInstancePendingEvaluationWaitingOnItemField != nil {
-		return visitor.VisitContextInstancePendingEvaluationWaitingOnItemField(c.ContextInstancePendingEvaluationWaitingOnItemField)
-	}
-	return fmt.Errorf("type %T does not include a non-empty union type", c)
-}
-
-var (
-	contextInstancePendingEvaluationWaitingOnItemFieldFieldField    = big.NewInt(1 << 0)
-	contextInstancePendingEvaluationWaitingOnItemFieldFieldRelation = big.NewInt(1 << 1)
-	contextInstancePendingEvaluationWaitingOnItemFieldFieldInstance = big.NewInt(1 << 2)
-)
-
-type ContextInstancePendingEvaluationWaitingOnItemField struct {
-	// Field key this evaluation is waiting for.
-	Field *string `json:"field,omitempty" url:"field,omitempty"`
-	// Related context name if waiting on a relationship.
-	Relation *string `json:"relation,omitempty" url:"relation,omitempty"`
-	// Instance ID of the related context (if applicable).
-	Instance *string `json:"instance,omitempty" url:"instance,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetField() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Field
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetRelation() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Relation
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetInstance() *string {
-	if c == nil {
-		return nil
-	}
-	return c.Instance
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) require(field *big.Int) {
-	if c.explicitFields == nil {
-		c.explicitFields = big.NewInt(0)
-	}
-	c.explicitFields.Or(c.explicitFields, field)
-}
-
-// SetField sets the Field field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) SetField(field *string) {
-	c.Field = field
-	c.require(contextInstancePendingEvaluationWaitingOnItemFieldFieldField)
-}
-
-// SetRelation sets the Relation field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) SetRelation(relation *string) {
-	c.Relation = relation
-	c.require(contextInstancePendingEvaluationWaitingOnItemFieldFieldRelation)
-}
-
-// SetInstance sets the Instance field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) SetInstance(instance *string) {
-	c.Instance = instance
-	c.require(contextInstancePendingEvaluationWaitingOnItemFieldFieldInstance)
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) UnmarshalJSON(data []byte) error {
-	type unmarshaler ContextInstancePendingEvaluationWaitingOnItemField
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = ContextInstancePendingEvaluationWaitingOnItemField(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) MarshalJSON() ([]byte, error) {
-	type embed ContextInstancePendingEvaluationWaitingOnItemField
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *ContextInstancePendingEvaluationWaitingOnItemField) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
 // List of pending evaluations for a context instance.
 var (
 	contextInstancePendingResponseFieldPending = big.NewInt(1 << 0)
@@ -1451,23 +2483,25 @@ func (c *ContextInstancePendingResponse) String() string {
 
 // The current state of a context instance.
 var (
-	contextInstanceStateFieldContext   = big.NewInt(1 << 0)
-	contextInstanceStateFieldState     = big.NewInt(1 << 1)
-	contextInstanceStateFieldDerived   = big.NewInt(1 << 2)
-	contextInstanceStateFieldStatus    = big.NewInt(1 << 3)
-	contextInstanceStateFieldHave      = big.NewInt(1 << 4)
-	contextInstanceStateFieldNeed      = big.NewInt(1 << 5)
-	contextInstanceStateFieldCreatedAt = big.NewInt(1 << 6)
-	contextInstanceStateFieldUpdatedAt = big.NewInt(1 << 7)
-	contextInstanceStateFieldExpiresAt = big.NewInt(1 << 8)
+	contextInstanceStateFieldContext    = big.NewInt(1 << 0)
+	contextInstanceStateFieldState      = big.NewInt(1 << 1)
+	contextInstanceStateFieldDerived    = big.NewInt(1 << 2)
+	contextInstanceStateFieldStatus     = big.NewInt(1 << 3)
+	contextInstanceStateFieldHave       = big.NewInt(1 << 4)
+	contextInstanceStateFieldNeed       = big.NewInt(1 << 5)
+	contextInstanceStateFieldRelations  = big.NewInt(1 << 6)
+	contextInstanceStateFieldExecutions = big.NewInt(1 << 7)
+	contextInstanceStateFieldCreatedAt  = big.NewInt(1 << 8)
+	contextInstanceStateFieldUpdatedAt  = big.NewInt(1 << 9)
+	contextInstanceStateFieldExpiresAt  = big.NewInt(1 << 10)
 )
 
 type ContextInstanceState struct {
 	// Combined identifier in format 'contextSlug:instanceId'.
 	Context *string `json:"context,omitempty" url:"context,omitempty"`
-	// The current base field values for this instance.
+	// The current base fact values for this instance (derived facts are reported separately under `derived`; note that POST responses combine both under `state`).
 	State map[string]any `json:"state,omitempty" url:"state,omitempty"`
-	// Computed/derived field values from bound rules.
+	// Expression-computed derived fact values (recomputed on read from base facts, relations, and history).
 	Derived map[string]any `json:"derived,omitempty" url:"derived,omitempty"`
 	// Whether all required fields are present ('complete') or some are missing ('pending').
 	Status *ContextInstanceStateStatus `json:"status,omitempty" url:"status,omitempty"`
@@ -1475,6 +2509,10 @@ type ContextInstanceState struct {
 	Have []string `json:"have,omitempty" url:"have,omitempty"`
 	// List of required field keys that are missing (empty when status is 'complete').
 	Need []string `json:"need,omitempty" url:"need,omitempty"`
+	// Related instance data, present only when include_relations was requested. Keys are relationship names; has_many relations map to a list of related instance states, has_one/belongs_to to a single state or null.
+	Relations map[string]any `json:"relations,omitempty" url:"relations,omitempty"`
+	// Per-asset execution metadata, present after a bound rule or flow has run for this instance.
+	Executions map[string]any `json:"executions,omitempty" url:"executions,omitempty"`
 	// When the instance was first created.
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
 	// When the instance was last updated.
@@ -1529,6 +2567,20 @@ func (c *ContextInstanceState) GetNeed() []string {
 		return nil
 	}
 	return c.Need
+}
+
+func (c *ContextInstanceState) GetRelations() map[string]any {
+	if c == nil {
+		return nil
+	}
+	return c.Relations
+}
+
+func (c *ContextInstanceState) GetExecutions() map[string]any {
+	if c == nil {
+		return nil
+	}
+	return c.Executions
 }
 
 func (c *ContextInstanceState) GetCreatedAt() *time.Time {
@@ -1606,6 +2658,20 @@ func (c *ContextInstanceState) SetHave(have []string) {
 func (c *ContextInstanceState) SetNeed(need []string) {
 	c.Need = need
 	c.require(contextInstanceStateFieldNeed)
+}
+
+// SetRelations sets the Relations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextInstanceState) SetRelations(relations map[string]any) {
+	c.Relations = relations
+	c.require(contextInstanceStateFieldRelations)
+}
+
+// SetExecutions sets the Executions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextInstanceState) SetExecutions(executions map[string]any) {
+	c.Executions = executions
+	c.require(contextInstanceStateFieldExecutions)
 }
 
 // SetCreatedAt sets the CreatedAt field and marks it as non-optional;
@@ -1708,6 +2774,160 @@ func NewContextInstanceStateStatusFromString(s string) (ContextInstanceStateStat
 
 func (c ContextInstanceStateStatus) Ptr() *ContextInstanceStateStatus {
 	return &c
+}
+
+// A pending dependency. Fact dependencies identify the context instance and missing fields; relationship dependencies also include the relationship name and derived facts that depend on it.
+var (
+	contextWaitingOnFieldContext                = big.NewInt(1 << 0)
+	contextWaitingOnFieldInstance               = big.NewInt(1 << 1)
+	contextWaitingOnFieldFields                 = big.NewInt(1 << 2)
+	contextWaitingOnFieldRelation               = big.NewInt(1 << 3)
+	contextWaitingOnFieldDependentDerivedFields = big.NewInt(1 << 4)
+)
+
+type ContextWaitingOn struct {
+	// Context slug that must supply the dependency. May be null when relationship metadata cannot resolve a target.
+	Context *string `json:"context,omitempty" url:"context,omitempty"`
+	// Context instance identity for direct fact dependencies.
+	Instance *string `json:"instance,omitempty" url:"instance,omitempty"`
+	// Missing fact paths, or [`*`] for a relationship dependency.
+	Fields []string `json:"fields,omitempty" url:"fields,omitempty"`
+	// Relationship name for relationship dependencies.
+	Relation *string `json:"relation,omitempty" url:"relation,omitempty"`
+	// Derived fact keys waiting on this relationship.
+	DependentDerivedFields []string `json:"dependentDerivedFields,omitempty" url:"dependentDerivedFields,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextWaitingOn) GetContext() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Context
+}
+
+func (c *ContextWaitingOn) GetInstance() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Instance
+}
+
+func (c *ContextWaitingOn) GetFields() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Fields
+}
+
+func (c *ContextWaitingOn) GetRelation() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Relation
+}
+
+func (c *ContextWaitingOn) GetDependentDerivedFields() []string {
+	if c == nil {
+		return nil
+	}
+	return c.DependentDerivedFields
+}
+
+func (c *ContextWaitingOn) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextWaitingOn) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetContext sets the Context field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextWaitingOn) SetContext(context *string) {
+	c.Context = context
+	c.require(contextWaitingOnFieldContext)
+}
+
+// SetInstance sets the Instance field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextWaitingOn) SetInstance(instance *string) {
+	c.Instance = instance
+	c.require(contextWaitingOnFieldInstance)
+}
+
+// SetFields sets the Fields field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextWaitingOn) SetFields(fields []string) {
+	c.Fields = fields
+	c.require(contextWaitingOnFieldFields)
+}
+
+// SetRelation sets the Relation field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextWaitingOn) SetRelation(relation *string) {
+	c.Relation = relation
+	c.require(contextWaitingOnFieldRelation)
+}
+
+// SetDependentDerivedFields sets the DependentDerivedFields field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextWaitingOn) SetDependentDerivedFields(dependentDerivedFields []string) {
+	c.DependentDerivedFields = dependentDerivedFields
+	c.require(contextWaitingOnFieldDependentDerivedFields)
+}
+
+func (c *ContextWaitingOn) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextWaitingOn
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextWaitingOn(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextWaitingOn) MarshalJSON() ([]byte, error) {
+	type embed ContextWaitingOn
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextWaitingOn) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 // Response after deleting a context instance.
@@ -1813,383 +3033,6 @@ func (d *DeleteContextInstanceResponse) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// Optional request body for executing a flow against context. The entire body is merged with instance state before flow execution.
-type SolveContextFlowRequest = map[string]any
-
-// Response after executing a flow against a context instance.
-var (
-	solveContextFlowResponseFieldStatus  = big.NewInt(1 << 0)
-	solveContextFlowResponseFieldContext = big.NewInt(1 << 1)
-	solveContextFlowResponseFieldFlow    = big.NewInt(1 << 2)
-	solveContextFlowResponseFieldResult  = big.NewInt(1 << 3)
-	solveContextFlowResponseFieldUsage   = big.NewInt(1 << 4)
-)
-
-type SolveContextFlowResponse struct {
-	// Whether the flow executed successfully.
-	Status *SolveContextFlowResponseStatus `json:"status,omitempty" url:"status,omitempty"`
-	// Combined identifier in format 'contextSlug:instanceId'.
-	Context *string `json:"context,omitempty" url:"context,omitempty"`
-	// The slug of the flow that was executed.
-	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
-	// The flow execution output.
-	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
-	// Resource usage information for the flow execution.
-	Usage map[string]any `json:"usage,omitempty" url:"usage,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (s *SolveContextFlowResponse) GetStatus() *SolveContextFlowResponseStatus {
-	if s == nil {
-		return nil
-	}
-	return s.Status
-}
-
-func (s *SolveContextFlowResponse) GetContext() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Context
-}
-
-func (s *SolveContextFlowResponse) GetFlow() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Flow
-}
-
-func (s *SolveContextFlowResponse) GetResult() map[string]any {
-	if s == nil {
-		return nil
-	}
-	return s.Result
-}
-
-func (s *SolveContextFlowResponse) GetUsage() map[string]any {
-	if s == nil {
-		return nil
-	}
-	return s.Usage
-}
-
-func (s *SolveContextFlowResponse) GetExtraProperties() map[string]interface{} {
-	if s == nil {
-		return nil
-	}
-	return s.extraProperties
-}
-
-func (s *SolveContextFlowResponse) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
-	}
-	s.explicitFields.Or(s.explicitFields, field)
-}
-
-// SetStatus sets the Status field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetStatus(status *SolveContextFlowResponseStatus) {
-	s.Status = status
-	s.require(solveContextFlowResponseFieldStatus)
-}
-
-// SetContext sets the Context field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetContext(context *string) {
-	s.Context = context
-	s.require(solveContextFlowResponseFieldContext)
-}
-
-// SetFlow sets the Flow field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetFlow(flow *string) {
-	s.Flow = flow
-	s.require(solveContextFlowResponseFieldFlow)
-}
-
-// SetResult sets the Result field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetResult(result map[string]any) {
-	s.Result = result
-	s.require(solveContextFlowResponseFieldResult)
-}
-
-// SetUsage sets the Usage field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetUsage(usage map[string]any) {
-	s.Usage = usage
-	s.require(solveContextFlowResponseFieldUsage)
-}
-
-func (s *SolveContextFlowResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler SolveContextFlowResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*s = SolveContextFlowResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *s)
-	if err != nil {
-		return err
-	}
-	s.extraProperties = extraProperties
-	s.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (s *SolveContextFlowResponse) MarshalJSON() ([]byte, error) {
-	type embed SolveContextFlowResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*s),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (s *SolveContextFlowResponse) String() string {
-	if s == nil {
-		return "<nil>"
-	}
-	if len(s.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(s); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", s)
-}
-
-// Whether the flow executed successfully.
-type SolveContextFlowResponseStatus string
-
-const (
-	SolveContextFlowResponseStatusSolved SolveContextFlowResponseStatus = "solved"
-	SolveContextFlowResponseStatusError  SolveContextFlowResponseStatus = "error"
-)
-
-func NewSolveContextFlowResponseStatusFromString(s string) (SolveContextFlowResponseStatus, error) {
-	switch s {
-	case "solved":
-		return SolveContextFlowResponseStatusSolved, nil
-	case "error":
-		return SolveContextFlowResponseStatusError, nil
-	}
-	var t SolveContextFlowResponseStatus
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (s SolveContextFlowResponseStatus) Ptr() *SolveContextFlowResponseStatus {
-	return &s
-}
-
-// Optional request body for solving a rule against context. The entire body is merged with the instance state before rule evaluation.
-type SolveContextRuleRequest = map[string]any
-
-// Response after solving a rule against a context instance.
-var (
-	solveContextRuleResponseFieldStatus           = big.NewInt(1 << 0)
-	solveContextRuleResponseFieldContext          = big.NewInt(1 << 1)
-	solveContextRuleResponseFieldRule             = big.NewInt(1 << 2)
-	solveContextRuleResponseFieldResult           = big.NewInt(1 << 3)
-	solveContextRuleResponseFieldWrittenToContext = big.NewInt(1 << 4)
-	solveContextRuleResponseFieldCascaded         = big.NewInt(1 << 5)
-)
-
-type SolveContextRuleResponse struct {
-	// Whether the rule executed successfully.
-	Status *SolveContextRuleResponseStatus `json:"status,omitempty" url:"status,omitempty"`
-	// Combined identifier in format 'contextSlug:instanceId'.
-	Context *string `json:"context,omitempty" url:"context,omitempty"`
-	// The slug of the rule that was executed.
-	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
-	// The rule evaluation result (output values).
-	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
-	// List of field keys that were written back to the context instance.
-	WrittenToContext []string `json:"written_to_context,omitempty" url:"written_to_context,omitempty"`
-	// Results from any cascaded evaluations triggered by the rule outputs.
-	Cascaded []*CascadeResult `json:"cascaded,omitempty" url:"cascaded,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (s *SolveContextRuleResponse) GetStatus() *SolveContextRuleResponseStatus {
-	if s == nil {
-		return nil
-	}
-	return s.Status
-}
-
-func (s *SolveContextRuleResponse) GetContext() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Context
-}
-
-func (s *SolveContextRuleResponse) GetRule() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Rule
-}
-
-func (s *SolveContextRuleResponse) GetResult() map[string]any {
-	if s == nil {
-		return nil
-	}
-	return s.Result
-}
-
-func (s *SolveContextRuleResponse) GetWrittenToContext() []string {
-	if s == nil {
-		return nil
-	}
-	return s.WrittenToContext
-}
-
-func (s *SolveContextRuleResponse) GetCascaded() []*CascadeResult {
-	if s == nil {
-		return nil
-	}
-	return s.Cascaded
-}
-
-func (s *SolveContextRuleResponse) GetExtraProperties() map[string]interface{} {
-	if s == nil {
-		return nil
-	}
-	return s.extraProperties
-}
-
-func (s *SolveContextRuleResponse) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
-	}
-	s.explicitFields.Or(s.explicitFields, field)
-}
-
-// SetStatus sets the Status field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetStatus(status *SolveContextRuleResponseStatus) {
-	s.Status = status
-	s.require(solveContextRuleResponseFieldStatus)
-}
-
-// SetContext sets the Context field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetContext(context *string) {
-	s.Context = context
-	s.require(solveContextRuleResponseFieldContext)
-}
-
-// SetRule sets the Rule field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetRule(rule *string) {
-	s.Rule = rule
-	s.require(solveContextRuleResponseFieldRule)
-}
-
-// SetResult sets the Result field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetResult(result map[string]any) {
-	s.Result = result
-	s.require(solveContextRuleResponseFieldResult)
-}
-
-// SetWrittenToContext sets the WrittenToContext field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetWrittenToContext(writtenToContext []string) {
-	s.WrittenToContext = writtenToContext
-	s.require(solveContextRuleResponseFieldWrittenToContext)
-}
-
-// SetCascaded sets the Cascaded field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetCascaded(cascaded []*CascadeResult) {
-	s.Cascaded = cascaded
-	s.require(solveContextRuleResponseFieldCascaded)
-}
-
-func (s *SolveContextRuleResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler SolveContextRuleResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*s = SolveContextRuleResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *s)
-	if err != nil {
-		return err
-	}
-	s.extraProperties = extraProperties
-	s.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (s *SolveContextRuleResponse) MarshalJSON() ([]byte, error) {
-	type embed SolveContextRuleResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*s),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (s *SolveContextRuleResponse) String() string {
-	if s == nil {
-		return "<nil>"
-	}
-	if len(s.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(s); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", s)
-}
-
-// Whether the rule executed successfully.
-type SolveContextRuleResponseStatus string
-
-const (
-	SolveContextRuleResponseStatusSolved SolveContextRuleResponseStatus = "solved"
-	SolveContextRuleResponseStatusError  SolveContextRuleResponseStatus = "error"
-)
-
-func NewSolveContextRuleResponseStatusFromString(s string) (SolveContextRuleResponseStatus, error) {
-	switch s {
-	case "solved":
-		return SolveContextRuleResponseStatusSolved, nil
-	case "error":
-		return SolveContextRuleResponseStatusError, nil
-	}
-	var t SolveContextRuleResponseStatus
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (s SolveContextRuleResponseStatus) Ptr() *SolveContextRuleResponseStatus {
-	return &s
-}
-
 // Data to submit to a context instance. Keys should match the context schema fields.
 type SubmitContextDataRequest = map[string]any
 
@@ -2208,7 +3051,7 @@ var (
 type SubmitContextDataResponse struct {
 	// Combined identifier in format 'contextSlug:instanceId'.
 	Context *string `json:"context,omitempty" url:"context,omitempty"`
-	// The merged state after submitting data and any auto-executed rules/flows.
+	// The merged state after submitting data and any auto-executed rules/flows. Includes derived facts inline (unlike GET, which reports them separately under `derived`).
 	State map[string]any `json:"state,omitempty" url:"state,omitempty"`
 	// Whether all required fields are present ('complete') or some are missing ('pending').
 	Status *SubmitContextDataResponseStatus `json:"status,omitempty" url:"status,omitempty"`
@@ -2220,8 +3063,8 @@ type SubmitContextDataResponse struct {
 	IsNew *bool `json:"is_new,omitempty" url:"is_new,omitempty"`
 	// When the instance will expire based on context TTL.
 	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
-	// Results from auto-executed rules/flows and pending evaluation cascades.
-	Cascaded []*CascadeResult `json:"cascaded,omitempty" url:"cascaded,omitempty"`
+	// Results from auto-executed rules/flows and pending evaluation cascades, plus summaries when a relationship change re-evaluated dependent contexts.
+	Cascaded []*SubmitContextDataResponseCascadedItem `json:"cascaded,omitempty" url:"cascaded,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2279,7 +3122,7 @@ func (s *SubmitContextDataResponse) GetExpiresAt() *time.Time {
 	return s.ExpiresAt
 }
 
-func (s *SubmitContextDataResponse) GetCascaded() []*CascadeResult {
+func (s *SubmitContextDataResponse) GetCascaded() []*SubmitContextDataResponseCascadedItem {
 	if s == nil {
 		return nil
 	}
@@ -2351,7 +3194,7 @@ func (s *SubmitContextDataResponse) SetExpiresAt(expiresAt *time.Time) {
 
 // SetCascaded sets the Cascaded field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SubmitContextDataResponse) SetCascaded(cascaded []*CascadeResult) {
+func (s *SubmitContextDataResponse) SetCascaded(cascaded []*SubmitContextDataResponseCascadedItem) {
 	s.Cascaded = cascaded
 	s.require(submitContextDataResponseFieldCascaded)
 }
@@ -2404,6 +3247,68 @@ func (s *SubmitContextDataResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", s)
+}
+
+type SubmitContextDataResponseCascadedItem struct {
+	CascadeResult         *CascadeResult
+	ContextCascadeSummary *ContextCascadeSummary
+
+	typ string
+}
+
+func (s *SubmitContextDataResponseCascadedItem) GetCascadeResult() *CascadeResult {
+	if s == nil {
+		return nil
+	}
+	return s.CascadeResult
+}
+
+func (s *SubmitContextDataResponseCascadedItem) GetContextCascadeSummary() *ContextCascadeSummary {
+	if s == nil {
+		return nil
+	}
+	return s.ContextCascadeSummary
+}
+
+func (s *SubmitContextDataResponseCascadedItem) UnmarshalJSON(data []byte) error {
+	valueCascadeResult := new(CascadeResult)
+	if err := json.Unmarshal(data, &valueCascadeResult); err == nil {
+		s.typ = "CascadeResult"
+		s.CascadeResult = valueCascadeResult
+		return nil
+	}
+	valueContextCascadeSummary := new(ContextCascadeSummary)
+	if err := json.Unmarshal(data, &valueContextCascadeSummary); err == nil {
+		s.typ = "ContextCascadeSummary"
+		s.ContextCascadeSummary = valueContextCascadeSummary
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
+}
+
+func (s SubmitContextDataResponseCascadedItem) MarshalJSON() ([]byte, error) {
+	if s.typ == "CascadeResult" || s.CascadeResult != nil {
+		return json.Marshal(s.CascadeResult)
+	}
+	if s.typ == "ContextCascadeSummary" || s.ContextCascadeSummary != nil {
+		return json.Marshal(s.ContextCascadeSummary)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type SubmitContextDataResponseCascadedItemVisitor interface {
+	VisitCascadeResult(*CascadeResult) error
+	VisitContextCascadeSummary(*ContextCascadeSummary) error
+}
+
+func (s *SubmitContextDataResponseCascadedItem) Accept(visitor SubmitContextDataResponseCascadedItemVisitor) error {
+	if s.typ == "CascadeResult" || s.CascadeResult != nil {
+		return visitor.VisitCascadeResult(s.CascadeResult)
+	}
+	if s.typ == "ContextCascadeSummary" || s.ContextCascadeSummary != nil {
+		return visitor.VisitContextCascadeSummary(s.ContextCascadeSummary)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
 // Whether all required fields are present ('complete') or some are missing ('pending').

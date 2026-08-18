@@ -17,6 +17,7 @@ var (
 	exportManifestRequestFieldManifestName        = big.NewInt(1 << 3)
 	exportManifestRequestFieldManifestDescription = big.NewInt(1 << 4)
 	exportManifestRequestFieldPreviewOnly         = big.NewInt(1 << 5)
+	exportManifestRequestFieldCompress            = big.NewInt(1 << 6)
 )
 
 type ExportManifestRequest struct {
@@ -32,6 +33,8 @@ type ExportManifestRequest struct {
 	ManifestDescription *string `json:"manifest_description,omitempty" url:"-"`
 	// If true, returns a preview of what would be exported without the full data.
 	PreviewOnly *bool `json:"preview_only,omitempty" url:"-"`
+	// If true, the manifest in the response is returned in compressed form: the JSON array produced by the compress-json library instead of a plain object. Compressed manifests are substantially smaller, can be saved directly as a .rbm file, and are accepted by the import endpoint as-is. Intended for raw HTTP usage and file tooling; typed SDK clients should omit this flag, since the generated response type models the manifest as an object.
+	Compress *bool `json:"compress,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -86,6 +89,13 @@ func (e *ExportManifestRequest) SetPreviewOnly(previewOnly *bool) {
 	e.require(exportManifestRequestFieldPreviewOnly)
 }
 
+// SetCompress sets the Compress field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportManifestRequest) SetCompress(compress *bool) {
+	e.Compress = compress
+	e.require(exportManifestRequestFieldCompress)
+}
+
 func (e *ExportManifestRequest) UnmarshalJSON(data []byte) error {
 	type unmarshaler ExportManifestRequest
 	var body unmarshaler
@@ -115,7 +125,7 @@ var (
 )
 
 type ImportManifestRequest struct {
-	// The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads.
+	// The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads. A compressed manifest is also accepted: the JSON array produced by the compress-json library (for example, the contents of a compressed .rbm file exported with `compress: true`); it is detected and decompressed automatically.
 	Manifest *ImportManifestRequestManifest `json:"manifest" url:"-"`
 	// How to handle conflicts with existing assets. 'update' overwrites, 'skip' ignores, 'error' fails.
 	ConflictStrategy *ImportManifestRequestConflictStrategy `json:"conflict_strategy,omitempty" url:"-"`
@@ -1125,7 +1135,7 @@ var (
 type ExportManifestResponse struct {
 	// Whether the export completed successfully.
 	Success *bool `json:"success,omitempty" url:"success,omitempty"`
-	// The exported manifest data. The wrapper uses snake_case, while asset objects inside `contexts`, `values`, `rules`, and `flows` intentionally preserve `.rbm`/database casing for round-trip compatibility.
+	// The exported manifest data. The wrapper uses snake_case, while asset objects inside `contexts`, `values`, `rules`, and `flows` intentionally preserve `.rbm`/database casing for round-trip compatibility. When the request sets `compress: true`, this field is instead the compress-json array encoding of the same manifest (a JSON array, not the object described below).
 	Manifest *ExportManifestResponseManifest `json:"manifest,omitempty" url:"manifest,omitempty"`
 	// Error message if export failed.
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
@@ -1235,7 +1245,7 @@ func (e *ExportManifestResponse) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
-// The exported manifest data. The wrapper uses snake_case, while asset objects inside `contexts`, `values`, `rules`, and `flows` intentionally preserve `.rbm`/database casing for round-trip compatibility.
+// The exported manifest data. The wrapper uses snake_case, while asset objects inside `contexts`, `values`, `rules`, and `flows` intentionally preserve `.rbm`/database casing for round-trip compatibility. When the request sets `compress: true`, this field is instead the compress-json array encoding of the same manifest (a JSON array, not the object described below).
 var (
 	exportManifestResponseManifestFieldVersion     = big.NewInt(1 << 0)
 	exportManifestResponseManifestFieldName        = big.NewInt(1 << 1)
@@ -1257,7 +1267,7 @@ type ExportManifestResponseManifest struct {
 	ExportedAt  *time.Time `json:"exported_at,omitempty" url:"exported_at,omitempty"`
 	// Exported contexts.
 	Contexts []map[string]any `json:"contexts,omitempty" url:"contexts,omitempty"`
-	// Exported dynamic values.
+	// Exported vocabulary values.
 	Values []map[string]any `json:"values,omitempty" url:"values,omitempty"`
 	// Exported rules.
 	Rules []map[string]any `json:"rules,omitempty" url:"rules,omitempty"`
@@ -2743,13 +2753,14 @@ func (i ImportManifestRequestLegacyRuleMappingValueAction) Ptr() *ImportManifest
 	return &i
 }
 
-// The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads.
+// The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads. A compressed manifest is also accepted: the JSON array produced by the compress-json library (for example, the contents of a compressed .rbm file exported with `compress: true`); it is detected and decompressed automatically.
 var (
 	importManifestRequestManifestFieldVersion  = big.NewInt(1 << 0)
 	importManifestRequestManifestFieldRules    = big.NewInt(1 << 1)
 	importManifestRequestManifestFieldFlows    = big.NewInt(1 << 2)
 	importManifestRequestManifestFieldEntities = big.NewInt(1 << 3)
-	importManifestRequestManifestFieldValues   = big.NewInt(1 << 4)
+	importManifestRequestManifestFieldContexts = big.NewInt(1 << 4)
+	importManifestRequestManifestFieldValues   = big.NewInt(1 << 5)
 )
 
 type ImportManifestRequestManifest struct {
@@ -2761,7 +2772,9 @@ type ImportManifestRequestManifest struct {
 	Flows []map[string]any `json:"flows,omitempty" url:"flows,omitempty"`
 	// Contexts to import.
 	Entities []map[string]any `json:"entities,omitempty" url:"entities,omitempty"`
-	// Dynamic values to import.
+	// Alias for `entities`, accepted so manifests produced by the export endpoint (which names this array `contexts`) can be imported without modification. Ignored when `entities` is present and non-empty.
+	Contexts []map[string]any `json:"contexts,omitempty" url:"contexts,omitempty"`
+	// Vocabulary values to import.
 	Values []map[string]any `json:"values,omitempty" url:"values,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2797,6 +2810,13 @@ func (i *ImportManifestRequestManifest) GetEntities() []map[string]any {
 		return nil
 	}
 	return i.Entities
+}
+
+func (i *ImportManifestRequestManifest) GetContexts() []map[string]any {
+	if i == nil {
+		return nil
+	}
+	return i.Contexts
 }
 
 func (i *ImportManifestRequestManifest) GetValues() []map[string]any {
@@ -2846,6 +2866,13 @@ func (i *ImportManifestRequestManifest) SetFlows(flows []map[string]any) {
 func (i *ImportManifestRequestManifest) SetEntities(entities []map[string]any) {
 	i.Entities = entities
 	i.require(importManifestRequestManifestFieldEntities)
+}
+
+// SetContexts sets the Contexts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestManifest) SetContexts(contexts []map[string]any) {
+	i.Contexts = contexts
+	i.require(importManifestRequestManifestFieldContexts)
 }
 
 // SetValues sets the Values field and marks it as non-optional;

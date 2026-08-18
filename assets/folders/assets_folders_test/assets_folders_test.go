@@ -89,8 +89,10 @@ func TestAssetsFoldersListWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithAPIKey("test-value"),
 	)
+	request := &assets.ListFoldersRequest{}
 	_, invocationErr := client.Assets.Folders.List(
 		context.TODO(),
+		request,
 		option.WithHTTPHeader(
 			http.Header{"X-Test-Id": []string{"TestAssetsFoldersListWithWireMock"}},
 		),

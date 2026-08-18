@@ -4,6 +4,7 @@ package assets
 
 import (
 	json "encoding/json"
+	fmt "fmt"
 	big "math/big"
 	internal "sdk/internal"
 )
@@ -56,9 +57,72 @@ func (d *DeleteFolderRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	listFoldersRequestFieldUserGroup = big.NewInt(1 << 0)
+	listFoldersRequestFieldName      = big.NewInt(1 << 1)
+)
+
+type ListFoldersRequest struct {
+	// Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+	UserGroup *string `json:"-" url:"user_group,omitempty"`
+	// Filter results by name using a case-insensitive substring match.
+	Name *string `json:"-" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (l *ListFoldersRequest) require(field *big.Int) {
+	if l.explicitFields == nil {
+		l.explicitFields = big.NewInt(0)
+	}
+	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetUserGroup sets the UserGroup field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFoldersRequest) SetUserGroup(userGroup *string) {
+	l.UserGroup = userGroup
+	l.require(listFoldersRequestFieldUserGroup)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFoldersRequest) SetName(name *string) {
+	l.Name = name
+	l.require(listFoldersRequestFieldName)
+}
+
+// The type of assets the folder organizes. Applies on creation; ignored when updating an existing folder.
+type UpsertFolderRequestType string
+
+const (
+	UpsertFolderRequestTypeRule    UpsertFolderRequestType = "rule"
+	UpsertFolderRequestTypeFlow    UpsertFolderRequestType = "flow"
+	UpsertFolderRequestTypeContext UpsertFolderRequestType = "context"
+)
+
+func NewUpsertFolderRequestTypeFromString(s string) (UpsertFolderRequestType, error) {
+	switch s {
+	case "rule":
+		return UpsertFolderRequestTypeRule, nil
+	case "flow":
+		return UpsertFolderRequestTypeFlow, nil
+	case "context":
+		return UpsertFolderRequestTypeContext, nil
+	}
+	var t UpsertFolderRequestType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (u UpsertFolderRequestType) Ptr() *UpsertFolderRequestType {
+	return &u
+}
+
+var (
 	upsertFolderRequestFieldID          = big.NewInt(1 << 0)
 	upsertFolderRequestFieldName        = big.NewInt(1 << 1)
 	upsertFolderRequestFieldDescription = big.NewInt(1 << 2)
+	upsertFolderRequestFieldType        = big.NewInt(1 << 3)
 )
 
 type UpsertFolderRequest struct {
@@ -68,6 +132,8 @@ type UpsertFolderRequest struct {
 	Name string `json:"name" url:"-"`
 	// Description of the folder
 	Description *string `json:"description,omitempty" url:"-"`
+	// The type of assets the folder organizes. Applies on creation; ignored when updating an existing folder.
+	Type *UpsertFolderRequestType `json:"type,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -99,6 +165,13 @@ func (u *UpsertFolderRequest) SetName(name string) {
 func (u *UpsertFolderRequest) SetDescription(description *string) {
 	u.Description = description
 	u.require(upsertFolderRequestFieldDescription)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpsertFolderRequest) SetType(type_ *UpsertFolderRequestType) {
+	u.Type = type_
+	u.require(upsertFolderRequestFieldType)
 }
 
 func (u *UpsertFolderRequest) UnmarshalJSON(data []byte) error {

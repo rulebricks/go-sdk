@@ -89,8 +89,10 @@ func TestContextsObjectsListWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithAPIKey("test-value"),
 	)
+	request := &contexts.ListObjectsRequest{}
 	_, invocationErr := client.Contexts.Objects.List(
 		context.TODO(),
+		request,
 		option.WithHTTPHeader(
 			http.Header{"X-Test-Id": []string{"TestContextsObjectsListWithWireMock"}},
 		),
@@ -116,29 +118,31 @@ func TestContextsObjectsCreateWithWireMock(
 		Description: sdk.String(
 			"Represents a customer in the system",
 		),
-		Schema: []*contexts.CreateContextRequestSchemaItem{
-			&contexts.CreateContextRequestSchemaItem{
-				Key: sdk.String(
-					"email",
-				),
-				Name: sdk.String(
-					"Email",
-				),
-				Type: sdk.String(
-					"string",
-				),
+		Schema: &sdk.ContextSchema{
+			Base: []*sdk.ContextSchemaField{
+				&sdk.ContextSchemaField{
+					Key: sdk.String(
+						"email",
+					),
+					Name: sdk.String(
+						"Email",
+					),
+					Type: sdk.ContextSchemaFieldTypeString.Ptr(),
+					Required: sdk.Bool(
+						true,
+					),
+				},
+				&sdk.ContextSchemaField{
+					Key: sdk.String(
+						"age",
+					),
+					Name: sdk.String(
+						"Age",
+					),
+					Type: sdk.ContextSchemaFieldTypeNumber.Ptr(),
+				},
 			},
-			&contexts.CreateContextRequestSchemaItem{
-				Key: sdk.String(
-					"age",
-				),
-				Name: sdk.String(
-					"Age",
-				),
-				Type: sdk.String(
-					"number",
-				),
-			},
+			Derived: []*sdk.ContextSchemaField{},
 		},
 		IdentityFact: "email",
 	}

@@ -35,7 +35,7 @@ func (r *RawClient) List(
 	ctx context.Context,
 	request *sdk.ListValuesRequest,
 	opts ...option.RequestOption,
-) (*core.Response[sdk.DynamicValueListResponse], error) {
+) (*core.Response[*sdk.ListValuesResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -54,7 +54,7 @@ func (r *RawClient) List(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response sdk.DynamicValueListResponse
+	var response *sdk.ListValuesResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -73,7 +73,7 @@ func (r *RawClient) List(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[sdk.DynamicValueListResponse]{
+	return &core.Response[*sdk.ListValuesResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -84,7 +84,7 @@ func (r *RawClient) Update(
 	ctx context.Context,
 	request *sdk.UpdateValuesRequest,
 	opts ...option.RequestOption,
-) (*core.Response[sdk.DynamicValueListResponse], error) {
+) (*core.Response[*sdk.UpdateValuesResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -97,7 +97,7 @@ func (r *RawClient) Update(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response sdk.DynamicValueListResponse
+	var response *sdk.UpdateValuesResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -117,7 +117,7 @@ func (r *RawClient) Update(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[sdk.DynamicValueListResponse]{
+	return &core.Response[*sdk.UpdateValuesResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -128,7 +128,7 @@ func (r *RawClient) Delete(
 	ctx context.Context,
 	request *sdk.DeleteValuesRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*sdk.SuccessMessage], error) {
+) (*core.Response[*sdk.DeleteValueResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -147,7 +147,7 @@ func (r *RawClient) Delete(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *sdk.SuccessMessage
+	var response *sdk.DeleteValueResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -166,7 +166,51 @@ func (r *RawClient) Delete(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*sdk.SuccessMessage]{
+	return &core.Response[*sdk.DeleteValueResponse]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) Sync(
+	ctx context.Context,
+	request *sdk.SyncValuesRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*sdk.SyncValuesResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https%3A%2F%2Frulebricks.com/api/v1",
+	)
+	endpointURL := baseURL + "/values/sync"
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	headers.Add("Content-Type", "application/json")
+	var response *sdk.SyncValuesResponse
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*sdk.SyncValuesResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

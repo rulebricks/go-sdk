@@ -121,7 +121,7 @@ func TestContextsRelationshipsCreateWithWireMock(
 		RelationType:   contexts.CreateRelationshipRequestRelationTypeHasMany,
 		ForeignKeyFact: "customer_id",
 		Name: sdk.String(
-			"Customer Orders",
+			"customer_orders",
 		),
 	}
 	_, invocationErr := client.Contexts.Relationships.Create(

@@ -216,35 +216,6 @@ func TestContextsGetPendingWithWireMock(
 	VerifyRequestCount(t, "TestContextsGetPendingWithWireMock", "GET", "/contexts/customer/cust-12345/pending", nil, 1)
 }
 
-func TestContextsSolveWithWireMock(
-	t *testing.T,
-) {
-	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
-	if WireMockBaseURL == "" {
-		WireMockBaseURL = "http://localhost:8080"
-	}
-	client := client.NewClient(
-		option.WithBaseURL(WireMockBaseURL),
-		option.WithAPIKey("test-value"),
-	)
-	request := &sdk.SolveContextsRequest{
-		Slug:     "customer",
-		Instance: "cust-12345",
-		RuleSlug: "eligibility-check",
-		Body:     map[string]any{},
-	}
-	_, invocationErr := client.Contexts.Solve(
-		context.TODO(),
-		request,
-		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestContextsSolveWithWireMock"}},
-		),
-	)
-
-	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestContextsSolveWithWireMock", "POST", "/contexts/customer/cust-12345/solve/eligibility-check", nil, 1)
-}
-
 func TestContextsCascadeWithWireMock(
 	t *testing.T,
 ) {
@@ -273,7 +244,7 @@ func TestContextsCascadeWithWireMock(
 	VerifyRequestCount(t, "TestContextsCascadeWithWireMock", "POST", "/contexts/customer/cust-12345/cascade", nil, 1)
 }
 
-func TestContextsExecuteWithWireMock(
+func TestContextsBulkIngestWithWireMock(
 	t *testing.T,
 ) {
 	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
@@ -284,20 +255,27 @@ func TestContextsExecuteWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithAPIKey("test-value"),
 	)
-	request := &sdk.ExecuteContextsRequest{
-		Slug:     "customer",
-		Instance: "cust-12345",
-		FlowSlug: "onboarding-flow",
-		Body:     map[string]any{},
+	request := &sdk.BulkIngestContextsRequest{
+		Slug: "loan-application",
+		Body: []sdk.DynamicRequestPayload{
+			map[string]any{
+				"amount":  12000,
+				"loan_id": "APP-1",
+			},
+			map[string]any{
+				"amount":  7300,
+				"loan_id": "APP-2",
+			},
+		},
 	}
-	_, invocationErr := client.Contexts.Execute(
+	_, invocationErr := client.Contexts.BulkIngest(
 		context.TODO(),
 		request,
 		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestContextsExecuteWithWireMock"}},
+			http.Header{"X-Test-Id": []string{"TestContextsBulkIngestWithWireMock"}},
 		),
 	)
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestContextsExecuteWithWireMock", "POST", "/contexts/customer/cust-12345/flows/onboarding-flow", nil, 1)
+	VerifyRequestCount(t, "TestContextsBulkIngestWithWireMock", "POST", "/contexts/batch/loan-application", nil, 1)
 }

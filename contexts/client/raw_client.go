@@ -47,6 +47,13 @@ func (r *RawClient) Get(
 		request.Slug,
 		request.Instance,
 	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
@@ -270,55 +277,6 @@ func (r *RawClient) GetPending(
 	}, nil
 }
 
-func (r *RawClient) Solve(
-	ctx context.Context,
-	request *sdk.SolveContextsRequest,
-	opts ...option.RequestOption,
-) (*core.Response[*sdk.SolveContextRuleResponse], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		r.baseURL,
-		"https%3A%2F%2Frulebricks.com/api/v1",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/%v/%v/solve/%v",
-		request.Slug,
-		request.Instance,
-		request.RuleSlug,
-	)
-	headers := internal.MergeHeaders(
-		r.options.ToHeader(),
-		options.ToHeader(),
-	)
-	headers.Add("Content-Type", "application/json")
-	var response *sdk.SolveContextRuleResponse
-	raw, err := r.caller.Call(
-		ctx,
-		&internal.CallParams{
-			URL:             endpointURL,
-			Method:          http.MethodPost,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Request:         request,
-			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &core.Response[*sdk.SolveContextRuleResponse]{
-		StatusCode: raw.StatusCode,
-		Header:     raw.Header,
-		Body:       response,
-	}, nil
-}
-
 func (r *RawClient) Cascade(
 	ctx context.Context,
 	request *sdk.CascadeContextsRequest,
@@ -367,11 +325,11 @@ func (r *RawClient) Cascade(
 	}, nil
 }
 
-func (r *RawClient) Execute(
+func (r *RawClient) BulkIngest(
 	ctx context.Context,
-	request *sdk.ExecuteContextsRequest,
+	request *sdk.BulkIngestContextsRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*sdk.SolveContextFlowResponse], error) {
+) (*core.Response[*sdk.ContextBatchResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -379,17 +337,22 @@ func (r *RawClient) Execute(
 		"https%3A%2F%2Frulebricks.com/api/v1",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/%v/%v/flows/%v",
+		baseURL+"/contexts/batch/%v",
 		request.Slug,
-		request.Instance,
-		request.FlowSlug,
 	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *sdk.SolveContextFlowResponse
+	var response *sdk.ContextBatchResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -409,7 +372,7 @@ func (r *RawClient) Execute(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*sdk.SolveContextFlowResponse]{
+	return &core.Response[*sdk.ContextBatchResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

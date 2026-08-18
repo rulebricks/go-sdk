@@ -15,7 +15,7 @@ var (
 )
 
 type DeleteValuesRequest struct {
-	// ID of the dynamic value to delete
+	// ID of the vocabulary value to delete
 	ID string `json:"-" url:"id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -37,15 +37,33 @@ func (d *DeleteValuesRequest) SetID(id string) {
 }
 
 var (
-	listValuesRequestFieldName    = big.NewInt(1 << 0)
-	listValuesRequestFieldInclude = big.NewInt(1 << 1)
+	listValuesRequestFieldName      = big.NewInt(1 << 0)
+	listValuesRequestFieldPrefix    = big.NewInt(1 << 1)
+	listValuesRequestFieldType      = big.NewInt(1 << 2)
+	listValuesRequestFieldLimit     = big.NewInt(1 << 3)
+	listValuesRequestFieldCursor    = big.NewInt(1 << 4)
+	listValuesRequestFieldUserGroup = big.NewInt(1 << 5)
+	listValuesRequestFieldInclude   = big.NewInt(1 << 6)
+	listValuesRequestFieldResolve   = big.NewInt(1 << 7)
 )
 
 type ListValuesRequest struct {
-	// Query all dynamic values containing a specific name
+	// Query all vocabulary values containing a specific name
 	Name *string `json:"-" url:"name,omitempty"`
+	// Only return values whose name starts with this collection prefix (e.g. 'Countries.').
+	Prefix *string `json:"-" url:"prefix,omitempty"`
+	// Only return values of this type (string, number, boolean, list, date, function).
+	Type *string `json:"-" url:"type,omitempty"`
+	// Page size (default 100, max 1000). Providing limit or cursor switches the response to the paginated { data, next_cursor } envelope.
+	Limit *int `json:"-" url:"limit,omitempty"`
+	// Opaque pagination cursor from a previous page's next_cursor.
+	Cursor *string `json:"-" url:"cursor,omitempty"`
+	// Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+	UserGroup *string `json:"-" url:"user_group,omitempty"`
 	// Comma-separated list of additional data to include. Use 'usage' to include which rules reference each value.
 	Include *string `json:"-" url:"include,omitempty"`
+	// By default, payloads containing value-to-value references are returned materialized (references replaced with their resolved values). Pass 'false' to return stored payloads as-is, with { "$rb": "globalValue", "id": "..." } reference markers intact, so the reference graph round-trips.
+	Resolve *bool `json:"-" url:"resolve,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -65,11 +83,490 @@ func (l *ListValuesRequest) SetName(name *string) {
 	l.require(listValuesRequestFieldName)
 }
 
+// SetPrefix sets the Prefix field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListValuesRequest) SetPrefix(prefix *string) {
+	l.Prefix = prefix
+	l.require(listValuesRequestFieldPrefix)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListValuesRequest) SetType(type_ *string) {
+	l.Type = type_
+	l.require(listValuesRequestFieldType)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListValuesRequest) SetLimit(limit *int) {
+	l.Limit = limit
+	l.require(listValuesRequestFieldLimit)
+}
+
+// SetCursor sets the Cursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListValuesRequest) SetCursor(cursor *string) {
+	l.Cursor = cursor
+	l.require(listValuesRequestFieldCursor)
+}
+
+// SetUserGroup sets the UserGroup field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListValuesRequest) SetUserGroup(userGroup *string) {
+	l.UserGroup = userGroup
+	l.require(listValuesRequestFieldUserGroup)
+}
+
 // SetInclude sets the Include field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (l *ListValuesRequest) SetInclude(include *string) {
 	l.Include = include
 	l.require(listValuesRequestFieldInclude)
+}
+
+// SetResolve sets the Resolve field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListValuesRequest) SetResolve(resolve *bool) {
+	l.Resolve = resolve
+	l.require(listValuesRequestFieldResolve)
+}
+
+var (
+	syncValuesRequestFieldCollection        = big.NewInt(1 << 0)
+	syncValuesRequestFieldValues            = big.NewInt(1 << 1)
+	syncValuesRequestFieldSyncID            = big.NewInt(1 << 2)
+	syncValuesRequestFieldComplete          = big.NewInt(1 << 3)
+	syncValuesRequestFieldPermanentlyDelete = big.NewInt(1 << 4)
+	syncValuesRequestFieldDryRun            = big.NewInt(1 << 5)
+	syncValuesRequestFieldUserGroups        = big.NewInt(1 << 6)
+	syncValuesRequestFieldMetadataByName    = big.NewInt(1 << 7)
+)
+
+type SyncValuesRequest struct {
+	// Collection path to sync (e.g. 'Medical Codes'). Only values under this path are affected.
+	Collection string `json:"collection" url:"-"`
+	// Desired members of the collection, keyed relative to the collection path ('A123' becomes 'Medical Codes.A123'). Nested objects flatten with dot notation, and payloads may use ValueReference markers. An empty object empties the collection. May be omitted on a pure finalize call (sync_id + complete).
+	Values map[string]any `json:"values,omitempty" url:"-"`
+	// Identifier for a chunked run. Repeat the call with the same sync_id for each chunk of the desired state; nothing is removed until a call with complete: true. Abandoned runs are purged after 24 hours without removing anything.
+	SyncID *string `json:"sync_id,omitempty" url:"-"`
+	// Marks the run as complete, triggering the removal sweep. Implicitly true when sync_id is omitted (single-request syncs), false otherwise.
+	Complete *bool `json:"complete,omitempty" url:"-"`
+	// Hard-delete removed values instead of archiving them. Removals still referenced by a rule, flow, or surviving value are archived instead and reported in 'blocked'. Self-hosted deployments retain tombstones regardless.
+	PermanentlyDelete *bool `json:"permanently_delete,omitempty" url:"-"`
+	// Compute and return the full diff without writing anything. Only supported for single-request syncs (omit sync_id).
+	DryRun *bool `json:"dry_run,omitempty" url:"-"`
+	// Optional array of user group names to assign to written values, matching POST /values.
+	UserGroups []string `json:"user_groups,omitempty" url:"-"`
+	// Optional metadata keyed by FULL value name (including the collection prefix).
+	MetadataByName map[string]map[string]any `json:"metadata_by_name,omitempty" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (s *SyncValuesRequest) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetCollection sets the Collection field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesRequest) SetCollection(collection string) {
+	s.Collection = collection
+	s.require(syncValuesRequestFieldCollection)
+}
+
+// SetValues sets the Values field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesRequest) SetValues(values map[string]any) {
+	s.Values = values
+	s.require(syncValuesRequestFieldValues)
+}
+
+// SetSyncID sets the SyncID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesRequest) SetSyncID(syncID *string) {
+	s.SyncID = syncID
+	s.require(syncValuesRequestFieldSyncID)
+}
+
+// SetComplete sets the Complete field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesRequest) SetComplete(complete *bool) {
+	s.Complete = complete
+	s.require(syncValuesRequestFieldComplete)
+}
+
+// SetPermanentlyDelete sets the PermanentlyDelete field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesRequest) SetPermanentlyDelete(permanentlyDelete *bool) {
+	s.PermanentlyDelete = permanentlyDelete
+	s.require(syncValuesRequestFieldPermanentlyDelete)
+}
+
+// SetDryRun sets the DryRun field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesRequest) SetDryRun(dryRun *bool) {
+	s.DryRun = dryRun
+	s.require(syncValuesRequestFieldDryRun)
+}
+
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesRequest) SetUserGroups(userGroups []string) {
+	s.UserGroups = userGroups
+	s.require(syncValuesRequestFieldUserGroups)
+}
+
+// SetMetadataByName sets the MetadataByName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesRequest) SetMetadataByName(metadataByName map[string]map[string]any) {
+	s.MetadataByName = metadataByName
+	s.require(syncValuesRequestFieldMetadataByName)
+}
+
+func (s *SyncValuesRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler SyncValuesRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*s = SyncValuesRequest(body)
+	return nil
+}
+
+func (s *SyncValuesRequest) MarshalJSON() ([]byte, error) {
+	type embed SyncValuesRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+// Result of deleting a vocabulary value, including value-to-value reference effects.
+var (
+	deleteValueResponseFieldMessage           = big.NewInt(1 << 0)
+	deleteValueResponseFieldCascadeDeleted    = big.NewInt(1 << 1)
+	deleteValueResponseFieldUpdatedListValues = big.NewInt(1 << 2)
+)
+
+type DeleteValueResponse struct {
+	// Human-readable confirmation.
+	Message *string `json:"message,omitempty" url:"message,omitempty"`
+	// Values that were deleted with the target because their entire payload referenced it.
+	CascadeDeleted []*DeleteValueResponseCascadeDeletedItem `json:"cascade_deleted,omitempty" url:"cascade_deleted,omitempty"`
+	// List values that lost item(s) referencing the deleted value but were otherwise kept.
+	UpdatedListValues []*DeleteValueResponseUpdatedListValuesItem `json:"updated_list_values,omitempty" url:"updated_list_values,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeleteValueResponse) GetMessage() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Message
+}
+
+func (d *DeleteValueResponse) GetCascadeDeleted() []*DeleteValueResponseCascadeDeletedItem {
+	if d == nil {
+		return nil
+	}
+	return d.CascadeDeleted
+}
+
+func (d *DeleteValueResponse) GetUpdatedListValues() []*DeleteValueResponseUpdatedListValuesItem {
+	if d == nil {
+		return nil
+	}
+	return d.UpdatedListValues
+}
+
+func (d *DeleteValueResponse) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeleteValueResponse) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteValueResponse) SetMessage(message *string) {
+	d.Message = message
+	d.require(deleteValueResponseFieldMessage)
+}
+
+// SetCascadeDeleted sets the CascadeDeleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteValueResponse) SetCascadeDeleted(cascadeDeleted []*DeleteValueResponseCascadeDeletedItem) {
+	d.CascadeDeleted = cascadeDeleted
+	d.require(deleteValueResponseFieldCascadeDeleted)
+}
+
+// SetUpdatedListValues sets the UpdatedListValues field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteValueResponse) SetUpdatedListValues(updatedListValues []*DeleteValueResponseUpdatedListValuesItem) {
+	d.UpdatedListValues = updatedListValues
+	d.require(deleteValueResponseFieldUpdatedListValues)
+}
+
+func (d *DeleteValueResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteValueResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeleteValueResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeleteValueResponse) MarshalJSON() ([]byte, error) {
+	type embed DeleteValueResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeleteValueResponse) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+var (
+	deleteValueResponseCascadeDeletedItemFieldID   = big.NewInt(1 << 0)
+	deleteValueResponseCascadeDeletedItemFieldName = big.NewInt(1 << 1)
+)
+
+type DeleteValueResponseCascadeDeletedItem struct {
+	ID   *string `json:"id,omitempty" url:"id,omitempty"`
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeleteValueResponseCascadeDeletedItem) GetID() *string {
+	if d == nil {
+		return nil
+	}
+	return d.ID
+}
+
+func (d *DeleteValueResponseCascadeDeletedItem) GetName() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Name
+}
+
+func (d *DeleteValueResponseCascadeDeletedItem) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeleteValueResponseCascadeDeletedItem) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteValueResponseCascadeDeletedItem) SetID(id *string) {
+	d.ID = id
+	d.require(deleteValueResponseCascadeDeletedItemFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteValueResponseCascadeDeletedItem) SetName(name *string) {
+	d.Name = name
+	d.require(deleteValueResponseCascadeDeletedItemFieldName)
+}
+
+func (d *DeleteValueResponseCascadeDeletedItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteValueResponseCascadeDeletedItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeleteValueResponseCascadeDeletedItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeleteValueResponseCascadeDeletedItem) MarshalJSON() ([]byte, error) {
+	type embed DeleteValueResponseCascadeDeletedItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeleteValueResponseCascadeDeletedItem) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+var (
+	deleteValueResponseUpdatedListValuesItemFieldID   = big.NewInt(1 << 0)
+	deleteValueResponseUpdatedListValuesItemFieldName = big.NewInt(1 << 1)
+)
+
+type DeleteValueResponseUpdatedListValuesItem struct {
+	ID   *string `json:"id,omitempty" url:"id,omitempty"`
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeleteValueResponseUpdatedListValuesItem) GetID() *string {
+	if d == nil {
+		return nil
+	}
+	return d.ID
+}
+
+func (d *DeleteValueResponseUpdatedListValuesItem) GetName() *string {
+	if d == nil {
+		return nil
+	}
+	return d.Name
+}
+
+func (d *DeleteValueResponseUpdatedListValuesItem) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeleteValueResponseUpdatedListValuesItem) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteValueResponseUpdatedListValuesItem) SetID(id *string) {
+	d.ID = id
+	d.require(deleteValueResponseUpdatedListValuesItemFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeleteValueResponseUpdatedListValuesItem) SetName(name *string) {
+	d.Name = name
+	d.require(deleteValueResponseUpdatedListValuesItemFieldName)
+}
+
+func (d *DeleteValueResponseUpdatedListValuesItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteValueResponseUpdatedListValuesItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeleteValueResponseUpdatedListValuesItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeleteValueResponseUpdatedListValuesItem) MarshalJSON() ([]byte, error) {
+	type embed DeleteValueResponseUpdatedListValuesItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeleteValueResponseUpdatedListValuesItem) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
 }
 
 var (
@@ -79,21 +576,24 @@ var (
 	dynamicValueFieldValue      = big.NewInt(1 << 3)
 	dynamicValueFieldUsages     = big.NewInt(1 << 4)
 	dynamicValueFieldUserGroups = big.NewInt(1 << 5)
+	dynamicValueFieldMetadata   = big.NewInt(1 << 6)
 )
 
 type DynamicValue struct {
-	// Unique identifier for the dynamic value.
+	// Unique identifier for the vocabulary value.
 	ID string `json:"id" url:"id"`
-	// Name of the dynamic value (may include dot notation for nested properties).
+	// Name of the vocabulary value (may include dot notation for nested properties).
 	Name string `json:"name" url:"name"`
 	// Type identifier for the value (e.g., 'string', 'number', 'boolean', 'list', 'function', etc.)
 	Type string `json:"type" url:"type"`
-	// The actual value - can be any valid JSON type
+	// The actual value - can be any valid JSON type. Materialized by default when the payload contains value-to-value references; with resolve=false the stored payload is returned as-is, with ValueReference markers intact.
 	Value *DynamicValueValue `json:"value,omitempty" url:"value,omitempty"`
-	// Rules that use this dynamic value (only included when 'include=usage' parameter is used).
+	// Rules that use this vocabulary value (only included when 'include=usage' parameter is used).
 	Usages []*RuleUsage `json:"usages,omitempty" url:"usages,omitempty"`
 	// User groups assigned to this value.
 	UserGroups []string `json:"user_groups,omitempty" url:"user_groups,omitempty"`
+	// Arbitrary metadata attached to this value (set via metadata_by_name on writes). System-managed values carry provenance here (e.g. the object that generated them).
+	Metadata map[string]any `json:"metadata,omitempty" url:"metadata,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -142,6 +642,13 @@ func (d *DynamicValue) GetUserGroups() []string {
 		return nil
 	}
 	return d.UserGroups
+}
+
+func (d *DynamicValue) GetMetadata() map[string]any {
+	if d == nil {
+		return nil
+	}
+	return d.Metadata
 }
 
 func (d *DynamicValue) GetExtraProperties() map[string]interface{} {
@@ -200,6 +707,13 @@ func (d *DynamicValue) SetUserGroups(userGroups []string) {
 	d.require(dynamicValueFieldUserGroups)
 }
 
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DynamicValue) SetMetadata(metadata map[string]any) {
+	d.Metadata = metadata
+	d.require(dynamicValueFieldMetadata)
+}
+
 func (d *DynamicValue) UnmarshalJSON(data []byte) error {
 	type unmarshaler DynamicValue
 	var value unmarshaler
@@ -244,7 +758,143 @@ func (d *DynamicValue) String() string {
 
 type DynamicValueListResponse = []*DynamicValue
 
-// The actual value - can be any valid JSON type
+// Paginated values envelope, returned when 'limit' or 'cursor' is provided. Ordered by name.
+var (
+	dynamicValuePageFieldData            = big.NewInt(1 << 0)
+	dynamicValuePageFieldNextCursor      = big.NewInt(1 << 1)
+	dynamicValuePageFieldTotal           = big.NewInt(1 << 2)
+	dynamicValuePageFieldTotalIsEstimate = big.NewInt(1 << 3)
+)
+
+type DynamicValuePage struct {
+	Data []*DynamicValue `json:"data" url:"data"`
+	// Cursor for the next page, or null when this is the last page.
+	NextCursor *string `json:"next_cursor,omitempty" url:"next_cursor,omitempty"`
+	// Total number of matching values. Only included on the first page (no cursor).
+	Total *int `json:"total,omitempty" url:"total,omitempty"`
+	// Present and true when 'total' is a planner estimate rather than an exact count (large catalogs).
+	TotalIsEstimate *bool `json:"total_is_estimate,omitempty" url:"total_is_estimate,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DynamicValuePage) GetData() []*DynamicValue {
+	if d == nil {
+		return nil
+	}
+	return d.Data
+}
+
+func (d *DynamicValuePage) GetNextCursor() *string {
+	if d == nil {
+		return nil
+	}
+	return d.NextCursor
+}
+
+func (d *DynamicValuePage) GetTotal() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Total
+}
+
+func (d *DynamicValuePage) GetTotalIsEstimate() *bool {
+	if d == nil {
+		return nil
+	}
+	return d.TotalIsEstimate
+}
+
+func (d *DynamicValuePage) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DynamicValuePage) require(field *big.Int) {
+	if d.explicitFields == nil {
+		d.explicitFields = big.NewInt(0)
+	}
+	d.explicitFields.Or(d.explicitFields, field)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DynamicValuePage) SetData(data []*DynamicValue) {
+	d.Data = data
+	d.require(dynamicValuePageFieldData)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DynamicValuePage) SetNextCursor(nextCursor *string) {
+	d.NextCursor = nextCursor
+	d.require(dynamicValuePageFieldNextCursor)
+}
+
+// SetTotal sets the Total field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DynamicValuePage) SetTotal(total *int) {
+	d.Total = total
+	d.require(dynamicValuePageFieldTotal)
+}
+
+// SetTotalIsEstimate sets the TotalIsEstimate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DynamicValuePage) SetTotalIsEstimate(totalIsEstimate *bool) {
+	d.TotalIsEstimate = totalIsEstimate
+	d.require(dynamicValuePageFieldTotalIsEstimate)
+}
+
+func (d *DynamicValuePage) UnmarshalJSON(data []byte) error {
+	type unmarshaler DynamicValuePage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DynamicValuePage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DynamicValuePage) MarshalJSON() ([]byte, error) {
+	type embed DynamicValuePage
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DynamicValuePage) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+// The actual value - can be any valid JSON type. Materialized by default when the payload contains value-to-value references; with resolve=false the stored payload is returned as-is, with ValueReference markers intact.
 type DynamicValueValue struct {
 	String           string
 	Double           float64
@@ -548,6 +1198,789 @@ func (r *RuleUsage) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// Result of a sync call. For dry runs, counts describe what would happen.
+var (
+	syncValuesResponseFieldCollection       = big.NewInt(1 << 0)
+	syncValuesResponseFieldSyncID           = big.NewInt(1 << 1)
+	syncValuesResponseFieldAlreadyCompleted = big.NewInt(1 << 2)
+	syncValuesResponseFieldDryRun           = big.NewInt(1 << 3)
+	syncValuesResponseFieldSwept            = big.NewInt(1 << 4)
+	syncValuesResponseFieldCreated          = big.NewInt(1 << 5)
+	syncValuesResponseFieldUpdated          = big.NewInt(1 << 6)
+	syncValuesResponseFieldUnchanged        = big.NewInt(1 << 7)
+	syncValuesResponseFieldProcessed        = big.NewInt(1 << 8)
+	syncValuesResponseFieldArchived         = big.NewInt(1 << 9)
+	syncValuesResponseFieldDeleted          = big.NewInt(1 << 10)
+	syncValuesResponseFieldBlocked          = big.NewInt(1 << 11)
+	syncValuesResponseFieldErrors           = big.NewInt(1 << 12)
+)
+
+type SyncValuesResponse struct {
+	Collection *string `json:"collection,omitempty" url:"collection,omitempty"`
+	// Echoed for chunked runs.
+	SyncID *string `json:"sync_id,omitempty" url:"sync_id,omitempty"`
+	// Present (true) when a finalize call was retried after the run already completed; the body replays the recorded result and no second sweep ran.
+	AlreadyCompleted *bool `json:"already_completed,omitempty" url:"already_completed,omitempty"`
+	DryRun           *bool `json:"dry_run,omitempty" url:"dry_run,omitempty"`
+	// Whether the removal sweep ran (single-request syncs and completing calls of chunked runs).
+	Swept *bool `json:"swept,omitempty" url:"swept,omitempty"`
+	// Values created by this call.
+	Created *int `json:"created,omitempty" url:"created,omitempty"`
+	// Existing values whose content changed.
+	Updated *int `json:"updated,omitempty" url:"updated,omitempty"`
+	// Values in the payload that already matched (no write, no history entry).
+	Unchanged *int `json:"unchanged,omitempty" url:"unchanged,omitempty"`
+	// Total values in this call's payload.
+	Processed *int `json:"processed,omitempty" url:"processed,omitempty"`
+	// Values under the collection that were archived because the desired state no longer contains them (includes blocked hard-deletes).
+	Archived *int `json:"archived,omitempty" url:"archived,omitempty"`
+	// Values permanently deleted (permanently_delete: true only).
+	Deleted *int `json:"deleted,omitempty" url:"deleted,omitempty"`
+	// Hard-deletes that were archived instead because the value is still referenced. Capped at 200 entries.
+	Blocked []*SyncValuesResponseBlockedItem `json:"blocked,omitempty" url:"blocked,omitempty"`
+	// Rows the sync refused to touch (e.g. values managed by a workspace object). Capped at 200 entries.
+	Errors []*SyncValuesResponseErrorsItem `json:"errors,omitempty" url:"errors,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SyncValuesResponse) GetCollection() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Collection
+}
+
+func (s *SyncValuesResponse) GetSyncID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.SyncID
+}
+
+func (s *SyncValuesResponse) GetAlreadyCompleted() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.AlreadyCompleted
+}
+
+func (s *SyncValuesResponse) GetDryRun() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.DryRun
+}
+
+func (s *SyncValuesResponse) GetSwept() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.Swept
+}
+
+func (s *SyncValuesResponse) GetCreated() *int {
+	if s == nil {
+		return nil
+	}
+	return s.Created
+}
+
+func (s *SyncValuesResponse) GetUpdated() *int {
+	if s == nil {
+		return nil
+	}
+	return s.Updated
+}
+
+func (s *SyncValuesResponse) GetUnchanged() *int {
+	if s == nil {
+		return nil
+	}
+	return s.Unchanged
+}
+
+func (s *SyncValuesResponse) GetProcessed() *int {
+	if s == nil {
+		return nil
+	}
+	return s.Processed
+}
+
+func (s *SyncValuesResponse) GetArchived() *int {
+	if s == nil {
+		return nil
+	}
+	return s.Archived
+}
+
+func (s *SyncValuesResponse) GetDeleted() *int {
+	if s == nil {
+		return nil
+	}
+	return s.Deleted
+}
+
+func (s *SyncValuesResponse) GetBlocked() []*SyncValuesResponseBlockedItem {
+	if s == nil {
+		return nil
+	}
+	return s.Blocked
+}
+
+func (s *SyncValuesResponse) GetErrors() []*SyncValuesResponseErrorsItem {
+	if s == nil {
+		return nil
+	}
+	return s.Errors
+}
+
+func (s *SyncValuesResponse) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SyncValuesResponse) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetCollection sets the Collection field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetCollection(collection *string) {
+	s.Collection = collection
+	s.require(syncValuesResponseFieldCollection)
+}
+
+// SetSyncID sets the SyncID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetSyncID(syncID *string) {
+	s.SyncID = syncID
+	s.require(syncValuesResponseFieldSyncID)
+}
+
+// SetAlreadyCompleted sets the AlreadyCompleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetAlreadyCompleted(alreadyCompleted *bool) {
+	s.AlreadyCompleted = alreadyCompleted
+	s.require(syncValuesResponseFieldAlreadyCompleted)
+}
+
+// SetDryRun sets the DryRun field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetDryRun(dryRun *bool) {
+	s.DryRun = dryRun
+	s.require(syncValuesResponseFieldDryRun)
+}
+
+// SetSwept sets the Swept field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetSwept(swept *bool) {
+	s.Swept = swept
+	s.require(syncValuesResponseFieldSwept)
+}
+
+// SetCreated sets the Created field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetCreated(created *int) {
+	s.Created = created
+	s.require(syncValuesResponseFieldCreated)
+}
+
+// SetUpdated sets the Updated field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetUpdated(updated *int) {
+	s.Updated = updated
+	s.require(syncValuesResponseFieldUpdated)
+}
+
+// SetUnchanged sets the Unchanged field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetUnchanged(unchanged *int) {
+	s.Unchanged = unchanged
+	s.require(syncValuesResponseFieldUnchanged)
+}
+
+// SetProcessed sets the Processed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetProcessed(processed *int) {
+	s.Processed = processed
+	s.require(syncValuesResponseFieldProcessed)
+}
+
+// SetArchived sets the Archived field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetArchived(archived *int) {
+	s.Archived = archived
+	s.require(syncValuesResponseFieldArchived)
+}
+
+// SetDeleted sets the Deleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetDeleted(deleted *int) {
+	s.Deleted = deleted
+	s.require(syncValuesResponseFieldDeleted)
+}
+
+// SetBlocked sets the Blocked field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetBlocked(blocked []*SyncValuesResponseBlockedItem) {
+	s.Blocked = blocked
+	s.require(syncValuesResponseFieldBlocked)
+}
+
+// SetErrors sets the Errors field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponse) SetErrors(errors []*SyncValuesResponseErrorsItem) {
+	s.Errors = errors
+	s.require(syncValuesResponseFieldErrors)
+}
+
+func (s *SyncValuesResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler SyncValuesResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SyncValuesResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SyncValuesResponse) MarshalJSON() ([]byte, error) {
+	type embed SyncValuesResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SyncValuesResponse) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	syncValuesResponseBlockedItemFieldID     = big.NewInt(1 << 0)
+	syncValuesResponseBlockedItemFieldName   = big.NewInt(1 << 1)
+	syncValuesResponseBlockedItemFieldReason = big.NewInt(1 << 2)
+	syncValuesResponseBlockedItemFieldAction = big.NewInt(1 << 3)
+)
+
+type SyncValuesResponseBlockedItem struct {
+	ID     *string                              `json:"id,omitempty" url:"id,omitempty"`
+	Name   *string                              `json:"name,omitempty" url:"name,omitempty"`
+	Reason *string                              `json:"reason,omitempty" url:"reason,omitempty"`
+	Action *SyncValuesResponseBlockedItemAction `json:"action,omitempty" url:"action,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SyncValuesResponseBlockedItem) GetID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.ID
+}
+
+func (s *SyncValuesResponseBlockedItem) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *SyncValuesResponseBlockedItem) GetReason() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Reason
+}
+
+func (s *SyncValuesResponseBlockedItem) GetAction() *SyncValuesResponseBlockedItemAction {
+	if s == nil {
+		return nil
+	}
+	return s.Action
+}
+
+func (s *SyncValuesResponseBlockedItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SyncValuesResponseBlockedItem) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponseBlockedItem) SetID(id *string) {
+	s.ID = id
+	s.require(syncValuesResponseBlockedItemFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponseBlockedItem) SetName(name *string) {
+	s.Name = name
+	s.require(syncValuesResponseBlockedItemFieldName)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponseBlockedItem) SetReason(reason *string) {
+	s.Reason = reason
+	s.require(syncValuesResponseBlockedItemFieldReason)
+}
+
+// SetAction sets the Action field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponseBlockedItem) SetAction(action *SyncValuesResponseBlockedItemAction) {
+	s.Action = action
+	s.require(syncValuesResponseBlockedItemFieldAction)
+}
+
+func (s *SyncValuesResponseBlockedItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SyncValuesResponseBlockedItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SyncValuesResponseBlockedItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SyncValuesResponseBlockedItem) MarshalJSON() ([]byte, error) {
+	type embed SyncValuesResponseBlockedItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SyncValuesResponseBlockedItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SyncValuesResponseBlockedItemAction string
+
+const (
+	SyncValuesResponseBlockedItemActionArchived SyncValuesResponseBlockedItemAction = "archived"
+)
+
+func NewSyncValuesResponseBlockedItemActionFromString(s string) (SyncValuesResponseBlockedItemAction, error) {
+	switch s {
+	case "archived":
+		return SyncValuesResponseBlockedItemActionArchived, nil
+	}
+	var t SyncValuesResponseBlockedItemAction
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SyncValuesResponseBlockedItemAction) Ptr() *SyncValuesResponseBlockedItemAction {
+	return &s
+}
+
+var (
+	syncValuesResponseErrorsItemFieldName  = big.NewInt(1 << 0)
+	syncValuesResponseErrorsItemFieldError = big.NewInt(1 << 1)
+)
+
+type SyncValuesResponseErrorsItem struct {
+	Name  *string `json:"name,omitempty" url:"name,omitempty"`
+	Error *string `json:"error,omitempty" url:"error,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SyncValuesResponseErrorsItem) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *SyncValuesResponseErrorsItem) GetError() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Error
+}
+
+func (s *SyncValuesResponseErrorsItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SyncValuesResponseErrorsItem) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponseErrorsItem) SetName(name *string) {
+	s.Name = name
+	s.require(syncValuesResponseErrorsItemFieldName)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SyncValuesResponseErrorsItem) SetError(error_ *string) {
+	s.Error = error_
+	s.require(syncValuesResponseErrorsItemFieldError)
+}
+
+func (s *SyncValuesResponseErrorsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SyncValuesResponseErrorsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SyncValuesResponseErrorsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SyncValuesResponseErrorsItem) MarshalJSON() ([]byte, error) {
+	type embed SyncValuesResponseErrorsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SyncValuesResponseErrorsItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// Summary counts returned by value writes when the workspace catalog is too large to echo back in full.
+var (
+	updateValuesSummaryResponseFieldCreated   = big.NewInt(1 << 0)
+	updateValuesSummaryResponseFieldUpdated   = big.NewInt(1 << 1)
+	updateValuesSummaryResponseFieldProcessed = big.NewInt(1 << 2)
+)
+
+type UpdateValuesSummaryResponse struct {
+	// Number of new values created in this call.
+	Created *int `json:"created,omitempty" url:"created,omitempty"`
+	// Number of existing values updated in this call.
+	Updated *int `json:"updated,omitempty" url:"updated,omitempty"`
+	// Total number of values processed in this call.
+	Processed *int `json:"processed,omitempty" url:"processed,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UpdateValuesSummaryResponse) GetCreated() *int {
+	if u == nil {
+		return nil
+	}
+	return u.Created
+}
+
+func (u *UpdateValuesSummaryResponse) GetUpdated() *int {
+	if u == nil {
+		return nil
+	}
+	return u.Updated
+}
+
+func (u *UpdateValuesSummaryResponse) GetProcessed() *int {
+	if u == nil {
+		return nil
+	}
+	return u.Processed
+}
+
+func (u *UpdateValuesSummaryResponse) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
+	return u.extraProperties
+}
+
+func (u *UpdateValuesSummaryResponse) require(field *big.Int) {
+	if u.explicitFields == nil {
+		u.explicitFields = big.NewInt(0)
+	}
+	u.explicitFields.Or(u.explicitFields, field)
+}
+
+// SetCreated sets the Created field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateValuesSummaryResponse) SetCreated(created *int) {
+	u.Created = created
+	u.require(updateValuesSummaryResponseFieldCreated)
+}
+
+// SetUpdated sets the Updated field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateValuesSummaryResponse) SetUpdated(updated *int) {
+	u.Updated = updated
+	u.require(updateValuesSummaryResponseFieldUpdated)
+}
+
+// SetProcessed sets the Processed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateValuesSummaryResponse) SetProcessed(processed *int) {
+	u.Processed = processed
+	u.require(updateValuesSummaryResponseFieldProcessed)
+}
+
+func (u *UpdateValuesSummaryResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpdateValuesSummaryResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UpdateValuesSummaryResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UpdateValuesSummaryResponse) MarshalJSON() ([]byte, error) {
+	type embed UpdateValuesSummaryResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (u *UpdateValuesSummaryResponse) String() string {
+	if u == nil {
+		return "<nil>"
+	}
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type ListValuesResponse struct {
+	DynamicValueListResponse DynamicValueListResponse
+	DynamicValuePage         *DynamicValuePage
+
+	typ string
+}
+
+func (l *ListValuesResponse) GetDynamicValueListResponse() DynamicValueListResponse {
+	if l == nil {
+		return nil
+	}
+	return l.DynamicValueListResponse
+}
+
+func (l *ListValuesResponse) GetDynamicValuePage() *DynamicValuePage {
+	if l == nil {
+		return nil
+	}
+	return l.DynamicValuePage
+}
+
+func (l *ListValuesResponse) UnmarshalJSON(data []byte) error {
+	var valueDynamicValueListResponse DynamicValueListResponse
+	if err := json.Unmarshal(data, &valueDynamicValueListResponse); err == nil {
+		l.typ = "DynamicValueListResponse"
+		l.DynamicValueListResponse = valueDynamicValueListResponse
+		return nil
+	}
+	valueDynamicValuePage := new(DynamicValuePage)
+	if err := json.Unmarshal(data, &valueDynamicValuePage); err == nil {
+		l.typ = "DynamicValuePage"
+		l.DynamicValuePage = valueDynamicValuePage
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, l)
+}
+
+func (l ListValuesResponse) MarshalJSON() ([]byte, error) {
+	if l.typ == "DynamicValueListResponse" || l.DynamicValueListResponse != nil {
+		return json.Marshal(l.DynamicValueListResponse)
+	}
+	if l.typ == "DynamicValuePage" || l.DynamicValuePage != nil {
+		return json.Marshal(l.DynamicValuePage)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", l)
+}
+
+type ListValuesResponseVisitor interface {
+	VisitDynamicValueListResponse(DynamicValueListResponse) error
+	VisitDynamicValuePage(*DynamicValuePage) error
+}
+
+func (l *ListValuesResponse) Accept(visitor ListValuesResponseVisitor) error {
+	if l.typ == "DynamicValueListResponse" || l.DynamicValueListResponse != nil {
+		return visitor.VisitDynamicValueListResponse(l.DynamicValueListResponse)
+	}
+	if l.typ == "DynamicValuePage" || l.DynamicValuePage != nil {
+		return visitor.VisitDynamicValuePage(l.DynamicValuePage)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", l)
+}
+
+type UpdateValuesResponse struct {
+	DynamicValueListResponse    DynamicValueListResponse
+	UpdateValuesSummaryResponse *UpdateValuesSummaryResponse
+
+	typ string
+}
+
+func (u *UpdateValuesResponse) GetDynamicValueListResponse() DynamicValueListResponse {
+	if u == nil {
+		return nil
+	}
+	return u.DynamicValueListResponse
+}
+
+func (u *UpdateValuesResponse) GetUpdateValuesSummaryResponse() *UpdateValuesSummaryResponse {
+	if u == nil {
+		return nil
+	}
+	return u.UpdateValuesSummaryResponse
+}
+
+func (u *UpdateValuesResponse) UnmarshalJSON(data []byte) error {
+	var valueDynamicValueListResponse DynamicValueListResponse
+	if err := json.Unmarshal(data, &valueDynamicValueListResponse); err == nil {
+		u.typ = "DynamicValueListResponse"
+		u.DynamicValueListResponse = valueDynamicValueListResponse
+		return nil
+	}
+	valueUpdateValuesSummaryResponse := new(UpdateValuesSummaryResponse)
+	if err := json.Unmarshal(data, &valueUpdateValuesSummaryResponse); err == nil {
+		u.typ = "UpdateValuesSummaryResponse"
+		u.UpdateValuesSummaryResponse = valueUpdateValuesSummaryResponse
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpdateValuesResponse) MarshalJSON() ([]byte, error) {
+	if u.typ == "DynamicValueListResponse" || u.DynamicValueListResponse != nil {
+		return json.Marshal(u.DynamicValueListResponse)
+	}
+	if u.typ == "UpdateValuesSummaryResponse" || u.UpdateValuesSummaryResponse != nil {
+		return json.Marshal(u.UpdateValuesSummaryResponse)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpdateValuesResponseVisitor interface {
+	VisitDynamicValueListResponse(DynamicValueListResponse) error
+	VisitUpdateValuesSummaryResponse(*UpdateValuesSummaryResponse) error
+}
+
+func (u *UpdateValuesResponse) Accept(visitor UpdateValuesResponseVisitor) error {
+	if u.typ == "DynamicValueListResponse" || u.DynamicValueListResponse != nil {
+		return visitor.VisitDynamicValueListResponse(u.DynamicValueListResponse)
+	}
+	if u.typ == "UpdateValuesSummaryResponse" || u.UpdateValuesSummaryResponse != nil {
+		return visitor.VisitUpdateValuesSummaryResponse(u.UpdateValuesSummaryResponse)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
 var (
 	updateValuesRequestFieldValues         = big.NewInt(1 << 0)
 	updateValuesRequestFieldUserGroups     = big.NewInt(1 << 1)
@@ -555,11 +1988,11 @@ var (
 )
 
 type UpdateValuesRequest struct {
-	// A dictionary of keys and values to update or add. Supports both flat key-value pairs and nested objects. Nested objects will be automatically flattened using dot notation with readable key names (e.g., 'user.contact_info.email' becomes 'User.Contact Info.Email').
+	// A dictionary of keys and values to update or add. Supports both flat key-value pairs and nested objects. Nested objects are automatically flattened using dot notation with keys preserved exactly as sent (e.g. 'user.contact_info.email' stays 'user.contact_info.email'). Individual payloads may be value-to-value references (see ValueReference): a scalar payload may be a single { "$ref": "<value name>" } marker, and list payloads may mix literal items with reference markers.
 	Values map[string]any `json:"values" url:"-"`
 	// Optional array of user group names or IDs. If omitted and user belongs to user groups, values will be assigned to all user's user groups. Required if values should be restricted to specific user groups.
 	UserGroups []string `json:"user_groups,omitempty" url:"-"`
-	// Optional metadata keyed by dynamic value name. This is the canonical snake_case field; legacy clients may still send `metadataByName`.
+	// Optional metadata keyed by vocabulary value name. This is the canonical snake_case field; legacy clients may still send `metadataByName`. System-owned keys (managedBy, source, lockedReason, previousTokens, and archive/tombstone fields) are stripped from user payloads - managed provenance and archive state cannot be forged.
 	MetadataByName map[string]map[string]any `json:"metadata_by_name,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

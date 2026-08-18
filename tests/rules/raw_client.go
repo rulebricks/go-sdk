@@ -169,3 +169,50 @@ func (r *RawClient) Delete(
 		Body:       response,
 	}, nil
 }
+
+func (r *RawClient) Run(
+	ctx context.Context,
+	request *tests.RunRulesRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*sdk.RunTestsResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https%3A%2F%2Frulebricks.com/api/v1",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/admin/rules/%v/tests/run",
+		request.Slug,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	headers.Add("Content-Type", "application/json")
+	var response *sdk.RunTestsResponse
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(tests.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*sdk.RunTestsResponse]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}

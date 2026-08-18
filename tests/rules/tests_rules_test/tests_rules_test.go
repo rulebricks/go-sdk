@@ -166,3 +166,34 @@ func TestTestsRulesDeleteWithWireMock(
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestTestsRulesDeleteWithWireMock", "DELETE", "/admin/rules/slug/tests/testId", nil, 1)
 }
+
+func TestTestsRulesRunWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
+	)
+	request := &tests.RunRulesRequest{
+		Slug: "slug",
+		Body: &sdk.RunTestsRequest{
+			CriticalOnly: sdk.Bool(
+				false,
+			),
+		},
+	}
+	_, invocationErr := client.Tests.Rules.Run(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestTestsRulesRunWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestTestsRulesRunWithWireMock", "POST", "/admin/rules/slug/tests/run", nil, 1)
+}

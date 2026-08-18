@@ -20,8 +20,6 @@ var (
 	contextBaseFieldTTLSeconds           = big.NewInt(1 << 5)
 	contextBaseFieldHistoryLimit         = big.NewInt(1 << 6)
 	contextBaseFieldOnSchemaMismatch     = big.NewInt(1 << 7)
-	contextBaseFieldWebhookOnSolve       = big.NewInt(1 << 8)
-	contextBaseFieldWebhookOnExpire      = big.NewInt(1 << 9)
 )
 
 type ContextBase struct {
@@ -33,18 +31,14 @@ type ContextBase struct {
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
 	// The description of the context.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
-	// When true, bound rules and flows automatically execute when their inputs are satisfied. When false, users must manually call /solve or /flows endpoints.
+	// When true, bound rules and flows automatically execute when their inputs are satisfied. When false, callers must execute them explicitly via /contexts/{slug}/{instance}/solve/{ruleSlug} or /contexts/{slug}/{instance}/flows/{flowSlug}.
 	AutoExecuteDecisions *bool `json:"auto_execute_decisions,omitempty" url:"auto_execute_decisions,omitempty"`
 	// Time-to-live in seconds for live context instances. Instances expire after this duration.
 	TTLSeconds *int `json:"ttl_seconds,omitempty" url:"ttl_seconds,omitempty"`
 	// Maximum number of history entries to retain per field.
 	HistoryLimit *int `json:"history_limit,omitempty" url:"history_limit,omitempty"`
-	// How to handle fields that don't match the schema: 'ignore' filters them out, 'reject' returns an error.
+	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or batch item), and `store` persists them alongside declared facts.
 	OnSchemaMismatch *ContextBaseOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"on_schema_mismatch,omitempty"`
-	// Webhook URL called when a rule or flow successfully solves for a live context.
-	WebhookOnSolve *string `json:"webhook_on_solve,omitempty" url:"webhook_on_solve,omitempty"`
-	// Webhook URL called when a live context expires due to TTL.
-	WebhookOnExpire *string `json:"webhook_on_expire,omitempty" url:"webhook_on_expire,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -107,20 +101,6 @@ func (c *ContextBase) GetOnSchemaMismatch() *ContextBaseOnSchemaMismatch {
 		return nil
 	}
 	return c.OnSchemaMismatch
-}
-
-func (c *ContextBase) GetWebhookOnSolve() *string {
-	if c == nil {
-		return nil
-	}
-	return c.WebhookOnSolve
-}
-
-func (c *ContextBase) GetWebhookOnExpire() *string {
-	if c == nil {
-		return nil
-	}
-	return c.WebhookOnExpire
 }
 
 func (c *ContextBase) GetExtraProperties() map[string]interface{} {
@@ -193,20 +173,6 @@ func (c *ContextBase) SetOnSchemaMismatch(onSchemaMismatch *ContextBaseOnSchemaM
 	c.require(contextBaseFieldOnSchemaMismatch)
 }
 
-// SetWebhookOnSolve sets the WebhookOnSolve field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextBase) SetWebhookOnSolve(webhookOnSolve *string) {
-	c.WebhookOnSolve = webhookOnSolve
-	c.require(contextBaseFieldWebhookOnSolve)
-}
-
-// SetWebhookOnExpire sets the WebhookOnExpire field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextBase) SetWebhookOnExpire(webhookOnExpire *string) {
-	c.WebhookOnExpire = webhookOnExpire
-	c.require(contextBaseFieldWebhookOnExpire)
-}
-
 func (c *ContextBase) UnmarshalJSON(data []byte) error {
 	type unmarshaler ContextBase
 	var value unmarshaler
@@ -249,12 +215,13 @@ func (c *ContextBase) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// How to handle fields that don't match the schema: 'ignore' filters them out, 'reject' returns an error.
+// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or batch item), and `store` persists them alongside declared facts.
 type ContextBaseOnSchemaMismatch string
 
 const (
 	ContextBaseOnSchemaMismatchIgnore ContextBaseOnSchemaMismatch = "ignore"
 	ContextBaseOnSchemaMismatchReject ContextBaseOnSchemaMismatch = "reject"
+	ContextBaseOnSchemaMismatchStore  ContextBaseOnSchemaMismatch = "store"
 )
 
 func NewContextBaseOnSchemaMismatchFromString(s string) (ContextBaseOnSchemaMismatch, error) {
@@ -263,6 +230,8 @@ func NewContextBaseOnSchemaMismatchFromString(s string) (ContextBaseOnSchemaMism
 		return ContextBaseOnSchemaMismatchIgnore, nil
 	case "reject":
 		return ContextBaseOnSchemaMismatchReject, nil
+	case "store":
+		return ContextBaseOnSchemaMismatchStore, nil
 	}
 	var t ContextBaseOnSchemaMismatch
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -281,17 +250,15 @@ var (
 	contextDetailFieldTTLSeconds           = big.NewInt(1 << 5)
 	contextDetailFieldHistoryLimit         = big.NewInt(1 << 6)
 	contextDetailFieldOnSchemaMismatch     = big.NewInt(1 << 7)
-	contextDetailFieldWebhookOnSolve       = big.NewInt(1 << 8)
-	contextDetailFieldWebhookOnExpire      = big.NewInt(1 << 9)
-	contextDetailFieldSchema               = big.NewInt(1 << 10)
-	contextDetailFieldIdentityFact         = big.NewInt(1 << 11)
-	contextDetailFieldUserGroups           = big.NewInt(1 << 12)
-	contextDetailFieldFolder               = big.NewInt(1 << 13)
-	contextDetailFieldBoundRules           = big.NewInt(1 << 14)
-	contextDetailFieldBoundFlows           = big.NewInt(1 << 15)
-	contextDetailFieldRelationships        = big.NewInt(1 << 16)
-	contextDetailFieldCreatedAt            = big.NewInt(1 << 17)
-	contextDetailFieldUpdatedAt            = big.NewInt(1 << 18)
+	contextDetailFieldSchema               = big.NewInt(1 << 8)
+	contextDetailFieldIdentityFact         = big.NewInt(1 << 9)
+	contextDetailFieldUserGroups           = big.NewInt(1 << 10)
+	contextDetailFieldFolder               = big.NewInt(1 << 11)
+	contextDetailFieldBoundRules           = big.NewInt(1 << 12)
+	contextDetailFieldBoundFlows           = big.NewInt(1 << 13)
+	contextDetailFieldRelationships        = big.NewInt(1 << 14)
+	contextDetailFieldCreatedAt            = big.NewInt(1 << 15)
+	contextDetailFieldUpdatedAt            = big.NewInt(1 << 16)
 )
 
 type ContextDetail struct {
@@ -303,19 +270,15 @@ type ContextDetail struct {
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
 	// The description of the context.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
-	// When true, bound rules and flows automatically execute when their inputs are satisfied. When false, users must manually call /solve or /flows endpoints.
+	// When true, bound rules and flows automatically execute when their inputs are satisfied. When false, callers must execute them explicitly via /contexts/{slug}/{instance}/solve/{ruleSlug} or /contexts/{slug}/{instance}/flows/{flowSlug}.
 	AutoExecuteDecisions *bool `json:"auto_execute_decisions,omitempty" url:"auto_execute_decisions,omitempty"`
 	// Time-to-live in seconds for live context instances. Instances expire after this duration.
 	TTLSeconds *int `json:"ttl_seconds,omitempty" url:"ttl_seconds,omitempty"`
 	// Maximum number of history entries to retain per field.
 	HistoryLimit *int `json:"history_limit,omitempty" url:"history_limit,omitempty"`
-	// How to handle fields that don't match the schema: 'ignore' filters them out, 'reject' returns an error.
+	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or batch item), and `store` persists them alongside declared facts.
 	OnSchemaMismatch *ContextBaseOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"on_schema_mismatch,omitempty"`
-	// Webhook URL called when a rule or flow successfully solves for a live context.
-	WebhookOnSolve *string `json:"webhook_on_solve,omitempty" url:"webhook_on_solve,omitempty"`
-	// Webhook URL called when a live context expires due to TTL.
-	WebhookOnExpire *string        `json:"webhook_on_expire,omitempty" url:"webhook_on_expire,omitempty"`
-	Schema          *ContextSchema `json:"schema,omitempty" url:"schema,omitempty"`
+	Schema           *ContextSchema               `json:"schema,omitempty" url:"schema,omitempty"`
 	// The field key used as the unique identifier for instances.
 	IdentityFact *string `json:"identity_fact,omitempty" url:"identity_fact,omitempty"`
 	// User groups that can interact with this context.
@@ -393,20 +356,6 @@ func (c *ContextDetail) GetOnSchemaMismatch() *ContextBaseOnSchemaMismatch {
 		return nil
 	}
 	return c.OnSchemaMismatch
-}
-
-func (c *ContextDetail) GetWebhookOnSolve() *string {
-	if c == nil {
-		return nil
-	}
-	return c.WebhookOnSolve
-}
-
-func (c *ContextDetail) GetWebhookOnExpire() *string {
-	if c == nil {
-		return nil
-	}
-	return c.WebhookOnExpire
 }
 
 func (c *ContextDetail) GetSchema() *ContextSchema {
@@ -540,20 +489,6 @@ func (c *ContextDetail) SetHistoryLimit(historyLimit *int) {
 func (c *ContextDetail) SetOnSchemaMismatch(onSchemaMismatch *ContextBaseOnSchemaMismatch) {
 	c.OnSchemaMismatch = onSchemaMismatch
 	c.require(contextDetailFieldOnSchemaMismatch)
-}
-
-// SetWebhookOnSolve sets the WebhookOnSolve field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextDetail) SetWebhookOnSolve(webhookOnSolve *string) {
-	c.WebhookOnSolve = webhookOnSolve
-	c.require(contextDetailFieldWebhookOnSolve)
-}
-
-// SetWebhookOnExpire sets the WebhookOnExpire field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextDetail) SetWebhookOnExpire(webhookOnExpire *string) {
-	c.WebhookOnExpire = webhookOnExpire
-	c.require(contextDetailFieldWebhookOnExpire)
 }
 
 // SetSchema sets the Schema field and marks it as non-optional;
@@ -1280,16 +1215,15 @@ var (
 	contextListItemFieldTTLSeconds           = big.NewInt(1 << 5)
 	contextListItemFieldHistoryLimit         = big.NewInt(1 << 6)
 	contextListItemFieldOnSchemaMismatch     = big.NewInt(1 << 7)
-	contextListItemFieldWebhookOnSolve       = big.NewInt(1 << 8)
-	contextListItemFieldWebhookOnExpire      = big.NewInt(1 << 9)
-	contextListItemFieldIdentityFact         = big.NewInt(1 << 10)
-	contextListItemFieldSchema               = big.NewInt(1 << 11)
-	contextListItemFieldFolder               = big.NewInt(1 << 12)
-	contextListItemFieldBoundRulesCount      = big.NewInt(1 << 13)
-	contextListItemFieldBoundFlowsCount      = big.NewInt(1 << 14)
-	contextListItemFieldRelationshipsCount   = big.NewInt(1 << 15)
-	contextListItemFieldCreatedAt            = big.NewInt(1 << 16)
-	contextListItemFieldUpdatedAt            = big.NewInt(1 << 17)
+	contextListItemFieldIdentityFact         = big.NewInt(1 << 8)
+	contextListItemFieldSchema               = big.NewInt(1 << 9)
+	contextListItemFieldUserGroups           = big.NewInt(1 << 10)
+	contextListItemFieldFolder               = big.NewInt(1 << 11)
+	contextListItemFieldBoundRulesCount      = big.NewInt(1 << 12)
+	contextListItemFieldBoundFlowsCount      = big.NewInt(1 << 13)
+	contextListItemFieldRelationshipsCount   = big.NewInt(1 << 14)
+	contextListItemFieldCreatedAt            = big.NewInt(1 << 15)
+	contextListItemFieldUpdatedAt            = big.NewInt(1 << 16)
 )
 
 type ContextListItem struct {
@@ -1301,22 +1235,20 @@ type ContextListItem struct {
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
 	// The description of the context.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
-	// When true, bound rules and flows automatically execute when their inputs are satisfied. When false, users must manually call /solve or /flows endpoints.
+	// When true, bound rules and flows automatically execute when their inputs are satisfied. When false, callers must execute them explicitly via /contexts/{slug}/{instance}/solve/{ruleSlug} or /contexts/{slug}/{instance}/flows/{flowSlug}.
 	AutoExecuteDecisions *bool `json:"auto_execute_decisions,omitempty" url:"auto_execute_decisions,omitempty"`
 	// Time-to-live in seconds for live context instances. Instances expire after this duration.
 	TTLSeconds *int `json:"ttl_seconds,omitempty" url:"ttl_seconds,omitempty"`
 	// Maximum number of history entries to retain per field.
 	HistoryLimit *int `json:"history_limit,omitempty" url:"history_limit,omitempty"`
-	// How to handle fields that don't match the schema: 'ignore' filters them out, 'reject' returns an error.
+	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or batch item), and `store` persists them alongside declared facts.
 	OnSchemaMismatch *ContextBaseOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"on_schema_mismatch,omitempty"`
-	// Webhook URL called when a rule or flow successfully solves for a live context.
-	WebhookOnSolve *string `json:"webhook_on_solve,omitempty" url:"webhook_on_solve,omitempty"`
-	// Webhook URL called when a live context expires due to TTL.
-	WebhookOnExpire *string `json:"webhook_on_expire,omitempty" url:"webhook_on_expire,omitempty"`
 	// The field key used as the unique identifier for instances.
-	IdentityFact *string                `json:"identity_fact,omitempty" url:"identity_fact,omitempty"`
-	Schema       *ContextSchema         `json:"schema,omitempty" url:"schema,omitempty"`
-	Folder       *ContextListItemFolder `json:"folder,omitempty" url:"folder,omitempty"`
+	IdentityFact *string        `json:"identity_fact,omitempty" url:"identity_fact,omitempty"`
+	Schema       *ContextSchema `json:"schema,omitempty" url:"schema,omitempty"`
+	// The user groups this context is assigned to.
+	UserGroups []string               `json:"user_groups,omitempty" url:"user_groups,omitempty"`
+	Folder     *ContextListItemFolder `json:"folder,omitempty" url:"folder,omitempty"`
 	// Number of rules bound to this context.
 	BoundRulesCount *int `json:"bound_rules_count,omitempty" url:"bound_rules_count,omitempty"`
 	// Number of flows bound to this context.
@@ -1389,20 +1321,6 @@ func (c *ContextListItem) GetOnSchemaMismatch() *ContextBaseOnSchemaMismatch {
 	return c.OnSchemaMismatch
 }
 
-func (c *ContextListItem) GetWebhookOnSolve() *string {
-	if c == nil {
-		return nil
-	}
-	return c.WebhookOnSolve
-}
-
-func (c *ContextListItem) GetWebhookOnExpire() *string {
-	if c == nil {
-		return nil
-	}
-	return c.WebhookOnExpire
-}
-
 func (c *ContextListItem) GetIdentityFact() *string {
 	if c == nil {
 		return nil
@@ -1415,6 +1333,13 @@ func (c *ContextListItem) GetSchema() *ContextSchema {
 		return nil
 	}
 	return c.Schema
+}
+
+func (c *ContextListItem) GetUserGroups() []string {
+	if c == nil {
+		return nil
+	}
+	return c.UserGroups
 }
 
 func (c *ContextListItem) GetFolder() *ContextListItemFolder {
@@ -1529,20 +1454,6 @@ func (c *ContextListItem) SetOnSchemaMismatch(onSchemaMismatch *ContextBaseOnSch
 	c.require(contextListItemFieldOnSchemaMismatch)
 }
 
-// SetWebhookOnSolve sets the WebhookOnSolve field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextListItem) SetWebhookOnSolve(webhookOnSolve *string) {
-	c.WebhookOnSolve = webhookOnSolve
-	c.require(contextListItemFieldWebhookOnSolve)
-}
-
-// SetWebhookOnExpire sets the WebhookOnExpire field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextListItem) SetWebhookOnExpire(webhookOnExpire *string) {
-	c.WebhookOnExpire = webhookOnExpire
-	c.require(contextListItemFieldWebhookOnExpire)
-}
-
 // SetIdentityFact sets the IdentityFact field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *ContextListItem) SetIdentityFact(identityFact *string) {
@@ -1555,6 +1466,13 @@ func (c *ContextListItem) SetIdentityFact(identityFact *string) {
 func (c *ContextListItem) SetSchema(schema *ContextSchema) {
 	c.Schema = schema
 	c.require(contextListItemFieldSchema)
+}
+
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextListItem) SetUserGroups(userGroups []string) {
+	c.UserGroups = userGroups
+	c.require(contextListItemFieldUserGroups)
 }
 
 // SetFolder sets the Folder field and marks it as non-optional;
@@ -1756,22 +1674,22 @@ func (c *ContextListItemFolder) String() string {
 type ContextListResponse = []*ContextListItem
 
 var (
-	contextRelationshipBaseFieldID          = big.NewInt(1 << 0)
-	contextRelationshipBaseFieldType        = big.NewInt(1 << 1)
-	contextRelationshipBaseFieldForeignKey  = big.NewInt(1 << 2)
-	contextRelationshipBaseFieldName        = big.NewInt(1 << 3)
-	contextRelationshipBaseFieldDescription = big.NewInt(1 << 4)
-	contextRelationshipBaseFieldCreatedAt   = big.NewInt(1 << 5)
+	contextRelationshipBaseFieldID             = big.NewInt(1 << 0)
+	contextRelationshipBaseFieldRelationType   = big.NewInt(1 << 1)
+	contextRelationshipBaseFieldForeignKeyFact = big.NewInt(1 << 2)
+	contextRelationshipBaseFieldName           = big.NewInt(1 << 3)
+	contextRelationshipBaseFieldDescription    = big.NewInt(1 << 4)
+	contextRelationshipBaseFieldCreatedAt      = big.NewInt(1 << 5)
 )
 
 type ContextRelationshipBase struct {
 	// The unique identifier for the relationship.
 	ID *string `json:"id,omitempty" url:"id,omitempty"`
 	// The type of relationship.
-	Type *ContextRelationshipBaseType `json:"type,omitempty" url:"type,omitempty"`
+	RelationType *ContextRelationshipBaseRelationType `json:"relation_type,omitempty" url:"relation_type,omitempty"`
 	// The field key used as the foreign key.
-	ForeignKey *string `json:"foreign_key,omitempty" url:"foreign_key,omitempty"`
-	// Display name for the relationship.
+	ForeignKeyFact *string `json:"foreign_key_fact,omitempty" url:"foreign_key_fact,omitempty"`
+	// Runtime relationship key used by derived expressions. It is normalized to lowercase snake_case.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Description of the relationship.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
@@ -1792,18 +1710,18 @@ func (c *ContextRelationshipBase) GetID() *string {
 	return c.ID
 }
 
-func (c *ContextRelationshipBase) GetType() *ContextRelationshipBaseType {
+func (c *ContextRelationshipBase) GetRelationType() *ContextRelationshipBaseRelationType {
 	if c == nil {
 		return nil
 	}
-	return c.Type
+	return c.RelationType
 }
 
-func (c *ContextRelationshipBase) GetForeignKey() *string {
+func (c *ContextRelationshipBase) GetForeignKeyFact() *string {
 	if c == nil {
 		return nil
 	}
-	return c.ForeignKey
+	return c.ForeignKeyFact
 }
 
 func (c *ContextRelationshipBase) GetName() *string {
@@ -1848,18 +1766,18 @@ func (c *ContextRelationshipBase) SetID(id *string) {
 	c.require(contextRelationshipBaseFieldID)
 }
 
-// SetType sets the Type field and marks it as non-optional;
+// SetRelationType sets the RelationType field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextRelationshipBase) SetType(type_ *ContextRelationshipBaseType) {
-	c.Type = type_
-	c.require(contextRelationshipBaseFieldType)
+func (c *ContextRelationshipBase) SetRelationType(relationType *ContextRelationshipBaseRelationType) {
+	c.RelationType = relationType
+	c.require(contextRelationshipBaseFieldRelationType)
 }
 
-// SetForeignKey sets the ForeignKey field and marks it as non-optional;
+// SetForeignKeyFact sets the ForeignKeyFact field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextRelationshipBase) SetForeignKey(foreignKey *string) {
-	c.ForeignKey = foreignKey
-	c.require(contextRelationshipBaseFieldForeignKey)
+func (c *ContextRelationshipBase) SetForeignKeyFact(foreignKeyFact *string) {
+	c.ForeignKeyFact = foreignKeyFact
+	c.require(contextRelationshipBaseFieldForeignKeyFact)
 }
 
 // SetName sets the Name field and marks it as non-optional;
@@ -1934,49 +1852,49 @@ func (c *ContextRelationshipBase) String() string {
 }
 
 // The type of relationship.
-type ContextRelationshipBaseType string
+type ContextRelationshipBaseRelationType string
 
 const (
-	ContextRelationshipBaseTypeHasMany   ContextRelationshipBaseType = "has_many"
-	ContextRelationshipBaseTypeHasOne    ContextRelationshipBaseType = "has_one"
-	ContextRelationshipBaseTypeBelongsTo ContextRelationshipBaseType = "belongs_to"
+	ContextRelationshipBaseRelationTypeHasMany   ContextRelationshipBaseRelationType = "has_many"
+	ContextRelationshipBaseRelationTypeHasOne    ContextRelationshipBaseRelationType = "has_one"
+	ContextRelationshipBaseRelationTypeBelongsTo ContextRelationshipBaseRelationType = "belongs_to"
 )
 
-func NewContextRelationshipBaseTypeFromString(s string) (ContextRelationshipBaseType, error) {
+func NewContextRelationshipBaseRelationTypeFromString(s string) (ContextRelationshipBaseRelationType, error) {
 	switch s {
 	case "has_many":
-		return ContextRelationshipBaseTypeHasMany, nil
+		return ContextRelationshipBaseRelationTypeHasMany, nil
 	case "has_one":
-		return ContextRelationshipBaseTypeHasOne, nil
+		return ContextRelationshipBaseRelationTypeHasOne, nil
 	case "belongs_to":
-		return ContextRelationshipBaseTypeBelongsTo, nil
+		return ContextRelationshipBaseRelationTypeBelongsTo, nil
 	}
-	var t ContextRelationshipBaseType
+	var t ContextRelationshipBaseRelationType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (c ContextRelationshipBaseType) Ptr() *ContextRelationshipBaseType {
+func (c ContextRelationshipBaseRelationType) Ptr() *ContextRelationshipBaseRelationType {
 	return &c
 }
 
 var (
-	contextRelationshipIncomingFieldID            = big.NewInt(1 << 0)
-	contextRelationshipIncomingFieldType          = big.NewInt(1 << 1)
-	contextRelationshipIncomingFieldForeignKey    = big.NewInt(1 << 2)
-	contextRelationshipIncomingFieldName          = big.NewInt(1 << 3)
-	contextRelationshipIncomingFieldDescription   = big.NewInt(1 << 4)
-	contextRelationshipIncomingFieldCreatedAt     = big.NewInt(1 << 5)
-	contextRelationshipIncomingFieldSourceContext = big.NewInt(1 << 6)
+	contextRelationshipIncomingFieldID             = big.NewInt(1 << 0)
+	contextRelationshipIncomingFieldRelationType   = big.NewInt(1 << 1)
+	contextRelationshipIncomingFieldForeignKeyFact = big.NewInt(1 << 2)
+	contextRelationshipIncomingFieldName           = big.NewInt(1 << 3)
+	contextRelationshipIncomingFieldDescription    = big.NewInt(1 << 4)
+	contextRelationshipIncomingFieldCreatedAt      = big.NewInt(1 << 5)
+	contextRelationshipIncomingFieldSourceContext  = big.NewInt(1 << 6)
 )
 
 type ContextRelationshipIncoming struct {
 	// The unique identifier for the relationship.
 	ID *string `json:"id,omitempty" url:"id,omitempty"`
 	// The type of relationship.
-	Type *ContextRelationshipBaseType `json:"type,omitempty" url:"type,omitempty"`
+	RelationType *ContextRelationshipBaseRelationType `json:"relation_type,omitempty" url:"relation_type,omitempty"`
 	// The field key used as the foreign key.
-	ForeignKey *string `json:"foreign_key,omitempty" url:"foreign_key,omitempty"`
-	// Display name for the relationship.
+	ForeignKeyFact *string `json:"foreign_key_fact,omitempty" url:"foreign_key_fact,omitempty"`
+	// Runtime relationship key used by derived expressions. It is normalized to lowercase snake_case.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Description of the relationship.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
@@ -1998,18 +1916,18 @@ func (c *ContextRelationshipIncoming) GetID() *string {
 	return c.ID
 }
 
-func (c *ContextRelationshipIncoming) GetType() *ContextRelationshipBaseType {
+func (c *ContextRelationshipIncoming) GetRelationType() *ContextRelationshipBaseRelationType {
 	if c == nil {
 		return nil
 	}
-	return c.Type
+	return c.RelationType
 }
 
-func (c *ContextRelationshipIncoming) GetForeignKey() *string {
+func (c *ContextRelationshipIncoming) GetForeignKeyFact() *string {
 	if c == nil {
 		return nil
 	}
-	return c.ForeignKey
+	return c.ForeignKeyFact
 }
 
 func (c *ContextRelationshipIncoming) GetName() *string {
@@ -2061,18 +1979,18 @@ func (c *ContextRelationshipIncoming) SetID(id *string) {
 	c.require(contextRelationshipIncomingFieldID)
 }
 
-// SetType sets the Type field and marks it as non-optional;
+// SetRelationType sets the RelationType field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextRelationshipIncoming) SetType(type_ *ContextRelationshipBaseType) {
-	c.Type = type_
-	c.require(contextRelationshipIncomingFieldType)
+func (c *ContextRelationshipIncoming) SetRelationType(relationType *ContextRelationshipBaseRelationType) {
+	c.RelationType = relationType
+	c.require(contextRelationshipIncomingFieldRelationType)
 }
 
-// SetForeignKey sets the ForeignKey field and marks it as non-optional;
+// SetForeignKeyFact sets the ForeignKeyFact field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextRelationshipIncoming) SetForeignKey(foreignKey *string) {
-	c.ForeignKey = foreignKey
-	c.require(contextRelationshipIncomingFieldForeignKey)
+func (c *ContextRelationshipIncoming) SetForeignKeyFact(foreignKeyFact *string) {
+	c.ForeignKeyFact = foreignKeyFact
+	c.require(contextRelationshipIncomingFieldForeignKeyFact)
 }
 
 // SetName sets the Name field and marks it as non-optional;
@@ -2270,23 +2188,23 @@ func (c *ContextRelationshipIncomingSourceContext) String() string {
 }
 
 var (
-	contextRelationshipOutgoingFieldID            = big.NewInt(1 << 0)
-	contextRelationshipOutgoingFieldType          = big.NewInt(1 << 1)
-	contextRelationshipOutgoingFieldForeignKey    = big.NewInt(1 << 2)
-	contextRelationshipOutgoingFieldName          = big.NewInt(1 << 3)
-	contextRelationshipOutgoingFieldDescription   = big.NewInt(1 << 4)
-	contextRelationshipOutgoingFieldCreatedAt     = big.NewInt(1 << 5)
-	contextRelationshipOutgoingFieldTargetContext = big.NewInt(1 << 6)
+	contextRelationshipOutgoingFieldID             = big.NewInt(1 << 0)
+	contextRelationshipOutgoingFieldRelationType   = big.NewInt(1 << 1)
+	contextRelationshipOutgoingFieldForeignKeyFact = big.NewInt(1 << 2)
+	contextRelationshipOutgoingFieldName           = big.NewInt(1 << 3)
+	contextRelationshipOutgoingFieldDescription    = big.NewInt(1 << 4)
+	contextRelationshipOutgoingFieldCreatedAt      = big.NewInt(1 << 5)
+	contextRelationshipOutgoingFieldTargetContext  = big.NewInt(1 << 6)
 )
 
 type ContextRelationshipOutgoing struct {
 	// The unique identifier for the relationship.
 	ID *string `json:"id,omitempty" url:"id,omitempty"`
 	// The type of relationship.
-	Type *ContextRelationshipBaseType `json:"type,omitempty" url:"type,omitempty"`
+	RelationType *ContextRelationshipBaseRelationType `json:"relation_type,omitempty" url:"relation_type,omitempty"`
 	// The field key used as the foreign key.
-	ForeignKey *string `json:"foreign_key,omitempty" url:"foreign_key,omitempty"`
-	// Display name for the relationship.
+	ForeignKeyFact *string `json:"foreign_key_fact,omitempty" url:"foreign_key_fact,omitempty"`
+	// Runtime relationship key used by derived expressions. It is normalized to lowercase snake_case.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Description of the relationship.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
@@ -2308,18 +2226,18 @@ func (c *ContextRelationshipOutgoing) GetID() *string {
 	return c.ID
 }
 
-func (c *ContextRelationshipOutgoing) GetType() *ContextRelationshipBaseType {
+func (c *ContextRelationshipOutgoing) GetRelationType() *ContextRelationshipBaseRelationType {
 	if c == nil {
 		return nil
 	}
-	return c.Type
+	return c.RelationType
 }
 
-func (c *ContextRelationshipOutgoing) GetForeignKey() *string {
+func (c *ContextRelationshipOutgoing) GetForeignKeyFact() *string {
 	if c == nil {
 		return nil
 	}
-	return c.ForeignKey
+	return c.ForeignKeyFact
 }
 
 func (c *ContextRelationshipOutgoing) GetName() *string {
@@ -2371,18 +2289,18 @@ func (c *ContextRelationshipOutgoing) SetID(id *string) {
 	c.require(contextRelationshipOutgoingFieldID)
 }
 
-// SetType sets the Type field and marks it as non-optional;
+// SetRelationType sets the RelationType field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextRelationshipOutgoing) SetType(type_ *ContextRelationshipBaseType) {
-	c.Type = type_
-	c.require(contextRelationshipOutgoingFieldType)
+func (c *ContextRelationshipOutgoing) SetRelationType(relationType *ContextRelationshipBaseRelationType) {
+	c.RelationType = relationType
+	c.require(contextRelationshipOutgoingFieldRelationType)
 }
 
-// SetForeignKey sets the ForeignKey field and marks it as non-optional;
+// SetForeignKeyFact sets the ForeignKeyFact field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextRelationshipOutgoing) SetForeignKey(foreignKey *string) {
-	c.ForeignKey = foreignKey
-	c.require(contextRelationshipOutgoingFieldForeignKey)
+func (c *ContextRelationshipOutgoing) SetForeignKeyFact(foreignKeyFact *string) {
+	c.ForeignKeyFact = foreignKeyFact
+	c.require(contextRelationshipOutgoingFieldForeignKeyFact)
 }
 
 // SetName sets the Name field and marks it as non-optional;
@@ -2822,7 +2740,7 @@ var (
 type ContextSchema struct {
 	// User-defined base fields for the context.
 	Base []*ContextSchemaField `json:"base,omitempty" url:"base,omitempty"`
-	// Fields derived from bound rule/flow outputs.
+	// Expression-computed fields. Each entry supplies an `expression` evaluated from base facts, tracked history, and configured relationships.
 	Derived []*ContextSchemaField `json:"derived,omitempty" url:"derived,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2918,15 +2836,17 @@ func (c *ContextSchema) String() string {
 
 // A field definition within a context schema.
 var (
-	contextSchemaFieldFieldKey          = big.NewInt(1 << 0)
-	contextSchemaFieldFieldName         = big.NewInt(1 << 1)
-	contextSchemaFieldFieldDescription  = big.NewInt(1 << 2)
-	contextSchemaFieldFieldType         = big.NewInt(1 << 3)
-	contextSchemaFieldFieldDefaultValue = big.NewInt(1 << 4)
-	contextSchemaFieldFieldDerived      = big.NewInt(1 << 5)
-	contextSchemaFieldFieldSourceRule   = big.NewInt(1 << 6)
-	contextSchemaFieldFieldSourceFlow   = big.NewInt(1 << 7)
-	contextSchemaFieldFieldSourceField  = big.NewInt(1 << 8)
+	contextSchemaFieldFieldKey              = big.NewInt(1 << 0)
+	contextSchemaFieldFieldName             = big.NewInt(1 << 1)
+	contextSchemaFieldFieldDescription      = big.NewInt(1 << 2)
+	contextSchemaFieldFieldType             = big.NewInt(1 << 3)
+	contextSchemaFieldFieldDefaultValue     = big.NewInt(1 << 4)
+	contextSchemaFieldFieldRequired         = big.NewInt(1 << 5)
+	contextSchemaFieldFieldOutputOnly       = big.NewInt(1 << 6)
+	contextSchemaFieldFieldTrackHistory     = big.NewInt(1 << 7)
+	contextSchemaFieldFieldValuesOnly       = big.NewInt(1 << 8)
+	contextSchemaFieldFieldValuesCollection = big.NewInt(1 << 9)
+	contextSchemaFieldFieldExpression       = big.NewInt(1 << 10)
 )
 
 type ContextSchemaField struct {
@@ -2936,18 +2856,22 @@ type ContextSchemaField struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Description of this field.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
-	// Data type of this field. 'function' type fields compute values dynamically.
+	// Data type of this field. `object` fields are parent nodes for dotted child facts; `function` fields are output-only.
 	Type *ContextSchemaFieldType `json:"type,omitempty" url:"type,omitempty"`
 	// Default value for this field.
 	DefaultValue any `json:"default_value,omitempty" url:"default_value,omitempty"`
-	// Whether this field is derived from rule/flow outputs.
-	Derived *bool `json:"derived,omitempty" url:"derived,omitempty"`
-	// The rule ID that derives this field (if derived).
-	SourceRule *string `json:"source_rule,omitempty" url:"source_rule,omitempty"`
-	// The flow ID that derives this field (if derived).
-	SourceFlow *string `json:"source_flow,omitempty" url:"source_flow,omitempty"`
-	// The source field key in the rule/flow output.
-	SourceField *string `json:"source_field,omitempty" url:"source_field,omitempty"`
+	// Whether this base fact is required for overall context completeness.
+	Required *bool `json:"required,omitempty" url:"required,omitempty"`
+	// Whether external submissions are rejected for this base fact. Rule writebacks may still set it.
+	OutputOnly *bool `json:"output_only,omitempty" url:"output_only,omitempty"`
+	// Whether changed values for this base fact are retained for history expressions and the history endpoint.
+	TrackHistory *bool `json:"track_history,omitempty" url:"track_history,omitempty"`
+	// Whether values must come from the configured vocabulary collection.
+	ValuesOnly *bool `json:"values_only,omitempty" url:"values_only,omitempty"`
+	// Vocabulary collection identifier, when configured.
+	ValuesCollection *string `json:"values_collection,omitempty" url:"values_collection,omitempty"`
+	// Required for derived facts: the expression evaluated from base, history, and relation values.
+	Expression *string `json:"expression,omitempty" url:"expression,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2991,32 +2915,46 @@ func (c *ContextSchemaField) GetDefaultValue() any {
 	return c.DefaultValue
 }
 
-func (c *ContextSchemaField) GetDerived() *bool {
+func (c *ContextSchemaField) GetRequired() *bool {
 	if c == nil {
 		return nil
 	}
-	return c.Derived
+	return c.Required
 }
 
-func (c *ContextSchemaField) GetSourceRule() *string {
+func (c *ContextSchemaField) GetOutputOnly() *bool {
 	if c == nil {
 		return nil
 	}
-	return c.SourceRule
+	return c.OutputOnly
 }
 
-func (c *ContextSchemaField) GetSourceFlow() *string {
+func (c *ContextSchemaField) GetTrackHistory() *bool {
 	if c == nil {
 		return nil
 	}
-	return c.SourceFlow
+	return c.TrackHistory
 }
 
-func (c *ContextSchemaField) GetSourceField() *string {
+func (c *ContextSchemaField) GetValuesOnly() *bool {
 	if c == nil {
 		return nil
 	}
-	return c.SourceField
+	return c.ValuesOnly
+}
+
+func (c *ContextSchemaField) GetValuesCollection() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ValuesCollection
+}
+
+func (c *ContextSchemaField) GetExpression() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Expression
 }
 
 func (c *ContextSchemaField) GetExtraProperties() map[string]interface{} {
@@ -3068,32 +3006,46 @@ func (c *ContextSchemaField) SetDefaultValue(defaultValue any) {
 	c.require(contextSchemaFieldFieldDefaultValue)
 }
 
-// SetDerived sets the Derived field and marks it as non-optional;
+// SetRequired sets the Required field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchemaField) SetDerived(derived *bool) {
-	c.Derived = derived
-	c.require(contextSchemaFieldFieldDerived)
+func (c *ContextSchemaField) SetRequired(required *bool) {
+	c.Required = required
+	c.require(contextSchemaFieldFieldRequired)
 }
 
-// SetSourceRule sets the SourceRule field and marks it as non-optional;
+// SetOutputOnly sets the OutputOnly field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchemaField) SetSourceRule(sourceRule *string) {
-	c.SourceRule = sourceRule
-	c.require(contextSchemaFieldFieldSourceRule)
+func (c *ContextSchemaField) SetOutputOnly(outputOnly *bool) {
+	c.OutputOnly = outputOnly
+	c.require(contextSchemaFieldFieldOutputOnly)
 }
 
-// SetSourceFlow sets the SourceFlow field and marks it as non-optional;
+// SetTrackHistory sets the TrackHistory field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchemaField) SetSourceFlow(sourceFlow *string) {
-	c.SourceFlow = sourceFlow
-	c.require(contextSchemaFieldFieldSourceFlow)
+func (c *ContextSchemaField) SetTrackHistory(trackHistory *bool) {
+	c.TrackHistory = trackHistory
+	c.require(contextSchemaFieldFieldTrackHistory)
 }
 
-// SetSourceField sets the SourceField field and marks it as non-optional;
+// SetValuesOnly sets the ValuesOnly field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchemaField) SetSourceField(sourceField *string) {
-	c.SourceField = sourceField
-	c.require(contextSchemaFieldFieldSourceField)
+func (c *ContextSchemaField) SetValuesOnly(valuesOnly *bool) {
+	c.ValuesOnly = valuesOnly
+	c.require(contextSchemaFieldFieldValuesOnly)
+}
+
+// SetValuesCollection sets the ValuesCollection field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextSchemaField) SetValuesCollection(valuesCollection *string) {
+	c.ValuesCollection = valuesCollection
+	c.require(contextSchemaFieldFieldValuesCollection)
+}
+
+// SetExpression sets the Expression field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextSchemaField) SetExpression(expression *string) {
+	c.Expression = expression
+	c.require(contextSchemaFieldFieldExpression)
 }
 
 func (c *ContextSchemaField) UnmarshalJSON(data []byte) error {
@@ -3138,7 +3090,7 @@ func (c *ContextSchemaField) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// Data type of this field. 'function' type fields compute values dynamically.
+// Data type of this field. `object` fields are parent nodes for dotted child facts; `function` fields are output-only.
 type ContextSchemaFieldType string
 
 const (
@@ -3147,6 +3099,7 @@ const (
 	ContextSchemaFieldTypeBoolean  ContextSchemaFieldType = "boolean"
 	ContextSchemaFieldTypeDate     ContextSchemaFieldType = "date"
 	ContextSchemaFieldTypeList     ContextSchemaFieldType = "list"
+	ContextSchemaFieldTypeObject   ContextSchemaFieldType = "object"
 	ContextSchemaFieldTypeFunction ContextSchemaFieldType = "function"
 )
 
@@ -3162,6 +3115,8 @@ func NewContextSchemaFieldTypeFromString(s string) (ContextSchemaFieldType, erro
 		return ContextSchemaFieldTypeDate, nil
 	case "list":
 		return ContextSchemaFieldTypeList, nil
+	case "object":
+		return ContextSchemaFieldTypeObject, nil
 	case "function":
 		return ContextSchemaFieldTypeFunction, nil
 	}
@@ -3173,7 +3128,150 @@ func (c ContextSchemaFieldType) Ptr() *ContextSchemaFieldType {
 	return &c
 }
 
-type CreateContextResponse = *ContextDetail
+// Summary of the newly created context.
+var (
+	createContextResponseFieldID        = big.NewInt(1 << 0)
+	createContextResponseFieldSlug      = big.NewInt(1 << 1)
+	createContextResponseFieldName      = big.NewInt(1 << 2)
+	createContextResponseFieldCreatedAt = big.NewInt(1 << 3)
+)
+
+type CreateContextResponse struct {
+	// Unique identifier of the context.
+	ID *string `json:"id,omitempty" url:"id,omitempty"`
+	// URL-safe slug generated from the name (suffixed on collision).
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+	// The name of the context.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Creation timestamp.
+	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateContextResponse) GetID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ID
+}
+
+func (c *CreateContextResponse) GetSlug() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Slug
+}
+
+func (c *CreateContextResponse) GetName() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Name
+}
+
+func (c *CreateContextResponse) GetCreatedAt() *time.Time {
+	if c == nil {
+		return nil
+	}
+	return c.CreatedAt
+}
+
+func (c *CreateContextResponse) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateContextResponse) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetID(id *string) {
+	c.ID = id
+	c.require(createContextResponseFieldID)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetSlug(slug *string) {
+	c.Slug = slug
+	c.require(createContextResponseFieldSlug)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetName(name *string) {
+	c.Name = name
+	c.require(createContextResponseFieldName)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetCreatedAt(createdAt *time.Time) {
+	c.CreatedAt = createdAt
+	c.require(createContextResponseFieldCreatedAt)
+}
+
+func (c *CreateContextResponse) UnmarshalJSON(data []byte) error {
+	type embed CreateContextResponse
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at,omitempty"`
+	}{
+		embed: embed(*c),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*c = CreateContextResponse(unmarshaler.embed)
+	c.CreatedAt = unmarshaler.CreatedAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateContextResponse) MarshalJSON() ([]byte, error) {
+	type embed CreateContextResponse
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at,omitempty"`
+	}{
+		embed:     embed(*c),
+		CreatedAt: internal.NewOptionalDateTime(c.CreatedAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateContextResponse) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
 
 type CreateRelationshipResponse = *ContextRelationshipOutgoing
 
@@ -3788,6 +3886,8 @@ var (
 	flowDetailFieldUpdatedAt   = big.NewInt(1 << 5)
 	flowDetailFieldOriginRule  = big.NewInt(1 << 6)
 	flowDetailFieldContext     = big.NewInt(1 << 7)
+	flowDetailFieldUserGroups  = big.NewInt(1 << 8)
+	flowDetailFieldFolder      = big.NewInt(1 << 9)
 )
 
 type FlowDetail struct {
@@ -3807,6 +3907,10 @@ type FlowDetail struct {
 	OriginRule *FlowDetailOriginRule `json:"origin_rule,omitempty" url:"origin_rule,omitempty"`
 	// The context this flow is bound to (via its origin rule). Flows inherit context binding from their origin rule.
 	Context *FlowDetailContext `json:"context,omitempty" url:"context,omitempty"`
+	// The user groups this flow is assigned to.
+	UserGroups []string `json:"user_groups,omitempty" url:"user_groups,omitempty"`
+	// The folder this flow belongs to, if any.
+	Folder *Folder `json:"folder,omitempty" url:"folder,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -3869,6 +3973,20 @@ func (f *FlowDetail) GetContext() *FlowDetailContext {
 		return nil
 	}
 	return f.Context
+}
+
+func (f *FlowDetail) GetUserGroups() []string {
+	if f == nil {
+		return nil
+	}
+	return f.UserGroups
+}
+
+func (f *FlowDetail) GetFolder() *Folder {
+	if f == nil {
+		return nil
+	}
+	return f.Folder
 }
 
 func (f *FlowDetail) GetExtraProperties() map[string]interface{} {
@@ -3939,6 +4057,20 @@ func (f *FlowDetail) SetOriginRule(originRule *FlowDetailOriginRule) {
 func (f *FlowDetail) SetContext(context *FlowDetailContext) {
 	f.Context = context
 	f.require(flowDetailFieldContext)
+}
+
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowDetail) SetUserGroups(userGroups []string) {
+	f.UserGroups = userGroups
+	f.require(flowDetailFieldUserGroups)
+}
+
+// SetFolder sets the Folder field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowDetail) SetFolder(folder *Folder) {
+	f.Folder = folder
+	f.require(flowDetailFieldFolder)
 }
 
 func (f *FlowDetail) UnmarshalJSON(data []byte) error {
@@ -4351,15 +4483,346 @@ func (f *FlowExecutionError) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
+// Rulebricks Flow Schema definition accepted by /admin/flows/import. If `id` is provided the matching flow is updated; otherwise a new flow is created. The server expands this into the full flow graph and (unless `_publish` is false) publishes it so it is immediately executable.
+var (
+	flowImportPayloadFieldName        = big.NewInt(1 << 0)
+	flowImportPayloadFieldDescription = big.NewInt(1 << 1)
+	flowImportPayloadFieldNodes       = big.NewInt(1 << 2)
+	flowImportPayloadFieldConnections = big.NewInt(1 << 3)
+	flowImportPayloadFieldPublish     = big.NewInt(1 << 4)
+	flowImportPayloadFieldID          = big.NewInt(1 << 5)
+	flowImportPayloadFieldStableID    = big.NewInt(1 << 6)
+	flowImportPayloadFieldSlug        = big.NewInt(1 << 7)
+)
+
+type FlowImportPayload struct {
+	// Flow name.
+	Name string `json:"name" url:"name"`
+	// Optional flow description.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The flow's nodes. Exactly one must be an `origin`.
+	Nodes []*RulebricksFlowNode `json:"nodes" url:"nodes"`
+	// Property and control connections between node refs.
+	Connections []*RulebricksFlowConnection `json:"connections,omitempty" url:"connections,omitempty"`
+	// Whether to publish the flow on import (default true). Set false to import as a draft.
+	Publish *bool `json:"_publish,omitempty" url:"_publish,omitempty"`
+	// Provide an existing flow UUID to update it instead of creating a new flow.
+	ID *string `json:"id,omitempty" url:"id,omitempty"`
+	// Stable ID used for import round-tripping.
+	StableID *string `json:"stable_id,omitempty" url:"stable_id,omitempty"`
+	// Optional slug (auto-generated when omitted).
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (f *FlowImportPayload) GetName() string {
+	if f == nil {
+		return ""
+	}
+	return f.Name
+}
+
+func (f *FlowImportPayload) GetDescription() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Description
+}
+
+func (f *FlowImportPayload) GetNodes() []*RulebricksFlowNode {
+	if f == nil {
+		return nil
+	}
+	return f.Nodes
+}
+
+func (f *FlowImportPayload) GetConnections() []*RulebricksFlowConnection {
+	if f == nil {
+		return nil
+	}
+	return f.Connections
+}
+
+func (f *FlowImportPayload) GetPublish() *bool {
+	if f == nil {
+		return nil
+	}
+	return f.Publish
+}
+
+func (f *FlowImportPayload) GetID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.ID
+}
+
+func (f *FlowImportPayload) GetStableID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.StableID
+}
+
+func (f *FlowImportPayload) GetSlug() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Slug
+}
+
+func (f *FlowImportPayload) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.ExtraProperties
+}
+
+func (f *FlowImportPayload) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetName(name string) {
+	f.Name = name
+	f.require(flowImportPayloadFieldName)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetDescription(description *string) {
+	f.Description = description
+	f.require(flowImportPayloadFieldDescription)
+}
+
+// SetNodes sets the Nodes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetNodes(nodes []*RulebricksFlowNode) {
+	f.Nodes = nodes
+	f.require(flowImportPayloadFieldNodes)
+}
+
+// SetConnections sets the Connections field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetConnections(connections []*RulebricksFlowConnection) {
+	f.Connections = connections
+	f.require(flowImportPayloadFieldConnections)
+}
+
+// SetPublish sets the Publish field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetPublish(publish *bool) {
+	f.Publish = publish
+	f.require(flowImportPayloadFieldPublish)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetID(id *string) {
+	f.ID = id
+	f.require(flowImportPayloadFieldID)
+}
+
+// SetStableID sets the StableID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetStableID(stableID *string) {
+	f.StableID = stableID
+	f.require(flowImportPayloadFieldStableID)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetSlug(slug *string) {
+	f.Slug = slug
+	f.require(flowImportPayloadFieldSlug)
+}
+
+func (f *FlowImportPayload) UnmarshalJSON(data []byte) error {
+	type embed FlowImportPayload
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*f = FlowImportPayload(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.ExtraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FlowImportPayload) MarshalJSON() ([]byte, error) {
+	type embed FlowImportPayload
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, f.ExtraProperties)
+}
+
+func (f *FlowImportPayload) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+// Summary of the imported flow.
+var (
+	flowImportResponseFieldName = big.NewInt(1 << 0)
+	flowImportResponseFieldID   = big.NewInt(1 << 1)
+	flowImportResponseFieldSlug = big.NewInt(1 << 2)
+)
+
+type FlowImportResponse struct {
+	// The flow name.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// The flow id.
+	ID *string `json:"id,omitempty" url:"id,omitempty"`
+	// The flow slug used in API requests.
+	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FlowImportResponse) GetName() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Name
+}
+
+func (f *FlowImportResponse) GetID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.ID
+}
+
+func (f *FlowImportResponse) GetSlug() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Slug
+}
+
+func (f *FlowImportResponse) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FlowImportResponse) require(field *big.Int) {
+	if f.explicitFields == nil {
+		f.explicitFields = big.NewInt(0)
+	}
+	f.explicitFields.Or(f.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportResponse) SetName(name *string) {
+	f.Name = name
+	f.require(flowImportResponseFieldName)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportResponse) SetID(id *string) {
+	f.ID = id
+	f.require(flowImportResponseFieldID)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportResponse) SetSlug(slug *string) {
+	f.Slug = slug
+	f.require(flowImportResponseFieldSlug)
+}
+
+func (f *FlowImportResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler FlowImportResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FlowImportResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FlowImportResponse) MarshalJSON() ([]byte, error) {
+	type embed FlowImportResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FlowImportResponse) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
 type FlowListResponse = []*FlowDetail
 
 var (
 	folderFieldID          = big.NewInt(1 << 0)
 	folderFieldName        = big.NewInt(1 << 1)
 	folderFieldDescription = big.NewInt(1 << 2)
-	folderFieldCreatedAt   = big.NewInt(1 << 3)
-	folderFieldUpdatedAt   = big.NewInt(1 << 4)
-	folderFieldUserGroups  = big.NewInt(1 << 5)
+	folderFieldType        = big.NewInt(1 << 3)
+	folderFieldCreatedAt   = big.NewInt(1 << 4)
+	folderFieldUpdatedAt   = big.NewInt(1 << 5)
+	folderFieldUserGroups  = big.NewInt(1 << 6)
 )
 
 type Folder struct {
@@ -4369,6 +4832,8 @@ type Folder struct {
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Description of the folder.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The type of assets the folder organizes.
+	Type *FolderType `json:"type,omitempty" url:"type,omitempty"`
 	// Timestamp of when the folder was created.
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
 	// Timestamp of when the folder was last updated.
@@ -4402,6 +4867,13 @@ func (f *Folder) GetDescription() *string {
 		return nil
 	}
 	return f.Description
+}
+
+func (f *Folder) GetType() *FolderType {
+	if f == nil {
+		return nil
+	}
+	return f.Type
 }
 
 func (f *Folder) GetCreatedAt() *time.Time {
@@ -4458,6 +4930,13 @@ func (f *Folder) SetName(name *string) {
 func (f *Folder) SetDescription(description *string) {
 	f.Description = description
 	f.require(folderFieldDescription)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *Folder) SetType(type_ *FolderType) {
+	f.Type = type_
+	f.require(folderFieldType)
 }
 
 // SetCreatedAt sets the CreatedAt field and marks it as non-optional;
@@ -4536,6 +5015,454 @@ func (f *Folder) String() string {
 }
 
 type FolderListResponse = []*Folder
+
+// The type of assets the folder organizes.
+type FolderType string
+
+const (
+	FolderTypeRule    FolderType = "rule"
+	FolderTypeFlow    FolderType = "flow"
+	FolderTypeContext FolderType = "context"
+)
+
+func NewFolderTypeFromString(s string) (FolderType, error) {
+	switch s {
+	case "rule":
+		return FolderTypeRule, nil
+	case "flow":
+		return FolderTypeFlow, nil
+	case "context":
+		return FolderTypeContext, nil
+	}
+	var t FolderType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FolderType) Ptr() *FolderType {
+	return &f
+}
+
+// Reported in a parallel-solve response slot when an individual rule or flow could not be executed. The reserved `$error` key cannot collide with a rule/flow's own output fields.
+var (
+	parallelSolveEntityErrorFieldError = big.NewInt(1 << 0)
+)
+
+type ParallelSolveEntityError struct {
+	// Details of the per-entity failure.
+	Error *ParallelSolveEntityErrorError `json:"$error" url:"$error"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *ParallelSolveEntityError) GetError() *ParallelSolveEntityErrorError {
+	if p == nil {
+		return nil
+	}
+	return p.Error
+}
+
+func (p *ParallelSolveEntityError) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *ParallelSolveEntityError) require(field *big.Int) {
+	if p.explicitFields == nil {
+		p.explicitFields = big.NewInt(0)
+	}
+	p.explicitFields.Or(p.explicitFields, field)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *ParallelSolveEntityError) SetError(error_ *ParallelSolveEntityErrorError) {
+	p.Error = error_
+	p.require(parallelSolveEntityErrorFieldError)
+}
+
+func (p *ParallelSolveEntityError) UnmarshalJSON(data []byte) error {
+	type unmarshaler ParallelSolveEntityError
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = ParallelSolveEntityError(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *ParallelSolveEntityError) MarshalJSON() ([]byte, error) {
+	type embed ParallelSolveEntityError
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *ParallelSolveEntityError) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+// Details of the per-entity failure.
+var (
+	parallelSolveEntityErrorErrorFieldMessage = big.NewInt(1 << 0)
+	parallelSolveEntityErrorErrorFieldStatus  = big.NewInt(1 << 1)
+)
+
+type ParallelSolveEntityErrorError struct {
+	// Human-readable description of why this entry failed.
+	Message string `json:"message" url:"message"`
+	// HTTP-equivalent status code of the underlying failure (e.g. 404 when the rule/flow was not found, 500 for an internal evaluation error).
+	Status int `json:"status" url:"status"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *ParallelSolveEntityErrorError) GetMessage() string {
+	if p == nil {
+		return ""
+	}
+	return p.Message
+}
+
+func (p *ParallelSolveEntityErrorError) GetStatus() int {
+	if p == nil {
+		return 0
+	}
+	return p.Status
+}
+
+func (p *ParallelSolveEntityErrorError) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *ParallelSolveEntityErrorError) require(field *big.Int) {
+	if p.explicitFields == nil {
+		p.explicitFields = big.NewInt(0)
+	}
+	p.explicitFields.Or(p.explicitFields, field)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *ParallelSolveEntityErrorError) SetMessage(message string) {
+	p.Message = message
+	p.require(parallelSolveEntityErrorErrorFieldMessage)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *ParallelSolveEntityErrorError) SetStatus(status int) {
+	p.Status = status
+	p.require(parallelSolveEntityErrorErrorFieldStatus)
+}
+
+func (p *ParallelSolveEntityErrorError) UnmarshalJSON(data []byte) error {
+	type unmarshaler ParallelSolveEntityErrorError
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = ParallelSolveEntityErrorError(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *ParallelSolveEntityErrorError) MarshalJSON() ([]byte, error) {
+	type embed ParallelSolveEntityErrorError
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *ParallelSolveEntityErrorError) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+// Returned with HTTP 202 when a rule or flow cannot run yet because required facts are missing. The evaluation is registered and fires automatically when the instance receives the missing facts (visible under the instance's /pending endpoint until then).
+var (
+	pendingContextEvaluationResponseFieldStatus    = big.NewInt(1 << 0)
+	pendingContextEvaluationResponseFieldContext   = big.NewInt(1 << 1)
+	pendingContextEvaluationResponseFieldRule      = big.NewInt(1 << 2)
+	pendingContextEvaluationResponseFieldFlow      = big.NewInt(1 << 3)
+	pendingContextEvaluationResponseFieldHave      = big.NewInt(1 << 4)
+	pendingContextEvaluationResponseFieldNeed      = big.NewInt(1 << 5)
+	pendingContextEvaluationResponseFieldWaitingOn = big.NewInt(1 << 6)
+	pendingContextEvaluationResponseFieldExpiresAt = big.NewInt(1 << 7)
+)
+
+type PendingContextEvaluationResponse struct {
+	// Always 'pending'.
+	Status *PendingContextEvaluationResponseStatus `json:"status,omitempty" url:"status,omitempty"`
+	// Combined identifier in format 'contextSlug:instanceId'.
+	Context *string `json:"context,omitempty" url:"context,omitempty"`
+	// The slug of the rule awaiting execution (rule solves only).
+	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
+	// The slug of the flow awaiting execution (flow executions only).
+	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
+	// Fact keys currently present on the instance.
+	Have []string `json:"have,omitempty" url:"have,omitempty"`
+	// Fact keys still required before execution.
+	Need []string `json:"need,omitempty" url:"need,omitempty"`
+	// What the evaluation is waiting for: entries carry either a context/instance/fields triple for missing facts, or a relation name for pending related data.
+	WaitingOn []*ContextWaitingOn `json:"waiting_on,omitempty" url:"waiting_on,omitempty"`
+	// When the pending registration expires (the context's TTL from now).
+	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PendingContextEvaluationResponse) GetStatus() *PendingContextEvaluationResponseStatus {
+	if p == nil {
+		return nil
+	}
+	return p.Status
+}
+
+func (p *PendingContextEvaluationResponse) GetContext() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Context
+}
+
+func (p *PendingContextEvaluationResponse) GetRule() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Rule
+}
+
+func (p *PendingContextEvaluationResponse) GetFlow() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Flow
+}
+
+func (p *PendingContextEvaluationResponse) GetHave() []string {
+	if p == nil {
+		return nil
+	}
+	return p.Have
+}
+
+func (p *PendingContextEvaluationResponse) GetNeed() []string {
+	if p == nil {
+		return nil
+	}
+	return p.Need
+}
+
+func (p *PendingContextEvaluationResponse) GetWaitingOn() []*ContextWaitingOn {
+	if p == nil {
+		return nil
+	}
+	return p.WaitingOn
+}
+
+func (p *PendingContextEvaluationResponse) GetExpiresAt() *time.Time {
+	if p == nil {
+		return nil
+	}
+	return p.ExpiresAt
+}
+
+func (p *PendingContextEvaluationResponse) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PendingContextEvaluationResponse) require(field *big.Int) {
+	if p.explicitFields == nil {
+		p.explicitFields = big.NewInt(0)
+	}
+	p.explicitFields.Or(p.explicitFields, field)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PendingContextEvaluationResponse) SetStatus(status *PendingContextEvaluationResponseStatus) {
+	p.Status = status
+	p.require(pendingContextEvaluationResponseFieldStatus)
+}
+
+// SetContext sets the Context field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PendingContextEvaluationResponse) SetContext(context *string) {
+	p.Context = context
+	p.require(pendingContextEvaluationResponseFieldContext)
+}
+
+// SetRule sets the Rule field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PendingContextEvaluationResponse) SetRule(rule *string) {
+	p.Rule = rule
+	p.require(pendingContextEvaluationResponseFieldRule)
+}
+
+// SetFlow sets the Flow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PendingContextEvaluationResponse) SetFlow(flow *string) {
+	p.Flow = flow
+	p.require(pendingContextEvaluationResponseFieldFlow)
+}
+
+// SetHave sets the Have field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PendingContextEvaluationResponse) SetHave(have []string) {
+	p.Have = have
+	p.require(pendingContextEvaluationResponseFieldHave)
+}
+
+// SetNeed sets the Need field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PendingContextEvaluationResponse) SetNeed(need []string) {
+	p.Need = need
+	p.require(pendingContextEvaluationResponseFieldNeed)
+}
+
+// SetWaitingOn sets the WaitingOn field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PendingContextEvaluationResponse) SetWaitingOn(waitingOn []*ContextWaitingOn) {
+	p.WaitingOn = waitingOn
+	p.require(pendingContextEvaluationResponseFieldWaitingOn)
+}
+
+// SetExpiresAt sets the ExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PendingContextEvaluationResponse) SetExpiresAt(expiresAt *time.Time) {
+	p.ExpiresAt = expiresAt
+	p.require(pendingContextEvaluationResponseFieldExpiresAt)
+}
+
+func (p *PendingContextEvaluationResponse) UnmarshalJSON(data []byte) error {
+	type embed PendingContextEvaluationResponse
+	var unmarshaler = struct {
+		embed
+		ExpiresAt *internal.DateTime `json:"expires_at,omitempty"`
+	}{
+		embed: embed(*p),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*p = PendingContextEvaluationResponse(unmarshaler.embed)
+	p.ExpiresAt = unmarshaler.ExpiresAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PendingContextEvaluationResponse) MarshalJSON() ([]byte, error) {
+	type embed PendingContextEvaluationResponse
+	var marshaler = struct {
+		embed
+		ExpiresAt *internal.DateTime `json:"expires_at,omitempty"`
+	}{
+		embed:     embed(*p),
+		ExpiresAt: internal.NewOptionalDateTime(p.ExpiresAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PendingContextEvaluationResponse) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+// Always 'pending'.
+type PendingContextEvaluationResponseStatus string
+
+const (
+	PendingContextEvaluationResponseStatusPending PendingContextEvaluationResponseStatus = "pending"
+)
+
+func NewPendingContextEvaluationResponseStatusFromString(s string) (PendingContextEvaluationResponseStatus, error) {
+	switch s {
+	case "pending":
+		return PendingContextEvaluationResponseStatusPending, nil
+	}
+	var t PendingContextEvaluationResponseStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PendingContextEvaluationResponseStatus) Ptr() *PendingContextEvaluationResponseStatus {
+	return &p
+}
 
 var (
 	ruleBaseFieldID          = big.NewInt(1 << 0)
@@ -6144,7 +7071,7 @@ type RuleImportSchemaField struct {
 	DefaultValue any `json:"defaultValue,omitempty" url:"defaultValue,omitempty"`
 	// When true, this field should only accept values from a value collection.
 	ValuesOnly *bool `json:"valuesOnly,omitempty" url:"valuesOnly,omitempty"`
-	// Prefix used to scope available dynamic values for this field.
+	// Prefix used to scope available vocabulary values for this field.
 	ValuesPrefix *string `json:"valuesPrefix,omitempty" url:"valuesPrefix,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6367,6 +7294,2840 @@ func (r RuleImportSchemaFieldType) Ptr() *RuleImportSchemaFieldType {
 
 type RuleListResponse = []*RuleDetail
 
+// A directed connection between two node refs. Data connections carry a property from `output` to `input`; control connections (`control: true`) gate the target on a Continue If.
+var (
+	rulebricksFlowConnectionFieldFrom    = big.NewInt(1 << 0)
+	rulebricksFlowConnectionFieldTo      = big.NewInt(1 << 1)
+	rulebricksFlowConnectionFieldOutput  = big.NewInt(1 << 2)
+	rulebricksFlowConnectionFieldInput   = big.NewInt(1 << 3)
+	rulebricksFlowConnectionFieldControl = big.NewInt(1 << 4)
+)
+
+type RulebricksFlowConnection struct {
+	// Source node ref.
+	From string `json:"from" url:"from"`
+	// Target node ref.
+	To string `json:"to" url:"to"`
+	// (data) Source output key: a declared output of the source node, or - for a rule/origin source - one of the referenced rule's response field keys (an origin also exposes `request_<field>` passthroughs). Free-form; validated against the resolved rule at import time.
+	Output *string `json:"output,omitempty" url:"output,omitempty"`
+	// (data) Target input key. Required for rule/entity targets, where it must be one of the referenced rule's request field keys. Free-form; validated against the resolved rule at import time.
+	Input *string `json:"input,omitempty" url:"input,omitempty"`
+	// Set true for a Continue If gating edge (carries no data).
+	Control *bool `json:"control,omitempty" url:"control,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RulebricksFlowConnection) GetFrom() string {
+	if r == nil {
+		return ""
+	}
+	return r.From
+}
+
+func (r *RulebricksFlowConnection) GetTo() string {
+	if r == nil {
+		return ""
+	}
+	return r.To
+}
+
+func (r *RulebricksFlowConnection) GetOutput() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Output
+}
+
+func (r *RulebricksFlowConnection) GetInput() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Input
+}
+
+func (r *RulebricksFlowConnection) GetControl() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.Control
+}
+
+func (r *RulebricksFlowConnection) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RulebricksFlowConnection) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowConnection) SetFrom(from string) {
+	r.From = from
+	r.require(rulebricksFlowConnectionFieldFrom)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowConnection) SetTo(to string) {
+	r.To = to
+	r.require(rulebricksFlowConnectionFieldTo)
+}
+
+// SetOutput sets the Output field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowConnection) SetOutput(output *string) {
+	r.Output = output
+	r.require(rulebricksFlowConnectionFieldOutput)
+}
+
+// SetInput sets the Input field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowConnection) SetInput(input *string) {
+	r.Input = input
+	r.require(rulebricksFlowConnectionFieldInput)
+}
+
+// SetControl sets the Control field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowConnection) SetControl(control *bool) {
+	r.Control = control
+	r.require(rulebricksFlowConnectionFieldControl)
+}
+
+func (r *RulebricksFlowConnection) UnmarshalJSON(data []byte) error {
+	type unmarshaler RulebricksFlowConnection
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RulebricksFlowConnection(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowConnection) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowConnection
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RulebricksFlowConnection) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// A single node in a Rulebricks Flow. `ref` is a flow-local id used only to wire `connections`; `type` selects the node kind. All other properties are that node type's config and unknown keys are preserved. Rule/origin request and response keys are defined by the referenced rule and validated server-side, so connection `output`/`input` keys are accepted as free-form strings.
+//
+// Node types:
+// - **Flow Input** - `type: origin` (aliases: `input`, `flow_input`). Input: no data input. requires a published rule.
+//   - Config: `rule`, `version`, `name`
+//   - Example: `{"ref":"origin","type":"origin","rule":"customer-eligibility"}`
+//
+// - **Rule** - `type: rule`. Input: per-key input (each connection sets `input`). requires a published rule; gateable by Continue If.
+//   - Config: `rule`, `version`, `name`
+//   - Example: `{"ref":"rule","type":"rule","rule":"risk-score","version":"2"}`
+//
+// - **Run Flow** - `type: flow` (aliases: `subflow`, `run_flow`). Input: per-key input (each connection sets `input`). gateable by Continue If.
+//   - Config: `flow`, `version`, `name`, `outputs`, `useCache`, `cacheExpiration`, `cacheKey`
+//   - Example: `{"ref":"flow","type":"flow","flow":"credit-check","version":"2","outputs":[{"key":"data.approved","type":"boolean"}]}`
+//
+// - **Continue If** - `type: ifelse` (aliases: `continue_if`, `continueif`). Input: single input (key derived from the source output). emits control edges; gateable by Continue If.
+//   - Config: `condition`
+//   - Example: `{"ref":"continue_if","type":"continue_if","condition":{"operator":"greater than","args":[700]}}`
+//
+// - **For Each Item** - `type: foreach` (aliases: `for_each`, `foreachitem`). Input: single input (key forced to `list`). gateable by Continue If.
+//   - Config: `name`, `outputs`
+//   - Example: `{"ref":"for_each","type":"for_each","outputs":[{"key":"amount","type":"number"}]}`
+//
+// - **Combine Items** - `type: aggregate` (aliases: `combine_items`, `combineitems`). Input: single input (key derived from the source output). gateable by Continue If.
+//   - Config: `mode`, `aggregations`, `filters`
+//   - Example: `{"ref":"combine_items","type":"combine_items","mode":"fields","aggregations":{"amount":{"operator":"sum"}}}`
+//
+// - **Result Object** - `type: result` (aliases: `result_object`). Input: single input (key derived from the source output). terminal; gateable by Continue If.
+//   - Config: `key`, `immediateExit`, `keyMappings`, `customExitData`
+//   - Example: `{"ref":"result","type":"result","key":"data"}`
+//
+// - **Run Code** - `type: code` (aliases: `run_code`). Input: single input (key derived from the source output). gateable by Continue If.
+//   - Config: `name`, `code`, `prompt`, `outputs`
+//   - Example: `{"ref":"code","type":"code","name":"Score Tier Script","code":"outputs.tier = inputs.score > 700 ? 'A' : 'B'","outputs":[{"key":"tier","type":"string"}]}`
+//
+// - **API Request** - `type: api` (aliases: `api_request`). Input: single input (key derived from the source output). gateable by Continue If.
+//   - Config: `url`, `method`, `headers`, `body`, `useCache`, `cacheExpiration`, `jsonPaths`, `extractPaths`, `outputs`
+//   - Example: `{"ref":"api","type":"api","url":"https://api.example.com/lookup","method":"POST","headers":{"Authorization":"Bearer <token>"},"body":{"id":1},"outputs":[{"key":"ok","type":"boolean"}]}`
+//
+// - **Database Query** - `type: db` (aliases: `database_query`). Input: single input (key derived from the source output). gateable by Continue If.
+//   - Config: `connectionString`, `query`, `useCache`, `cacheExpiration`, `outputs`
+//   - Example: `{"ref":"db","type":"db","connectionString":"postgres://user:pass@host:5432/db","query":"SELECT score FROM customers WHERE id = $1","outputs":[{"key":"score","type":"number"}]}`
+//
+// - **SOAP Request** - `type: soap` (aliases: `soap_request`). Input: single input (key derived from the source output). gateable by Continue If.
+//   - Config: `wsdlUrl`, `outputs`
+//   - Example: `{"ref":"soap","type":"soap","wsdlUrl":"https://example.com/service?wsdl","outputs":[{"key":"result","type":"object"}]}`
+//
+// - **AI Inference** - `type: ai` (aliases: `ai_inference`). Input: single input (key derived from the source output). gateable by Continue If.
+//   - Config: `model`, `labels`
+//   - Example: `{"ref":"ai","type":"ai","labels":[{"name":"Sentiment","type":"string","description":"Overall sentiment"}]}`
+//
+// - **Lookup Table** - `type: lookup` (aliases: `lookup_table`). Input: single input (key forced to `lookup`). gateable by Continue If.
+//   - Config: `table`, `keyType`, `valueType`, `defaultValue`
+//   - Example: `{"ref":"lookup","type":"lookup","table":[{"key":"gold","value":0.2},{"key":"silver","value":0.1}],"keyType":"string","valueType":"number","defaultValue":0}`
+//
+// - **Vault** - `type: vault`. Input: no data input.
+//   - Config: `provider`, `credentials`, `secrets`
+//   - Example: `{"ref":"vault","type":"vault","secrets":[{"name":"STRIPE_API_KEY"}]}`
+//
+// - **Context Operation** - `type: entity` (aliases: `context_operation`). Input: per-key input (each connection sets `input`). gateable by Continue If.
+//   - Config: `operation`, `entitySlug`, `identityFieldKey`, `selectedUpdateFields`, `updateValues`, `includeRelations`, `outputs`
+//   - Example: `{"ref":"entity","type":"entity","operation":"read","entitySlug":"customer"}`
+//
+// - **Send Notification** - `type: notification` (aliases: `send_notification`). Input: single input (key derived from the source output). terminal; gateable by Continue If.
+//   - Config: `channels`, `titleTemplate`, `messageTemplate`
+//   - Example: `{"ref":"notification","type":"notification","channels":{"email":{"enabled":true,"addresses":["alerts@example.com"]}},"titleTemplate":"Flow alert","messageTemplate":"A flow reached the notification step."}`
+var (
+	rulebricksFlowNodeFieldRef                  = big.NewInt(1 << 0)
+	rulebricksFlowNodeFieldType                 = big.NewInt(1 << 1)
+	rulebricksFlowNodeFieldRule                 = big.NewInt(1 << 2)
+	rulebricksFlowNodeFieldVersion              = big.NewInt(1 << 3)
+	rulebricksFlowNodeFieldName                 = big.NewInt(1 << 4)
+	rulebricksFlowNodeFieldFlow                 = big.NewInt(1 << 5)
+	rulebricksFlowNodeFieldOutputs              = big.NewInt(1 << 6)
+	rulebricksFlowNodeFieldUseCache             = big.NewInt(1 << 7)
+	rulebricksFlowNodeFieldCacheExpiration      = big.NewInt(1 << 8)
+	rulebricksFlowNodeFieldCacheKey             = big.NewInt(1 << 9)
+	rulebricksFlowNodeFieldCondition            = big.NewInt(1 << 10)
+	rulebricksFlowNodeFieldMode                 = big.NewInt(1 << 11)
+	rulebricksFlowNodeFieldAggregations         = big.NewInt(1 << 12)
+	rulebricksFlowNodeFieldFilters              = big.NewInt(1 << 13)
+	rulebricksFlowNodeFieldKey                  = big.NewInt(1 << 14)
+	rulebricksFlowNodeFieldImmediateExit        = big.NewInt(1 << 15)
+	rulebricksFlowNodeFieldKeyMappings          = big.NewInt(1 << 16)
+	rulebricksFlowNodeFieldCustomExitData       = big.NewInt(1 << 17)
+	rulebricksFlowNodeFieldCode                 = big.NewInt(1 << 18)
+	rulebricksFlowNodeFieldPrompt               = big.NewInt(1 << 19)
+	rulebricksFlowNodeFieldURL                  = big.NewInt(1 << 20)
+	rulebricksFlowNodeFieldMethod               = big.NewInt(1 << 21)
+	rulebricksFlowNodeFieldHeaders              = big.NewInt(1 << 22)
+	rulebricksFlowNodeFieldBody                 = big.NewInt(1 << 23)
+	rulebricksFlowNodeFieldJSONPaths            = big.NewInt(1 << 24)
+	rulebricksFlowNodeFieldExtractPaths         = big.NewInt(1 << 25)
+	rulebricksFlowNodeFieldConnectionString     = big.NewInt(1 << 26)
+	rulebricksFlowNodeFieldQuery                = big.NewInt(1 << 27)
+	rulebricksFlowNodeFieldWsdlURL              = big.NewInt(1 << 28)
+	rulebricksFlowNodeFieldModel                = big.NewInt(1 << 29)
+	rulebricksFlowNodeFieldLabels               = big.NewInt(1 << 30)
+	rulebricksFlowNodeFieldTable                = big.NewInt(1 << 31)
+	rulebricksFlowNodeFieldKeyType              = big.NewInt(1 << 32)
+	rulebricksFlowNodeFieldValueType            = big.NewInt(1 << 33)
+	rulebricksFlowNodeFieldDefaultValue         = big.NewInt(1 << 34)
+	rulebricksFlowNodeFieldProvider             = big.NewInt(1 << 35)
+	rulebricksFlowNodeFieldCredentials          = big.NewInt(1 << 36)
+	rulebricksFlowNodeFieldSecrets              = big.NewInt(1 << 37)
+	rulebricksFlowNodeFieldOperation            = big.NewInt(1 << 38)
+	rulebricksFlowNodeFieldEntitySlug           = big.NewInt(1 << 39)
+	rulebricksFlowNodeFieldIdentityFieldKey     = big.NewInt(1 << 40)
+	rulebricksFlowNodeFieldSelectedUpdateFields = big.NewInt(1 << 41)
+	rulebricksFlowNodeFieldUpdateValues         = big.NewInt(1 << 42)
+	rulebricksFlowNodeFieldIncludeRelations     = big.NewInt(1 << 43)
+	rulebricksFlowNodeFieldChannels             = big.NewInt(1 << 44)
+	rulebricksFlowNodeFieldTitleTemplate        = big.NewInt(1 << 45)
+	rulebricksFlowNodeFieldMessageTemplate      = big.NewInt(1 << 46)
+	rulebricksFlowNodeFieldData                 = big.NewInt(1 << 47)
+)
+
+type RulebricksFlowNode struct {
+	// Unique, flow-local id used to reference this node in `connections`.
+	Ref string `json:"ref" url:"ref"`
+	// Node type (a canonical key or a friendly alias).
+	Type RulebricksFlowNodeType `json:"type" url:"type"`
+	// Config for node types: origin, rule. A published rule slug, optionally `slug/version`.
+	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
+	// Config for node types: origin, rule, flow. Published version to pin (e.g. "3"). Optional for rule/origin nodes (omit to use the latest published version); REQUIRED for flow nodes, which cannot target "latest".
+	Version any `json:"version,omitempty" url:"version,omitempty"`
+	// Config for node types: origin, rule, flow, foreach, code. Optional human-readable display name for the step (code nodes show it as the script title on the node).
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Config for node type: flow. A published flow slug to invoke as a subflow, optionally `slug/version`. A pinned numeric version is REQUIRED (here or via `version`), and the target flow must not (transitively) invoke this flow.
+	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
+	// Config for node types: flow, foreach, code, api, db, soap, entity. Declared output handles - declare every output you wire to a downstream node.
+	Outputs []*RulebricksFlowNodeOutputsItem `json:"outputs,omitempty" url:"outputs,omitempty"`
+	// Config for node types: flow, api, db.
+	UseCache *bool `json:"useCache,omitempty" url:"useCache,omitempty"`
+	// Config for node types: flow, api, db.
+	CacheExpiration *float64 `json:"cacheExpiration,omitempty" url:"cacheExpiration,omitempty"`
+	// Config for node type: flow.
+	CacheKey *string `json:"cacheKey,omitempty" url:"cacheKey,omitempty"`
+	// Config for node type: ifelse. Continue If gating condition; evaluated against the single wired input.
+	Condition *RulebricksFlowNodeCondition `json:"condition,omitempty" url:"condition,omitempty"`
+	// Config for node type: aggregate.
+	Mode *RulebricksFlowNodeMode `json:"mode,omitempty" url:"mode,omitempty"`
+	// Config for node type: aggregate.
+	Aggregations map[string]*RulebricksFlowNodeAggregationsValue `json:"aggregations,omitempty" url:"aggregations,omitempty"`
+	// Config for node type: aggregate.
+	Filters []any `json:"filters,omitempty" url:"filters,omitempty"`
+	// Config for node type: result.
+	Key *string `json:"key,omitempty" url:"key,omitempty"`
+	// Config for node type: result.
+	ImmediateExit *bool `json:"immediateExit,omitempty" url:"immediateExit,omitempty"`
+	// Config for node type: result.
+	KeyMappings map[string]string `json:"keyMappings,omitempty" url:"keyMappings,omitempty"`
+	// Config for node type: result.
+	CustomExitData *string `json:"customExitData,omitempty" url:"customExitData,omitempty"`
+	// Config for node type: code. JavaScript that reads `inputs.<key>` and assigns to `outputs.<key>`.
+	Code *string `json:"code,omitempty" url:"code,omitempty"`
+	// Config for node type: code.
+	Prompt *string `json:"prompt,omitempty" url:"prompt,omitempty"`
+	// Config for node type: api.
+	URL *string `json:"url,omitempty" url:"url,omitempty"`
+	// Config for node type: api.
+	Method *string `json:"method,omitempty" url:"method,omitempty"`
+	// Config for node type: api.
+	Headers any `json:"headers,omitempty" url:"headers,omitempty"`
+	// Config for node type: api.
+	Body any `json:"body,omitempty" url:"body,omitempty"`
+	// Config for node type: api.
+	JSONPaths any `json:"jsonPaths,omitempty" url:"jsonPaths,omitempty"`
+	// Config for node type: api.
+	ExtractPaths *bool `json:"extractPaths,omitempty" url:"extractPaths,omitempty"`
+	// Config for node type: db.
+	ConnectionString *string `json:"connectionString,omitempty" url:"connectionString,omitempty"`
+	// Config for node type: db.
+	Query *string `json:"query,omitempty" url:"query,omitempty"`
+	// Config for node type: soap.
+	WsdlURL *string `json:"wsdlUrl,omitempty" url:"wsdlUrl,omitempty"`
+	// Config for node type: ai.
+	Model *string `json:"model,omitempty" url:"model,omitempty"`
+	// Config for node type: ai.
+	Labels []*RulebricksFlowNodeLabelsItem `json:"labels,omitempty" url:"labels,omitempty"`
+	// Config for node type: lookup.
+	Table []*RulebricksFlowNodeTableItem `json:"table,omitempty" url:"table,omitempty"`
+	// Config for node type: lookup.
+	KeyType *string `json:"keyType,omitempty" url:"keyType,omitempty"`
+	// Config for node type: lookup.
+	ValueType *string `json:"valueType,omitempty" url:"valueType,omitempty"`
+	// Config for node type: lookup.
+	DefaultValue any `json:"defaultValue,omitempty" url:"defaultValue,omitempty"`
+	// Config for node type: vault.
+	Provider *string `json:"provider,omitempty" url:"provider,omitempty"`
+	// Config for node type: vault.
+	Credentials map[string]any `json:"credentials,omitempty" url:"credentials,omitempty"`
+	// Config for node type: vault.
+	Secrets []*RulebricksFlowNodeSecretsItem `json:"secrets,omitempty" url:"secrets,omitempty"`
+	// Config for node type: entity.
+	Operation *RulebricksFlowNodeOperation `json:"operation,omitempty" url:"operation,omitempty"`
+	// Config for node type: entity.
+	EntitySlug *string `json:"entitySlug,omitempty" url:"entitySlug,omitempty"`
+	// Config for node type: entity.
+	IdentityFieldKey *string `json:"identityFieldKey,omitempty" url:"identityFieldKey,omitempty"`
+	// Config for node type: entity.
+	SelectedUpdateFields map[string]bool `json:"selectedUpdateFields,omitempty" url:"selectedUpdateFields,omitempty"`
+	// Config for node type: entity.
+	UpdateValues map[string]any `json:"updateValues,omitempty" url:"updateValues,omitempty"`
+	// Config for node type: entity.
+	IncludeRelations map[string]bool `json:"includeRelations,omitempty" url:"includeRelations,omitempty"`
+	// Config for node type: notification.
+	Channels map[string]any `json:"channels,omitempty" url:"channels,omitempty"`
+	// Config for node type: notification.
+	TitleTemplate *string `json:"titleTemplate,omitempty" url:"titleTemplate,omitempty"`
+	// Config for node type: notification.
+	MessageTemplate *string `json:"messageTemplate,omitempty" url:"messageTemplate,omitempty"`
+	// Optional escape hatch: properties merged verbatim onto the expanded node.data for advanced or forward-compatible fields.
+	Data map[string]any `json:"data,omitempty" url:"data,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RulebricksFlowNode) GetRef() string {
+	if r == nil {
+		return ""
+	}
+	return r.Ref
+}
+
+func (r *RulebricksFlowNode) GetType() RulebricksFlowNodeType {
+	if r == nil {
+		return ""
+	}
+	return r.Type
+}
+
+func (r *RulebricksFlowNode) GetRule() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Rule
+}
+
+func (r *RulebricksFlowNode) GetVersion() any {
+	if r == nil {
+		return nil
+	}
+	return r.Version
+}
+
+func (r *RulebricksFlowNode) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RulebricksFlowNode) GetFlow() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Flow
+}
+
+func (r *RulebricksFlowNode) GetOutputs() []*RulebricksFlowNodeOutputsItem {
+	if r == nil {
+		return nil
+	}
+	return r.Outputs
+}
+
+func (r *RulebricksFlowNode) GetUseCache() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.UseCache
+}
+
+func (r *RulebricksFlowNode) GetCacheExpiration() *float64 {
+	if r == nil {
+		return nil
+	}
+	return r.CacheExpiration
+}
+
+func (r *RulebricksFlowNode) GetCacheKey() *string {
+	if r == nil {
+		return nil
+	}
+	return r.CacheKey
+}
+
+func (r *RulebricksFlowNode) GetCondition() *RulebricksFlowNodeCondition {
+	if r == nil {
+		return nil
+	}
+	return r.Condition
+}
+
+func (r *RulebricksFlowNode) GetMode() *RulebricksFlowNodeMode {
+	if r == nil {
+		return nil
+	}
+	return r.Mode
+}
+
+func (r *RulebricksFlowNode) GetAggregations() map[string]*RulebricksFlowNodeAggregationsValue {
+	if r == nil {
+		return nil
+	}
+	return r.Aggregations
+}
+
+func (r *RulebricksFlowNode) GetFilters() []any {
+	if r == nil {
+		return nil
+	}
+	return r.Filters
+}
+
+func (r *RulebricksFlowNode) GetKey() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Key
+}
+
+func (r *RulebricksFlowNode) GetImmediateExit() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.ImmediateExit
+}
+
+func (r *RulebricksFlowNode) GetKeyMappings() map[string]string {
+	if r == nil {
+		return nil
+	}
+	return r.KeyMappings
+}
+
+func (r *RulebricksFlowNode) GetCustomExitData() *string {
+	if r == nil {
+		return nil
+	}
+	return r.CustomExitData
+}
+
+func (r *RulebricksFlowNode) GetCode() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Code
+}
+
+func (r *RulebricksFlowNode) GetPrompt() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Prompt
+}
+
+func (r *RulebricksFlowNode) GetURL() *string {
+	if r == nil {
+		return nil
+	}
+	return r.URL
+}
+
+func (r *RulebricksFlowNode) GetMethod() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Method
+}
+
+func (r *RulebricksFlowNode) GetHeaders() any {
+	if r == nil {
+		return nil
+	}
+	return r.Headers
+}
+
+func (r *RulebricksFlowNode) GetBody() any {
+	if r == nil {
+		return nil
+	}
+	return r.Body
+}
+
+func (r *RulebricksFlowNode) GetJSONPaths() any {
+	if r == nil {
+		return nil
+	}
+	return r.JSONPaths
+}
+
+func (r *RulebricksFlowNode) GetExtractPaths() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.ExtractPaths
+}
+
+func (r *RulebricksFlowNode) GetConnectionString() *string {
+	if r == nil {
+		return nil
+	}
+	return r.ConnectionString
+}
+
+func (r *RulebricksFlowNode) GetQuery() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Query
+}
+
+func (r *RulebricksFlowNode) GetWsdlURL() *string {
+	if r == nil {
+		return nil
+	}
+	return r.WsdlURL
+}
+
+func (r *RulebricksFlowNode) GetModel() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Model
+}
+
+func (r *RulebricksFlowNode) GetLabels() []*RulebricksFlowNodeLabelsItem {
+	if r == nil {
+		return nil
+	}
+	return r.Labels
+}
+
+func (r *RulebricksFlowNode) GetTable() []*RulebricksFlowNodeTableItem {
+	if r == nil {
+		return nil
+	}
+	return r.Table
+}
+
+func (r *RulebricksFlowNode) GetKeyType() *string {
+	if r == nil {
+		return nil
+	}
+	return r.KeyType
+}
+
+func (r *RulebricksFlowNode) GetValueType() *string {
+	if r == nil {
+		return nil
+	}
+	return r.ValueType
+}
+
+func (r *RulebricksFlowNode) GetDefaultValue() any {
+	if r == nil {
+		return nil
+	}
+	return r.DefaultValue
+}
+
+func (r *RulebricksFlowNode) GetProvider() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Provider
+}
+
+func (r *RulebricksFlowNode) GetCredentials() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.Credentials
+}
+
+func (r *RulebricksFlowNode) GetSecrets() []*RulebricksFlowNodeSecretsItem {
+	if r == nil {
+		return nil
+	}
+	return r.Secrets
+}
+
+func (r *RulebricksFlowNode) GetOperation() *RulebricksFlowNodeOperation {
+	if r == nil {
+		return nil
+	}
+	return r.Operation
+}
+
+func (r *RulebricksFlowNode) GetEntitySlug() *string {
+	if r == nil {
+		return nil
+	}
+	return r.EntitySlug
+}
+
+func (r *RulebricksFlowNode) GetIdentityFieldKey() *string {
+	if r == nil {
+		return nil
+	}
+	return r.IdentityFieldKey
+}
+
+func (r *RulebricksFlowNode) GetSelectedUpdateFields() map[string]bool {
+	if r == nil {
+		return nil
+	}
+	return r.SelectedUpdateFields
+}
+
+func (r *RulebricksFlowNode) GetUpdateValues() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.UpdateValues
+}
+
+func (r *RulebricksFlowNode) GetIncludeRelations() map[string]bool {
+	if r == nil {
+		return nil
+	}
+	return r.IncludeRelations
+}
+
+func (r *RulebricksFlowNode) GetChannels() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.Channels
+}
+
+func (r *RulebricksFlowNode) GetTitleTemplate() *string {
+	if r == nil {
+		return nil
+	}
+	return r.TitleTemplate
+}
+
+func (r *RulebricksFlowNode) GetMessageTemplate() *string {
+	if r == nil {
+		return nil
+	}
+	return r.MessageTemplate
+}
+
+func (r *RulebricksFlowNode) GetData() map[string]any {
+	if r == nil {
+		return nil
+	}
+	return r.Data
+}
+
+func (r *RulebricksFlowNode) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RulebricksFlowNode) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetRef sets the Ref field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetRef(ref string) {
+	r.Ref = ref
+	r.require(rulebricksFlowNodeFieldRef)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetType(type_ RulebricksFlowNodeType) {
+	r.Type = type_
+	r.require(rulebricksFlowNodeFieldType)
+}
+
+// SetRule sets the Rule field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetRule(rule *string) {
+	r.Rule = rule
+	r.require(rulebricksFlowNodeFieldRule)
+}
+
+// SetVersion sets the Version field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetVersion(version any) {
+	r.Version = version
+	r.require(rulebricksFlowNodeFieldVersion)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetName(name *string) {
+	r.Name = name
+	r.require(rulebricksFlowNodeFieldName)
+}
+
+// SetFlow sets the Flow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetFlow(flow *string) {
+	r.Flow = flow
+	r.require(rulebricksFlowNodeFieldFlow)
+}
+
+// SetOutputs sets the Outputs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetOutputs(outputs []*RulebricksFlowNodeOutputsItem) {
+	r.Outputs = outputs
+	r.require(rulebricksFlowNodeFieldOutputs)
+}
+
+// SetUseCache sets the UseCache field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetUseCache(useCache *bool) {
+	r.UseCache = useCache
+	r.require(rulebricksFlowNodeFieldUseCache)
+}
+
+// SetCacheExpiration sets the CacheExpiration field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetCacheExpiration(cacheExpiration *float64) {
+	r.CacheExpiration = cacheExpiration
+	r.require(rulebricksFlowNodeFieldCacheExpiration)
+}
+
+// SetCacheKey sets the CacheKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetCacheKey(cacheKey *string) {
+	r.CacheKey = cacheKey
+	r.require(rulebricksFlowNodeFieldCacheKey)
+}
+
+// SetCondition sets the Condition field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetCondition(condition *RulebricksFlowNodeCondition) {
+	r.Condition = condition
+	r.require(rulebricksFlowNodeFieldCondition)
+}
+
+// SetMode sets the Mode field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetMode(mode *RulebricksFlowNodeMode) {
+	r.Mode = mode
+	r.require(rulebricksFlowNodeFieldMode)
+}
+
+// SetAggregations sets the Aggregations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetAggregations(aggregations map[string]*RulebricksFlowNodeAggregationsValue) {
+	r.Aggregations = aggregations
+	r.require(rulebricksFlowNodeFieldAggregations)
+}
+
+// SetFilters sets the Filters field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetFilters(filters []any) {
+	r.Filters = filters
+	r.require(rulebricksFlowNodeFieldFilters)
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetKey(key *string) {
+	r.Key = key
+	r.require(rulebricksFlowNodeFieldKey)
+}
+
+// SetImmediateExit sets the ImmediateExit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetImmediateExit(immediateExit *bool) {
+	r.ImmediateExit = immediateExit
+	r.require(rulebricksFlowNodeFieldImmediateExit)
+}
+
+// SetKeyMappings sets the KeyMappings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetKeyMappings(keyMappings map[string]string) {
+	r.KeyMappings = keyMappings
+	r.require(rulebricksFlowNodeFieldKeyMappings)
+}
+
+// SetCustomExitData sets the CustomExitData field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetCustomExitData(customExitData *string) {
+	r.CustomExitData = customExitData
+	r.require(rulebricksFlowNodeFieldCustomExitData)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetCode(code *string) {
+	r.Code = code
+	r.require(rulebricksFlowNodeFieldCode)
+}
+
+// SetPrompt sets the Prompt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetPrompt(prompt *string) {
+	r.Prompt = prompt
+	r.require(rulebricksFlowNodeFieldPrompt)
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetURL(url *string) {
+	r.URL = url
+	r.require(rulebricksFlowNodeFieldURL)
+}
+
+// SetMethod sets the Method field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetMethod(method *string) {
+	r.Method = method
+	r.require(rulebricksFlowNodeFieldMethod)
+}
+
+// SetHeaders sets the Headers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetHeaders(headers any) {
+	r.Headers = headers
+	r.require(rulebricksFlowNodeFieldHeaders)
+}
+
+// SetBody sets the Body field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetBody(body any) {
+	r.Body = body
+	r.require(rulebricksFlowNodeFieldBody)
+}
+
+// SetJSONPaths sets the JSONPaths field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetJSONPaths(jsonPaths any) {
+	r.JSONPaths = jsonPaths
+	r.require(rulebricksFlowNodeFieldJSONPaths)
+}
+
+// SetExtractPaths sets the ExtractPaths field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetExtractPaths(extractPaths *bool) {
+	r.ExtractPaths = extractPaths
+	r.require(rulebricksFlowNodeFieldExtractPaths)
+}
+
+// SetConnectionString sets the ConnectionString field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetConnectionString(connectionString *string) {
+	r.ConnectionString = connectionString
+	r.require(rulebricksFlowNodeFieldConnectionString)
+}
+
+// SetQuery sets the Query field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetQuery(query *string) {
+	r.Query = query
+	r.require(rulebricksFlowNodeFieldQuery)
+}
+
+// SetWsdlURL sets the WsdlURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetWsdlURL(wsdlURL *string) {
+	r.WsdlURL = wsdlURL
+	r.require(rulebricksFlowNodeFieldWsdlURL)
+}
+
+// SetModel sets the Model field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetModel(model *string) {
+	r.Model = model
+	r.require(rulebricksFlowNodeFieldModel)
+}
+
+// SetLabels sets the Labels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetLabels(labels []*RulebricksFlowNodeLabelsItem) {
+	r.Labels = labels
+	r.require(rulebricksFlowNodeFieldLabels)
+}
+
+// SetTable sets the Table field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetTable(table []*RulebricksFlowNodeTableItem) {
+	r.Table = table
+	r.require(rulebricksFlowNodeFieldTable)
+}
+
+// SetKeyType sets the KeyType field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetKeyType(keyType *string) {
+	r.KeyType = keyType
+	r.require(rulebricksFlowNodeFieldKeyType)
+}
+
+// SetValueType sets the ValueType field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetValueType(valueType *string) {
+	r.ValueType = valueType
+	r.require(rulebricksFlowNodeFieldValueType)
+}
+
+// SetDefaultValue sets the DefaultValue field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetDefaultValue(defaultValue any) {
+	r.DefaultValue = defaultValue
+	r.require(rulebricksFlowNodeFieldDefaultValue)
+}
+
+// SetProvider sets the Provider field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetProvider(provider *string) {
+	r.Provider = provider
+	r.require(rulebricksFlowNodeFieldProvider)
+}
+
+// SetCredentials sets the Credentials field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetCredentials(credentials map[string]any) {
+	r.Credentials = credentials
+	r.require(rulebricksFlowNodeFieldCredentials)
+}
+
+// SetSecrets sets the Secrets field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetSecrets(secrets []*RulebricksFlowNodeSecretsItem) {
+	r.Secrets = secrets
+	r.require(rulebricksFlowNodeFieldSecrets)
+}
+
+// SetOperation sets the Operation field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetOperation(operation *RulebricksFlowNodeOperation) {
+	r.Operation = operation
+	r.require(rulebricksFlowNodeFieldOperation)
+}
+
+// SetEntitySlug sets the EntitySlug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetEntitySlug(entitySlug *string) {
+	r.EntitySlug = entitySlug
+	r.require(rulebricksFlowNodeFieldEntitySlug)
+}
+
+// SetIdentityFieldKey sets the IdentityFieldKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetIdentityFieldKey(identityFieldKey *string) {
+	r.IdentityFieldKey = identityFieldKey
+	r.require(rulebricksFlowNodeFieldIdentityFieldKey)
+}
+
+// SetSelectedUpdateFields sets the SelectedUpdateFields field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetSelectedUpdateFields(selectedUpdateFields map[string]bool) {
+	r.SelectedUpdateFields = selectedUpdateFields
+	r.require(rulebricksFlowNodeFieldSelectedUpdateFields)
+}
+
+// SetUpdateValues sets the UpdateValues field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetUpdateValues(updateValues map[string]any) {
+	r.UpdateValues = updateValues
+	r.require(rulebricksFlowNodeFieldUpdateValues)
+}
+
+// SetIncludeRelations sets the IncludeRelations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetIncludeRelations(includeRelations map[string]bool) {
+	r.IncludeRelations = includeRelations
+	r.require(rulebricksFlowNodeFieldIncludeRelations)
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetChannels(channels map[string]any) {
+	r.Channels = channels
+	r.require(rulebricksFlowNodeFieldChannels)
+}
+
+// SetTitleTemplate sets the TitleTemplate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetTitleTemplate(titleTemplate *string) {
+	r.TitleTemplate = titleTemplate
+	r.require(rulebricksFlowNodeFieldTitleTemplate)
+}
+
+// SetMessageTemplate sets the MessageTemplate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetMessageTemplate(messageTemplate *string) {
+	r.MessageTemplate = messageTemplate
+	r.require(rulebricksFlowNodeFieldMessageTemplate)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNode) SetData(data map[string]any) {
+	r.Data = data
+	r.require(rulebricksFlowNodeFieldData)
+}
+
+func (r *RulebricksFlowNode) UnmarshalJSON(data []byte) error {
+	type embed RulebricksFlowNode
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RulebricksFlowNode(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowNode) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowNode
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RulebricksFlowNode) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rulebricksFlowNodeAggregationsValueFieldOperator = big.NewInt(1 << 0)
+)
+
+type RulebricksFlowNodeAggregationsValue struct {
+	Operator *string `json:"operator,omitempty" url:"operator,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RulebricksFlowNodeAggregationsValue) GetOperator() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Operator
+}
+
+func (r *RulebricksFlowNodeAggregationsValue) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RulebricksFlowNodeAggregationsValue) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetOperator sets the Operator field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeAggregationsValue) SetOperator(operator *string) {
+	r.Operator = operator
+	r.require(rulebricksFlowNodeAggregationsValueFieldOperator)
+}
+
+func (r *RulebricksFlowNodeAggregationsValue) UnmarshalJSON(data []byte) error {
+	type embed RulebricksFlowNodeAggregationsValue
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RulebricksFlowNodeAggregationsValue(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowNodeAggregationsValue) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowNodeAggregationsValue
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RulebricksFlowNodeAggregationsValue) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Config for node type: ifelse. Continue If gating condition; evaluated against the single wired input.
+var (
+	rulebricksFlowNodeConditionFieldProperty = big.NewInt(1 << 0)
+	rulebricksFlowNodeConditionFieldOperator = big.NewInt(1 << 1)
+	rulebricksFlowNodeConditionFieldArgs     = big.NewInt(1 << 2)
+)
+
+type RulebricksFlowNodeCondition struct {
+	Property *string `json:"property,omitempty" url:"property,omitempty"`
+	Operator *string `json:"operator,omitempty" url:"operator,omitempty"`
+	Args     []any   `json:"args,omitempty" url:"args,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RulebricksFlowNodeCondition) GetProperty() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Property
+}
+
+func (r *RulebricksFlowNodeCondition) GetOperator() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Operator
+}
+
+func (r *RulebricksFlowNodeCondition) GetArgs() []any {
+	if r == nil {
+		return nil
+	}
+	return r.Args
+}
+
+func (r *RulebricksFlowNodeCondition) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RulebricksFlowNodeCondition) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetProperty sets the Property field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeCondition) SetProperty(property *string) {
+	r.Property = property
+	r.require(rulebricksFlowNodeConditionFieldProperty)
+}
+
+// SetOperator sets the Operator field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeCondition) SetOperator(operator *string) {
+	r.Operator = operator
+	r.require(rulebricksFlowNodeConditionFieldOperator)
+}
+
+// SetArgs sets the Args field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeCondition) SetArgs(args []any) {
+	r.Args = args
+	r.require(rulebricksFlowNodeConditionFieldArgs)
+}
+
+func (r *RulebricksFlowNodeCondition) UnmarshalJSON(data []byte) error {
+	type embed RulebricksFlowNodeCondition
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RulebricksFlowNodeCondition(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowNodeCondition) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowNodeCondition
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RulebricksFlowNodeCondition) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rulebricksFlowNodeLabelsItemFieldName        = big.NewInt(1 << 0)
+	rulebricksFlowNodeLabelsItemFieldType        = big.NewInt(1 << 1)
+	rulebricksFlowNodeLabelsItemFieldDescription = big.NewInt(1 << 2)
+)
+
+type RulebricksFlowNodeLabelsItem struct {
+	Name        string                            `json:"name" url:"name"`
+	Type        *RulebricksFlowNodeLabelsItemType `json:"type,omitempty" url:"type,omitempty"`
+	Description *string                           `json:"description,omitempty" url:"description,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RulebricksFlowNodeLabelsItem) GetName() string {
+	if r == nil {
+		return ""
+	}
+	return r.Name
+}
+
+func (r *RulebricksFlowNodeLabelsItem) GetType() *RulebricksFlowNodeLabelsItemType {
+	if r == nil {
+		return nil
+	}
+	return r.Type
+}
+
+func (r *RulebricksFlowNodeLabelsItem) GetDescription() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Description
+}
+
+func (r *RulebricksFlowNodeLabelsItem) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RulebricksFlowNodeLabelsItem) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeLabelsItem) SetName(name string) {
+	r.Name = name
+	r.require(rulebricksFlowNodeLabelsItemFieldName)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeLabelsItem) SetType(type_ *RulebricksFlowNodeLabelsItemType) {
+	r.Type = type_
+	r.require(rulebricksFlowNodeLabelsItemFieldType)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeLabelsItem) SetDescription(description *string) {
+	r.Description = description
+	r.require(rulebricksFlowNodeLabelsItemFieldDescription)
+}
+
+func (r *RulebricksFlowNodeLabelsItem) UnmarshalJSON(data []byte) error {
+	type embed RulebricksFlowNodeLabelsItem
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RulebricksFlowNodeLabelsItem(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowNodeLabelsItem) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowNodeLabelsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RulebricksFlowNodeLabelsItem) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+type RulebricksFlowNodeLabelsItemType string
+
+const (
+	RulebricksFlowNodeLabelsItemTypeString  RulebricksFlowNodeLabelsItemType = "string"
+	RulebricksFlowNodeLabelsItemTypeNumber  RulebricksFlowNodeLabelsItemType = "number"
+	RulebricksFlowNodeLabelsItemTypeBoolean RulebricksFlowNodeLabelsItemType = "boolean"
+	RulebricksFlowNodeLabelsItemTypeList    RulebricksFlowNodeLabelsItemType = "list"
+	RulebricksFlowNodeLabelsItemTypeObject  RulebricksFlowNodeLabelsItemType = "object"
+	RulebricksFlowNodeLabelsItemTypeDate    RulebricksFlowNodeLabelsItemType = "date"
+	RulebricksFlowNodeLabelsItemTypeAny     RulebricksFlowNodeLabelsItemType = "any"
+)
+
+func NewRulebricksFlowNodeLabelsItemTypeFromString(s string) (RulebricksFlowNodeLabelsItemType, error) {
+	switch s {
+	case "string":
+		return RulebricksFlowNodeLabelsItemTypeString, nil
+	case "number":
+		return RulebricksFlowNodeLabelsItemTypeNumber, nil
+	case "boolean":
+		return RulebricksFlowNodeLabelsItemTypeBoolean, nil
+	case "list":
+		return RulebricksFlowNodeLabelsItemTypeList, nil
+	case "object":
+		return RulebricksFlowNodeLabelsItemTypeObject, nil
+	case "date":
+		return RulebricksFlowNodeLabelsItemTypeDate, nil
+	case "any":
+		return RulebricksFlowNodeLabelsItemTypeAny, nil
+	}
+	var t RulebricksFlowNodeLabelsItemType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RulebricksFlowNodeLabelsItemType) Ptr() *RulebricksFlowNodeLabelsItemType {
+	return &r
+}
+
+// Config for node type: aggregate.
+type RulebricksFlowNodeMode string
+
+const (
+	RulebricksFlowNodeModeFields RulebricksFlowNodeMode = "fields"
+	RulebricksFlowNodeModeItems  RulebricksFlowNodeMode = "items"
+)
+
+func NewRulebricksFlowNodeModeFromString(s string) (RulebricksFlowNodeMode, error) {
+	switch s {
+	case "fields":
+		return RulebricksFlowNodeModeFields, nil
+	case "items":
+		return RulebricksFlowNodeModeItems, nil
+	}
+	var t RulebricksFlowNodeMode
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RulebricksFlowNodeMode) Ptr() *RulebricksFlowNodeMode {
+	return &r
+}
+
+// Config for node type: entity.
+type RulebricksFlowNodeOperation string
+
+const (
+	RulebricksFlowNodeOperationRead        RulebricksFlowNodeOperation = "read"
+	RulebricksFlowNodeOperationUpdate      RulebricksFlowNodeOperation = "update"
+	RulebricksFlowNodeOperationDelete      RulebricksFlowNodeOperation = "delete"
+	RulebricksFlowNodeOperationBatchUpdate RulebricksFlowNodeOperation = "batch_update"
+)
+
+func NewRulebricksFlowNodeOperationFromString(s string) (RulebricksFlowNodeOperation, error) {
+	switch s {
+	case "read":
+		return RulebricksFlowNodeOperationRead, nil
+	case "update":
+		return RulebricksFlowNodeOperationUpdate, nil
+	case "delete":
+		return RulebricksFlowNodeOperationDelete, nil
+	case "batch_update":
+		return RulebricksFlowNodeOperationBatchUpdate, nil
+	}
+	var t RulebricksFlowNodeOperation
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RulebricksFlowNodeOperation) Ptr() *RulebricksFlowNodeOperation {
+	return &r
+}
+
+var (
+	rulebricksFlowNodeOutputsItemFieldKey  = big.NewInt(1 << 0)
+	rulebricksFlowNodeOutputsItemFieldType = big.NewInt(1 << 1)
+	rulebricksFlowNodeOutputsItemFieldName = big.NewInt(1 << 2)
+)
+
+type RulebricksFlowNodeOutputsItem struct {
+	Key  string                             `json:"key" url:"key"`
+	Type *RulebricksFlowNodeOutputsItemType `json:"type,omitempty" url:"type,omitempty"`
+	Name *string                            `json:"name,omitempty" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RulebricksFlowNodeOutputsItem) GetKey() string {
+	if r == nil {
+		return ""
+	}
+	return r.Key
+}
+
+func (r *RulebricksFlowNodeOutputsItem) GetType() *RulebricksFlowNodeOutputsItemType {
+	if r == nil {
+		return nil
+	}
+	return r.Type
+}
+
+func (r *RulebricksFlowNodeOutputsItem) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RulebricksFlowNodeOutputsItem) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RulebricksFlowNodeOutputsItem) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeOutputsItem) SetKey(key string) {
+	r.Key = key
+	r.require(rulebricksFlowNodeOutputsItemFieldKey)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeOutputsItem) SetType(type_ *RulebricksFlowNodeOutputsItemType) {
+	r.Type = type_
+	r.require(rulebricksFlowNodeOutputsItemFieldType)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeOutputsItem) SetName(name *string) {
+	r.Name = name
+	r.require(rulebricksFlowNodeOutputsItemFieldName)
+}
+
+func (r *RulebricksFlowNodeOutputsItem) UnmarshalJSON(data []byte) error {
+	type embed RulebricksFlowNodeOutputsItem
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RulebricksFlowNodeOutputsItem(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowNodeOutputsItem) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowNodeOutputsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RulebricksFlowNodeOutputsItem) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+type RulebricksFlowNodeOutputsItemType string
+
+const (
+	RulebricksFlowNodeOutputsItemTypeString  RulebricksFlowNodeOutputsItemType = "string"
+	RulebricksFlowNodeOutputsItemTypeNumber  RulebricksFlowNodeOutputsItemType = "number"
+	RulebricksFlowNodeOutputsItemTypeBoolean RulebricksFlowNodeOutputsItemType = "boolean"
+	RulebricksFlowNodeOutputsItemTypeList    RulebricksFlowNodeOutputsItemType = "list"
+	RulebricksFlowNodeOutputsItemTypeObject  RulebricksFlowNodeOutputsItemType = "object"
+	RulebricksFlowNodeOutputsItemTypeDate    RulebricksFlowNodeOutputsItemType = "date"
+	RulebricksFlowNodeOutputsItemTypeAny     RulebricksFlowNodeOutputsItemType = "any"
+)
+
+func NewRulebricksFlowNodeOutputsItemTypeFromString(s string) (RulebricksFlowNodeOutputsItemType, error) {
+	switch s {
+	case "string":
+		return RulebricksFlowNodeOutputsItemTypeString, nil
+	case "number":
+		return RulebricksFlowNodeOutputsItemTypeNumber, nil
+	case "boolean":
+		return RulebricksFlowNodeOutputsItemTypeBoolean, nil
+	case "list":
+		return RulebricksFlowNodeOutputsItemTypeList, nil
+	case "object":
+		return RulebricksFlowNodeOutputsItemTypeObject, nil
+	case "date":
+		return RulebricksFlowNodeOutputsItemTypeDate, nil
+	case "any":
+		return RulebricksFlowNodeOutputsItemTypeAny, nil
+	}
+	var t RulebricksFlowNodeOutputsItemType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RulebricksFlowNodeOutputsItemType) Ptr() *RulebricksFlowNodeOutputsItemType {
+	return &r
+}
+
+var (
+	rulebricksFlowNodeSecretsItemFieldName = big.NewInt(1 << 0)
+)
+
+type RulebricksFlowNodeSecretsItem struct {
+	Name string `json:"name" url:"name"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RulebricksFlowNodeSecretsItem) GetName() string {
+	if r == nil {
+		return ""
+	}
+	return r.Name
+}
+
+func (r *RulebricksFlowNodeSecretsItem) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RulebricksFlowNodeSecretsItem) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeSecretsItem) SetName(name string) {
+	r.Name = name
+	r.require(rulebricksFlowNodeSecretsItemFieldName)
+}
+
+func (r *RulebricksFlowNodeSecretsItem) UnmarshalJSON(data []byte) error {
+	type embed RulebricksFlowNodeSecretsItem
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RulebricksFlowNodeSecretsItem(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowNodeSecretsItem) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowNodeSecretsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RulebricksFlowNodeSecretsItem) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	rulebricksFlowNodeTableItemFieldKey   = big.NewInt(1 << 0)
+	rulebricksFlowNodeTableItemFieldValue = big.NewInt(1 << 1)
+)
+
+type RulebricksFlowNodeTableItem struct {
+	Key   any `json:"key" url:"key"`
+	Value any `json:"value" url:"value"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RulebricksFlowNodeTableItem) GetKey() any {
+	if r == nil {
+		return nil
+	}
+	return r.Key
+}
+
+func (r *RulebricksFlowNodeTableItem) GetValue() any {
+	if r == nil {
+		return nil
+	}
+	return r.Value
+}
+
+func (r *RulebricksFlowNodeTableItem) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RulebricksFlowNodeTableItem) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeTableItem) SetKey(key any) {
+	r.Key = key
+	r.require(rulebricksFlowNodeTableItemFieldKey)
+}
+
+// SetValue sets the Value field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowNodeTableItem) SetValue(value any) {
+	r.Value = value
+	r.require(rulebricksFlowNodeTableItemFieldValue)
+}
+
+func (r *RulebricksFlowNodeTableItem) UnmarshalJSON(data []byte) error {
+	type embed RulebricksFlowNodeTableItem
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RulebricksFlowNodeTableItem(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowNodeTableItem) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowNodeTableItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RulebricksFlowNodeTableItem) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Node type (a canonical key or a friendly alias).
+type RulebricksFlowNodeType string
+
+const (
+	RulebricksFlowNodeTypeOrigin           RulebricksFlowNodeType = "origin"
+	RulebricksFlowNodeTypeInput            RulebricksFlowNodeType = "input"
+	RulebricksFlowNodeTypeFlowInput        RulebricksFlowNodeType = "flow_input"
+	RulebricksFlowNodeTypeRule             RulebricksFlowNodeType = "rule"
+	RulebricksFlowNodeTypeFlow             RulebricksFlowNodeType = "flow"
+	RulebricksFlowNodeTypeSubflow          RulebricksFlowNodeType = "subflow"
+	RulebricksFlowNodeTypeRunFlow          RulebricksFlowNodeType = "run_flow"
+	RulebricksFlowNodeTypeIfelse           RulebricksFlowNodeType = "ifelse"
+	RulebricksFlowNodeTypeContinueIf       RulebricksFlowNodeType = "continue_if"
+	RulebricksFlowNodeTypeContinueif       RulebricksFlowNodeType = "continueif"
+	RulebricksFlowNodeTypeForeach          RulebricksFlowNodeType = "foreach"
+	RulebricksFlowNodeTypeForEach          RulebricksFlowNodeType = "for_each"
+	RulebricksFlowNodeTypeForeachitem      RulebricksFlowNodeType = "foreachitem"
+	RulebricksFlowNodeTypeAggregate        RulebricksFlowNodeType = "aggregate"
+	RulebricksFlowNodeTypeCombineItems     RulebricksFlowNodeType = "combine_items"
+	RulebricksFlowNodeTypeCombineitems     RulebricksFlowNodeType = "combineitems"
+	RulebricksFlowNodeTypeResult           RulebricksFlowNodeType = "result"
+	RulebricksFlowNodeTypeResultObject     RulebricksFlowNodeType = "result_object"
+	RulebricksFlowNodeTypeCode             RulebricksFlowNodeType = "code"
+	RulebricksFlowNodeTypeRunCode          RulebricksFlowNodeType = "run_code"
+	RulebricksFlowNodeTypeAPI              RulebricksFlowNodeType = "api"
+	RulebricksFlowNodeTypeAPIRequest       RulebricksFlowNodeType = "api_request"
+	RulebricksFlowNodeTypeDb               RulebricksFlowNodeType = "db"
+	RulebricksFlowNodeTypeDatabaseQuery    RulebricksFlowNodeType = "database_query"
+	RulebricksFlowNodeTypeSoap             RulebricksFlowNodeType = "soap"
+	RulebricksFlowNodeTypeSoapRequest      RulebricksFlowNodeType = "soap_request"
+	RulebricksFlowNodeTypeAi               RulebricksFlowNodeType = "ai"
+	RulebricksFlowNodeTypeAiInference      RulebricksFlowNodeType = "ai_inference"
+	RulebricksFlowNodeTypeLookup           RulebricksFlowNodeType = "lookup"
+	RulebricksFlowNodeTypeLookupTable      RulebricksFlowNodeType = "lookup_table"
+	RulebricksFlowNodeTypeVault            RulebricksFlowNodeType = "vault"
+	RulebricksFlowNodeTypeEntity           RulebricksFlowNodeType = "entity"
+	RulebricksFlowNodeTypeContextOperation RulebricksFlowNodeType = "context_operation"
+	RulebricksFlowNodeTypeNotification     RulebricksFlowNodeType = "notification"
+	RulebricksFlowNodeTypeSendNotification RulebricksFlowNodeType = "send_notification"
+)
+
+func NewRulebricksFlowNodeTypeFromString(s string) (RulebricksFlowNodeType, error) {
+	switch s {
+	case "origin":
+		return RulebricksFlowNodeTypeOrigin, nil
+	case "input":
+		return RulebricksFlowNodeTypeInput, nil
+	case "flow_input":
+		return RulebricksFlowNodeTypeFlowInput, nil
+	case "rule":
+		return RulebricksFlowNodeTypeRule, nil
+	case "flow":
+		return RulebricksFlowNodeTypeFlow, nil
+	case "subflow":
+		return RulebricksFlowNodeTypeSubflow, nil
+	case "run_flow":
+		return RulebricksFlowNodeTypeRunFlow, nil
+	case "ifelse":
+		return RulebricksFlowNodeTypeIfelse, nil
+	case "continue_if":
+		return RulebricksFlowNodeTypeContinueIf, nil
+	case "continueif":
+		return RulebricksFlowNodeTypeContinueif, nil
+	case "foreach":
+		return RulebricksFlowNodeTypeForeach, nil
+	case "for_each":
+		return RulebricksFlowNodeTypeForEach, nil
+	case "foreachitem":
+		return RulebricksFlowNodeTypeForeachitem, nil
+	case "aggregate":
+		return RulebricksFlowNodeTypeAggregate, nil
+	case "combine_items":
+		return RulebricksFlowNodeTypeCombineItems, nil
+	case "combineitems":
+		return RulebricksFlowNodeTypeCombineitems, nil
+	case "result":
+		return RulebricksFlowNodeTypeResult, nil
+	case "result_object":
+		return RulebricksFlowNodeTypeResultObject, nil
+	case "code":
+		return RulebricksFlowNodeTypeCode, nil
+	case "run_code":
+		return RulebricksFlowNodeTypeRunCode, nil
+	case "api":
+		return RulebricksFlowNodeTypeAPI, nil
+	case "api_request":
+		return RulebricksFlowNodeTypeAPIRequest, nil
+	case "db":
+		return RulebricksFlowNodeTypeDb, nil
+	case "database_query":
+		return RulebricksFlowNodeTypeDatabaseQuery, nil
+	case "soap":
+		return RulebricksFlowNodeTypeSoap, nil
+	case "soap_request":
+		return RulebricksFlowNodeTypeSoapRequest, nil
+	case "ai":
+		return RulebricksFlowNodeTypeAi, nil
+	case "ai_inference":
+		return RulebricksFlowNodeTypeAiInference, nil
+	case "lookup":
+		return RulebricksFlowNodeTypeLookup, nil
+	case "lookup_table":
+		return RulebricksFlowNodeTypeLookupTable, nil
+	case "vault":
+		return RulebricksFlowNodeTypeVault, nil
+	case "entity":
+		return RulebricksFlowNodeTypeEntity, nil
+	case "context_operation":
+		return RulebricksFlowNodeTypeContextOperation, nil
+	case "notification":
+		return RulebricksFlowNodeTypeNotification, nil
+	case "send_notification":
+		return RulebricksFlowNodeTypeSendNotification, nil
+	}
+	var t RulebricksFlowNodeType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RulebricksFlowNodeType) Ptr() *RulebricksFlowNodeType {
+	return &r
+}
+
+// A declared output of a dynamic node (code/api/db/soap/ai/for_each). Declaring outputs lets the expander render the output handle and keep generated connections.
+var (
+	rulebricksFlowOutputFieldFieldKey  = big.NewInt(1 << 0)
+	rulebricksFlowOutputFieldFieldType = big.NewInt(1 << 1)
+	rulebricksFlowOutputFieldFieldName = big.NewInt(1 << 2)
+)
+
+type RulebricksFlowOutputField struct {
+	// Output property key.
+	Key string `json:"key" url:"key"`
+	// Value type used for handle typing.
+	Type *RulebricksFlowOutputFieldType `json:"type,omitempty" url:"type,omitempty"`
+	// Optional display name.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RulebricksFlowOutputField) GetKey() string {
+	if r == nil {
+		return ""
+	}
+	return r.Key
+}
+
+func (r *RulebricksFlowOutputField) GetType() *RulebricksFlowOutputFieldType {
+	if r == nil {
+		return nil
+	}
+	return r.Type
+}
+
+func (r *RulebricksFlowOutputField) GetName() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Name
+}
+
+func (r *RulebricksFlowOutputField) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RulebricksFlowOutputField) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowOutputField) SetKey(key string) {
+	r.Key = key
+	r.require(rulebricksFlowOutputFieldFieldKey)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowOutputField) SetType(type_ *RulebricksFlowOutputFieldType) {
+	r.Type = type_
+	r.require(rulebricksFlowOutputFieldFieldType)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RulebricksFlowOutputField) SetName(name *string) {
+	r.Name = name
+	r.require(rulebricksFlowOutputFieldFieldName)
+}
+
+func (r *RulebricksFlowOutputField) UnmarshalJSON(data []byte) error {
+	type unmarshaler RulebricksFlowOutputField
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RulebricksFlowOutputField(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RulebricksFlowOutputField) MarshalJSON() ([]byte, error) {
+	type embed RulebricksFlowOutputField
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RulebricksFlowOutputField) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+// Value type used for handle typing.
+type RulebricksFlowOutputFieldType string
+
+const (
+	RulebricksFlowOutputFieldTypeString  RulebricksFlowOutputFieldType = "string"
+	RulebricksFlowOutputFieldTypeNumber  RulebricksFlowOutputFieldType = "number"
+	RulebricksFlowOutputFieldTypeBoolean RulebricksFlowOutputFieldType = "boolean"
+	RulebricksFlowOutputFieldTypeList    RulebricksFlowOutputFieldType = "list"
+	RulebricksFlowOutputFieldTypeObject  RulebricksFlowOutputFieldType = "object"
+	RulebricksFlowOutputFieldTypeDate    RulebricksFlowOutputFieldType = "date"
+	RulebricksFlowOutputFieldTypeAny     RulebricksFlowOutputFieldType = "any"
+)
+
+func NewRulebricksFlowOutputFieldTypeFromString(s string) (RulebricksFlowOutputFieldType, error) {
+	switch s {
+	case "string":
+		return RulebricksFlowOutputFieldTypeString, nil
+	case "number":
+		return RulebricksFlowOutputFieldTypeNumber, nil
+	case "boolean":
+		return RulebricksFlowOutputFieldTypeBoolean, nil
+	case "list":
+		return RulebricksFlowOutputFieldTypeList, nil
+	case "object":
+		return RulebricksFlowOutputFieldTypeObject, nil
+	case "date":
+		return RulebricksFlowOutputFieldTypeDate, nil
+	case "any":
+		return RulebricksFlowOutputFieldTypeAny, nil
+	}
+	var t RulebricksFlowOutputFieldType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RulebricksFlowOutputFieldType) Ptr() *RulebricksFlowOutputFieldType {
+	return &r
+}
+
+var (
+	runTestsRequestFieldCriticalOnly = big.NewInt(1 << 0)
+)
+
+type RunTestsRequest struct {
+	// When true, run only the tests flagged as critical (a smoke test). Defaults to false (run the entire suite).
+	CriticalOnly *bool `json:"critical_only,omitempty" url:"critical_only,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunTestsRequest) GetCriticalOnly() *bool {
+	if r == nil {
+		return nil
+	}
+	return r.CriticalOnly
+}
+
+func (r *RunTestsRequest) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunTestsRequest) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetCriticalOnly sets the CriticalOnly field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsRequest) SetCriticalOnly(criticalOnly *bool) {
+	r.CriticalOnly = criticalOnly
+	r.require(runTestsRequestFieldCriticalOnly)
+}
+
+func (r *RunTestsRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunTestsRequest
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunTestsRequest(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunTestsRequest) MarshalJSON() ([]byte, error) {
+	type embed RunTestsRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunTestsRequest) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	runTestsResponseFieldRule                = big.NewInt(1 << 0)
+	runTestsResponseFieldFlow                = big.NewInt(1 << 1)
+	runTestsResponseFieldTotal               = big.NewInt(1 << 2)
+	runTestsResponseFieldPassed              = big.NewInt(1 << 3)
+	runTestsResponseFieldFailed              = big.NewInt(1 << 4)
+	runTestsResponseFieldPassPercentage      = big.NewInt(1 << 5)
+	runTestsResponseFieldCriticalFailure     = big.NewInt(1 << 6)
+	runTestsResponseFieldFailedTests         = big.NewInt(1 << 7)
+	runTestsResponseFieldCriticalFailedTests = big.NewInt(1 << 8)
+	runTestsResponseFieldResults             = big.NewInt(1 << 9)
+	runTestsResponseFieldFailures            = big.NewInt(1 << 10)
+)
+
+type RunTestsResponse struct {
+	// The slug of the rule that was tested (rule runs only).
+	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
+	// The slug of the flow that was tested (flow runs only).
+	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
+	// The number of tests that were run.
+	Total int `json:"total" url:"total"`
+	// The number of tests that passed.
+	Passed int `json:"passed" url:"passed"`
+	// The number of tests that failed.
+	Failed int `json:"failed" url:"failed"`
+	// The percentage of tests that passed, formatted to two decimals.
+	PassPercentage string `json:"pass_percentage" url:"pass_percentage"`
+	// True if any test flagged as critical failed. Use this to decide whether to block a release.
+	CriticalFailure bool `json:"critical_failure" url:"critical_failure"`
+	// The names of all tests that failed.
+	FailedTests []string `json:"failed_tests" url:"failed_tests"`
+	// The names of the critical tests that failed.
+	CriticalFailedTests []string `json:"critical_failed_tests" url:"critical_failed_tests"`
+	// Per-test outcomes.
+	Results []*RunTestsResponseResultsItem `json:"results" url:"results"`
+	// Diagnostics for each failing test: what was expected, what the rule/flow actually produced, and (for rules) which decision-table row(s) fired. Empty when every test passed.
+	Failures []*RunTestsResponseFailuresItem `json:"failures,omitempty" url:"failures,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunTestsResponse) GetRule() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Rule
+}
+
+func (r *RunTestsResponse) GetFlow() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Flow
+}
+
+func (r *RunTestsResponse) GetTotal() int {
+	if r == nil {
+		return 0
+	}
+	return r.Total
+}
+
+func (r *RunTestsResponse) GetPassed() int {
+	if r == nil {
+		return 0
+	}
+	return r.Passed
+}
+
+func (r *RunTestsResponse) GetFailed() int {
+	if r == nil {
+		return 0
+	}
+	return r.Failed
+}
+
+func (r *RunTestsResponse) GetPassPercentage() string {
+	if r == nil {
+		return ""
+	}
+	return r.PassPercentage
+}
+
+func (r *RunTestsResponse) GetCriticalFailure() bool {
+	if r == nil {
+		return false
+	}
+	return r.CriticalFailure
+}
+
+func (r *RunTestsResponse) GetFailedTests() []string {
+	if r == nil {
+		return nil
+	}
+	return r.FailedTests
+}
+
+func (r *RunTestsResponse) GetCriticalFailedTests() []string {
+	if r == nil {
+		return nil
+	}
+	return r.CriticalFailedTests
+}
+
+func (r *RunTestsResponse) GetResults() []*RunTestsResponseResultsItem {
+	if r == nil {
+		return nil
+	}
+	return r.Results
+}
+
+func (r *RunTestsResponse) GetFailures() []*RunTestsResponseFailuresItem {
+	if r == nil {
+		return nil
+	}
+	return r.Failures
+}
+
+func (r *RunTestsResponse) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunTestsResponse) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetRule sets the Rule field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetRule(rule *string) {
+	r.Rule = rule
+	r.require(runTestsResponseFieldRule)
+}
+
+// SetFlow sets the Flow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetFlow(flow *string) {
+	r.Flow = flow
+	r.require(runTestsResponseFieldFlow)
+}
+
+// SetTotal sets the Total field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetTotal(total int) {
+	r.Total = total
+	r.require(runTestsResponseFieldTotal)
+}
+
+// SetPassed sets the Passed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetPassed(passed int) {
+	r.Passed = passed
+	r.require(runTestsResponseFieldPassed)
+}
+
+// SetFailed sets the Failed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetFailed(failed int) {
+	r.Failed = failed
+	r.require(runTestsResponseFieldFailed)
+}
+
+// SetPassPercentage sets the PassPercentage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetPassPercentage(passPercentage string) {
+	r.PassPercentage = passPercentage
+	r.require(runTestsResponseFieldPassPercentage)
+}
+
+// SetCriticalFailure sets the CriticalFailure field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetCriticalFailure(criticalFailure bool) {
+	r.CriticalFailure = criticalFailure
+	r.require(runTestsResponseFieldCriticalFailure)
+}
+
+// SetFailedTests sets the FailedTests field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetFailedTests(failedTests []string) {
+	r.FailedTests = failedTests
+	r.require(runTestsResponseFieldFailedTests)
+}
+
+// SetCriticalFailedTests sets the CriticalFailedTests field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetCriticalFailedTests(criticalFailedTests []string) {
+	r.CriticalFailedTests = criticalFailedTests
+	r.require(runTestsResponseFieldCriticalFailedTests)
+}
+
+// SetResults sets the Results field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetResults(results []*RunTestsResponseResultsItem) {
+	r.Results = results
+	r.require(runTestsResponseFieldResults)
+}
+
+// SetFailures sets the Failures field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponse) SetFailures(failures []*RunTestsResponseFailuresItem) {
+	r.Failures = failures
+	r.require(runTestsResponseFieldFailures)
+}
+
+func (r *RunTestsResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunTestsResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunTestsResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunTestsResponse) MarshalJSON() ([]byte, error) {
+	type embed RunTestsResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunTestsResponse) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	runTestsResponseFailuresItemFieldID           = big.NewInt(1 << 0)
+	runTestsResponseFailuresItemFieldName         = big.NewInt(1 << 1)
+	runTestsResponseFailuresItemFieldCritical     = big.NewInt(1 << 2)
+	runTestsResponseFailuresItemFieldExpected     = big.NewInt(1 << 3)
+	runTestsResponseFailuresItemFieldActual       = big.NewInt(1 << 4)
+	runTestsResponseFailuresItemFieldMatchedRows  = big.NewInt(1 << 5)
+	runTestsResponseFailuresItemFieldErrorMessage = big.NewInt(1 << 6)
+)
+
+type RunTestsResponseFailuresItem struct {
+	ID       string `json:"id" url:"id"`
+	Name     string `json:"name" url:"name"`
+	Critical bool   `json:"critical" url:"critical"`
+	// The expected response for the test case.
+	Expected any `json:"expected,omitempty" url:"expected,omitempty"`
+	// The response the rule/flow actually produced (null when the case failed to execute).
+	Actual any `json:"actual,omitempty" url:"actual,omitempty"`
+	// Rules only: the index(es) of the decision-table row(s) that fired for this case.
+	MatchedRows []int `json:"matched_rows,omitempty" url:"matched_rows,omitempty"`
+	// A human-readable evaluation error when the case failed to execute.
+	ErrorMessage *string `json:"error_message,omitempty" url:"error_message,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunTestsResponseFailuresItem) GetID() string {
+	if r == nil {
+		return ""
+	}
+	return r.ID
+}
+
+func (r *RunTestsResponseFailuresItem) GetName() string {
+	if r == nil {
+		return ""
+	}
+	return r.Name
+}
+
+func (r *RunTestsResponseFailuresItem) GetCritical() bool {
+	if r == nil {
+		return false
+	}
+	return r.Critical
+}
+
+func (r *RunTestsResponseFailuresItem) GetExpected() any {
+	if r == nil {
+		return nil
+	}
+	return r.Expected
+}
+
+func (r *RunTestsResponseFailuresItem) GetActual() any {
+	if r == nil {
+		return nil
+	}
+	return r.Actual
+}
+
+func (r *RunTestsResponseFailuresItem) GetMatchedRows() []int {
+	if r == nil {
+		return nil
+	}
+	return r.MatchedRows
+}
+
+func (r *RunTestsResponseFailuresItem) GetErrorMessage() *string {
+	if r == nil {
+		return nil
+	}
+	return r.ErrorMessage
+}
+
+func (r *RunTestsResponseFailuresItem) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunTestsResponseFailuresItem) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseFailuresItem) SetID(id string) {
+	r.ID = id
+	r.require(runTestsResponseFailuresItemFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseFailuresItem) SetName(name string) {
+	r.Name = name
+	r.require(runTestsResponseFailuresItemFieldName)
+}
+
+// SetCritical sets the Critical field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseFailuresItem) SetCritical(critical bool) {
+	r.Critical = critical
+	r.require(runTestsResponseFailuresItemFieldCritical)
+}
+
+// SetExpected sets the Expected field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseFailuresItem) SetExpected(expected any) {
+	r.Expected = expected
+	r.require(runTestsResponseFailuresItemFieldExpected)
+}
+
+// SetActual sets the Actual field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseFailuresItem) SetActual(actual any) {
+	r.Actual = actual
+	r.require(runTestsResponseFailuresItemFieldActual)
+}
+
+// SetMatchedRows sets the MatchedRows field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseFailuresItem) SetMatchedRows(matchedRows []int) {
+	r.MatchedRows = matchedRows
+	r.require(runTestsResponseFailuresItemFieldMatchedRows)
+}
+
+// SetErrorMessage sets the ErrorMessage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseFailuresItem) SetErrorMessage(errorMessage *string) {
+	r.ErrorMessage = errorMessage
+	r.require(runTestsResponseFailuresItemFieldErrorMessage)
+}
+
+func (r *RunTestsResponseFailuresItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunTestsResponseFailuresItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunTestsResponseFailuresItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunTestsResponseFailuresItem) MarshalJSON() ([]byte, error) {
+	type embed RunTestsResponseFailuresItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunTestsResponseFailuresItem) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	runTestsResponseResultsItemFieldID       = big.NewInt(1 << 0)
+	runTestsResponseResultsItemFieldName     = big.NewInt(1 << 1)
+	runTestsResponseResultsItemFieldCritical = big.NewInt(1 << 2)
+	runTestsResponseResultsItemFieldSuccess  = big.NewInt(1 << 3)
+	runTestsResponseResultsItemFieldError    = big.NewInt(1 << 4)
+)
+
+type RunTestsResponseResultsItem struct {
+	ID       string `json:"id" url:"id"`
+	Name     string `json:"name" url:"name"`
+	Critical bool   `json:"critical" url:"critical"`
+	Success  bool   `json:"success" url:"success"`
+	Error    bool   `json:"error" url:"error"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *RunTestsResponseResultsItem) GetID() string {
+	if r == nil {
+		return ""
+	}
+	return r.ID
+}
+
+func (r *RunTestsResponseResultsItem) GetName() string {
+	if r == nil {
+		return ""
+	}
+	return r.Name
+}
+
+func (r *RunTestsResponseResultsItem) GetCritical() bool {
+	if r == nil {
+		return false
+	}
+	return r.Critical
+}
+
+func (r *RunTestsResponseResultsItem) GetSuccess() bool {
+	if r == nil {
+		return false
+	}
+	return r.Success
+}
+
+func (r *RunTestsResponseResultsItem) GetError() bool {
+	if r == nil {
+		return false
+	}
+	return r.Error
+}
+
+func (r *RunTestsResponseResultsItem) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *RunTestsResponseResultsItem) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseResultsItem) SetID(id string) {
+	r.ID = id
+	r.require(runTestsResponseResultsItemFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseResultsItem) SetName(name string) {
+	r.Name = name
+	r.require(runTestsResponseResultsItemFieldName)
+}
+
+// SetCritical sets the Critical field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseResultsItem) SetCritical(critical bool) {
+	r.Critical = critical
+	r.require(runTestsResponseResultsItemFieldCritical)
+}
+
+// SetSuccess sets the Success field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseResultsItem) SetSuccess(success bool) {
+	r.Success = success
+	r.require(runTestsResponseResultsItemFieldSuccess)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseResultsItem) SetError(error_ bool) {
+	r.Error = error_
+	r.require(runTestsResponseResultsItemFieldError)
+}
+
+func (r *RunTestsResponseResultsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler RunTestsResponseResultsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = RunTestsResponseResultsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RunTestsResponseResultsItem) MarshalJSON() ([]byte, error) {
+	type embed RunTestsResponseResultsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *RunTestsResponseResultsItem) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
 var (
 	schemaFieldFieldKey                  = big.NewInt(1 << 0)
 	schemaFieldFieldShow                 = big.NewInt(1 << 1)
@@ -6379,7 +10140,7 @@ var (
 )
 
 type SchemaField struct {
-	// The unique key for this field.
+	// The unique key for this field. Nested facts use dot-separated identifiers.
 	Key *string `json:"key,omitempty" url:"key,omitempty"`
 	// Whether this field is visible in the UI.
 	Show *bool `json:"show,omitempty" url:"show,omitempty"`
@@ -6726,6 +10487,383 @@ func NewSchemaFieldTypeFromString(s string) (SchemaFieldType, error) {
 }
 
 func (s SchemaFieldType) Ptr() *SchemaFieldType {
+	return &s
+}
+
+// Optional request body for executing a flow against context. The entire body is merged into (and persisted to) the instance state before flow execution.
+type SolveContextFlowRequest = map[string]any
+
+// Response after executing a flow against a context instance.
+var (
+	solveContextFlowResponseFieldStatus  = big.NewInt(1 << 0)
+	solveContextFlowResponseFieldContext = big.NewInt(1 << 1)
+	solveContextFlowResponseFieldFlow    = big.NewInt(1 << 2)
+	solveContextFlowResponseFieldResult  = big.NewInt(1 << 3)
+	solveContextFlowResponseFieldUsage   = big.NewInt(1 << 4)
+)
+
+type SolveContextFlowResponse struct {
+	// Whether the flow executed successfully.
+	Status *SolveContextFlowResponseStatus `json:"status,omitempty" url:"status,omitempty"`
+	// Combined identifier in format 'contextSlug:instanceId'.
+	Context *string `json:"context,omitempty" url:"context,omitempty"`
+	// The slug of the flow that was executed.
+	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
+	// The flow execution output.
+	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
+	// Resource usage information for the flow execution.
+	Usage map[string]any `json:"usage,omitempty" url:"usage,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SolveContextFlowResponse) GetStatus() *SolveContextFlowResponseStatus {
+	if s == nil {
+		return nil
+	}
+	return s.Status
+}
+
+func (s *SolveContextFlowResponse) GetContext() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Context
+}
+
+func (s *SolveContextFlowResponse) GetFlow() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Flow
+}
+
+func (s *SolveContextFlowResponse) GetResult() map[string]any {
+	if s == nil {
+		return nil
+	}
+	return s.Result
+}
+
+func (s *SolveContextFlowResponse) GetUsage() map[string]any {
+	if s == nil {
+		return nil
+	}
+	return s.Usage
+}
+
+func (s *SolveContextFlowResponse) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SolveContextFlowResponse) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextFlowResponse) SetStatus(status *SolveContextFlowResponseStatus) {
+	s.Status = status
+	s.require(solveContextFlowResponseFieldStatus)
+}
+
+// SetContext sets the Context field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextFlowResponse) SetContext(context *string) {
+	s.Context = context
+	s.require(solveContextFlowResponseFieldContext)
+}
+
+// SetFlow sets the Flow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextFlowResponse) SetFlow(flow *string) {
+	s.Flow = flow
+	s.require(solveContextFlowResponseFieldFlow)
+}
+
+// SetResult sets the Result field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextFlowResponse) SetResult(result map[string]any) {
+	s.Result = result
+	s.require(solveContextFlowResponseFieldResult)
+}
+
+// SetUsage sets the Usage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextFlowResponse) SetUsage(usage map[string]any) {
+	s.Usage = usage
+	s.require(solveContextFlowResponseFieldUsage)
+}
+
+func (s *SolveContextFlowResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler SolveContextFlowResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SolveContextFlowResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SolveContextFlowResponse) MarshalJSON() ([]byte, error) {
+	type embed SolveContextFlowResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SolveContextFlowResponse) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// Whether the flow executed successfully.
+type SolveContextFlowResponseStatus string
+
+const (
+	SolveContextFlowResponseStatusSolved SolveContextFlowResponseStatus = "solved"
+	SolveContextFlowResponseStatusError  SolveContextFlowResponseStatus = "error"
+)
+
+func NewSolveContextFlowResponseStatusFromString(s string) (SolveContextFlowResponseStatus, error) {
+	switch s {
+	case "solved":
+		return SolveContextFlowResponseStatusSolved, nil
+	case "error":
+		return SolveContextFlowResponseStatusError, nil
+	}
+	var t SolveContextFlowResponseStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SolveContextFlowResponseStatus) Ptr() *SolveContextFlowResponseStatus {
+	return &s
+}
+
+// Optional request body for solving a rule against context. The entire body is merged into (and persisted to) the instance state before rule evaluation.
+type SolveContextRuleRequest = map[string]any
+
+// Response after solving a rule against a context instance.
+var (
+	solveContextRuleResponseFieldStatus           = big.NewInt(1 << 0)
+	solveContextRuleResponseFieldContext          = big.NewInt(1 << 1)
+	solveContextRuleResponseFieldRule             = big.NewInt(1 << 2)
+	solveContextRuleResponseFieldResult           = big.NewInt(1 << 3)
+	solveContextRuleResponseFieldWrittenToContext = big.NewInt(1 << 4)
+	solveContextRuleResponseFieldCascaded         = big.NewInt(1 << 5)
+)
+
+type SolveContextRuleResponse struct {
+	// Whether the rule executed successfully.
+	Status *SolveContextRuleResponseStatus `json:"status,omitempty" url:"status,omitempty"`
+	// Combined identifier in format 'contextSlug:instanceId'.
+	Context *string `json:"context,omitempty" url:"context,omitempty"`
+	// The slug of the rule that was executed.
+	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
+	// The rule evaluation result (output values).
+	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
+	// List of field keys that were written back to the context instance.
+	WrittenToContext []string `json:"written_to_context,omitempty" url:"written_to_context,omitempty"`
+	// Results from any cascaded evaluations triggered by the rule outputs.
+	Cascaded []*CascadeResult `json:"cascaded,omitempty" url:"cascaded,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SolveContextRuleResponse) GetStatus() *SolveContextRuleResponseStatus {
+	if s == nil {
+		return nil
+	}
+	return s.Status
+}
+
+func (s *SolveContextRuleResponse) GetContext() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Context
+}
+
+func (s *SolveContextRuleResponse) GetRule() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Rule
+}
+
+func (s *SolveContextRuleResponse) GetResult() map[string]any {
+	if s == nil {
+		return nil
+	}
+	return s.Result
+}
+
+func (s *SolveContextRuleResponse) GetWrittenToContext() []string {
+	if s == nil {
+		return nil
+	}
+	return s.WrittenToContext
+}
+
+func (s *SolveContextRuleResponse) GetCascaded() []*CascadeResult {
+	if s == nil {
+		return nil
+	}
+	return s.Cascaded
+}
+
+func (s *SolveContextRuleResponse) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SolveContextRuleResponse) require(field *big.Int) {
+	if s.explicitFields == nil {
+		s.explicitFields = big.NewInt(0)
+	}
+	s.explicitFields.Or(s.explicitFields, field)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextRuleResponse) SetStatus(status *SolveContextRuleResponseStatus) {
+	s.Status = status
+	s.require(solveContextRuleResponseFieldStatus)
+}
+
+// SetContext sets the Context field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextRuleResponse) SetContext(context *string) {
+	s.Context = context
+	s.require(solveContextRuleResponseFieldContext)
+}
+
+// SetRule sets the Rule field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextRuleResponse) SetRule(rule *string) {
+	s.Rule = rule
+	s.require(solveContextRuleResponseFieldRule)
+}
+
+// SetResult sets the Result field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextRuleResponse) SetResult(result map[string]any) {
+	s.Result = result
+	s.require(solveContextRuleResponseFieldResult)
+}
+
+// SetWrittenToContext sets the WrittenToContext field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextRuleResponse) SetWrittenToContext(writtenToContext []string) {
+	s.WrittenToContext = writtenToContext
+	s.require(solveContextRuleResponseFieldWrittenToContext)
+}
+
+// SetCascaded sets the Cascaded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextRuleResponse) SetCascaded(cascaded []*CascadeResult) {
+	s.Cascaded = cascaded
+	s.require(solveContextRuleResponseFieldCascaded)
+}
+
+func (s *SolveContextRuleResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler SolveContextRuleResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SolveContextRuleResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SolveContextRuleResponse) MarshalJSON() ([]byte, error) {
+	type embed SolveContextRuleResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SolveContextRuleResponse) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// Whether the rule executed successfully.
+type SolveContextRuleResponseStatus string
+
+const (
+	SolveContextRuleResponseStatusSolved SolveContextRuleResponseStatus = "solved"
+	SolveContextRuleResponseStatusError  SolveContextRuleResponseStatus = "error"
+)
+
+func NewSolveContextRuleResponseStatusFromString(s string) (SolveContextRuleResponseStatus, error) {
+	switch s {
+	case "solved":
+		return SolveContextRuleResponseStatusSolved, nil
+	case "error":
+		return SolveContextRuleResponseStatusError, nil
+	}
+	var t SolveContextRuleResponseStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SolveContextRuleResponseStatus) Ptr() *SolveContextRuleResponseStatus {
 	return &s
 }
 
@@ -7568,22 +11706,19 @@ func (u *UserGroup) String() string {
 
 type UserGroupListResponse = []*UserGroup
 
-// System limits for dynamic values
+// System limits for vocabulary values
 var (
 	valueLimitsFieldMaxKeys        = big.NewInt(1 << 0)
 	valueLimitsFieldMaxValueLength = big.NewInt(1 << 1)
-	valueLimitsFieldMaxTotalSize   = big.NewInt(1 << 2)
-	valueLimitsFieldMaxKeyLength   = big.NewInt(1 << 3)
+	valueLimitsFieldMaxKeyLength   = big.NewInt(1 << 2)
 )
 
 type ValueLimits struct {
-	// Maximum number of value keys per user
+	// Maximum number of vocabulary values per workspace (a guardrail against runaway imports; the system is designed to operate at this scale)
 	MaxKeys *int `json:"MAX_KEYS,omitempty" url:"MAX_KEYS,omitempty"`
-	// Maximum length of a single value in characters
+	// Maximum serialized length of a single value payload in characters
 	MaxValueLength *int `json:"MAX_VALUE_LENGTH,omitempty" url:"MAX_VALUE_LENGTH,omitempty"`
-	// Maximum total size of all values in bytes
-	MaxTotalSize *int `json:"MAX_TOTAL_SIZE,omitempty" url:"MAX_TOTAL_SIZE,omitempty"`
-	// Maximum length of a key name
+	// Maximum length of a value name in characters, including collection prefixes
 	MaxKeyLength *int `json:"MAX_KEY_LENGTH,omitempty" url:"MAX_KEY_LENGTH,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7605,13 +11740,6 @@ func (v *ValueLimits) GetMaxValueLength() *int {
 		return nil
 	}
 	return v.MaxValueLength
-}
-
-func (v *ValueLimits) GetMaxTotalSize() *int {
-	if v == nil {
-		return nil
-	}
-	return v.MaxTotalSize
 }
 
 func (v *ValueLimits) GetMaxKeyLength() *int {
@@ -7647,13 +11775,6 @@ func (v *ValueLimits) SetMaxKeys(maxKeys *int) {
 func (v *ValueLimits) SetMaxValueLength(maxValueLength *int) {
 	v.MaxValueLength = maxValueLength
 	v.require(valueLimitsFieldMaxValueLength)
-}
-
-// SetMaxTotalSize sets the MaxTotalSize field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (v *ValueLimits) SetMaxTotalSize(maxTotalSize *int) {
-	v.MaxTotalSize = maxTotalSize
-	v.require(valueLimitsFieldMaxTotalSize)
 }
 
 // SetMaxKeyLength sets the MaxKeyLength field and marks it as non-optional;
@@ -7703,4 +11824,161 @@ func (v *ValueLimits) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", v)
+}
+
+// A value-to-value reference marker. On writes, reference a value by name with { "$ref": "<value name>" } or by ID with { "$rb": "globalValue", "id": "<value id>" }. Name references are resolved and stored as ID references, so renames never break them. A scalar payload may be a single reference; list payloads may mix literal items and references. Reads with resolve=false return the stored id-based markers.
+var (
+	valueReferenceFieldRef  = big.NewInt(1 << 0)
+	valueReferenceFieldRb   = big.NewInt(1 << 1)
+	valueReferenceFieldID   = big.NewInt(1 << 2)
+	valueReferenceFieldName = big.NewInt(1 << 3)
+)
+
+type ValueReference struct {
+	// Full name of the referenced value (write-time form), e.g. 'Medical Codes.A123'.
+	Ref *string `json:"$ref,omitempty" url:"$ref,omitempty"`
+	// Marker discriminator for id-based references.
+	Rb *ValueReferenceRb `json:"$rb,omitempty" url:"$rb,omitempty"`
+	// Id of the referenced value (stored form).
+	ID *string `json:"id,omitempty" url:"id,omitempty"`
+	// Denormalized display name of the referenced value (stored form; may lag renames).
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (v *ValueReference) GetRef() *string {
+	if v == nil {
+		return nil
+	}
+	return v.Ref
+}
+
+func (v *ValueReference) GetRb() *ValueReferenceRb {
+	if v == nil {
+		return nil
+	}
+	return v.Rb
+}
+
+func (v *ValueReference) GetID() *string {
+	if v == nil {
+		return nil
+	}
+	return v.ID
+}
+
+func (v *ValueReference) GetName() *string {
+	if v == nil {
+		return nil
+	}
+	return v.Name
+}
+
+func (v *ValueReference) GetExtraProperties() map[string]interface{} {
+	if v == nil {
+		return nil
+	}
+	return v.extraProperties
+}
+
+func (v *ValueReference) require(field *big.Int) {
+	if v.explicitFields == nil {
+		v.explicitFields = big.NewInt(0)
+	}
+	v.explicitFields.Or(v.explicitFields, field)
+}
+
+// SetRef sets the Ref field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *ValueReference) SetRef(ref *string) {
+	v.Ref = ref
+	v.require(valueReferenceFieldRef)
+}
+
+// SetRb sets the Rb field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *ValueReference) SetRb(rb *ValueReferenceRb) {
+	v.Rb = rb
+	v.require(valueReferenceFieldRb)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *ValueReference) SetID(id *string) {
+	v.ID = id
+	v.require(valueReferenceFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *ValueReference) SetName(name *string) {
+	v.Name = name
+	v.require(valueReferenceFieldName)
+}
+
+func (v *ValueReference) UnmarshalJSON(data []byte) error {
+	type unmarshaler ValueReference
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*v = ValueReference(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *v)
+	if err != nil {
+		return err
+	}
+	v.extraProperties = extraProperties
+	v.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (v *ValueReference) MarshalJSON() ([]byte, error) {
+	type embed ValueReference
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*v),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, v.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (v *ValueReference) String() string {
+	if v == nil {
+		return "<nil>"
+	}
+	if len(v.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(v); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", v)
+}
+
+// Marker discriminator for id-based references.
+type ValueReferenceRb string
+
+const (
+	ValueReferenceRbGlobalValue ValueReferenceRb = "globalValue"
+)
+
+func NewValueReferenceRbFromString(s string) (ValueReferenceRb, error) {
+	switch s {
+	case "globalValue":
+		return ValueReferenceRbGlobalValue, nil
+	}
+	var t ValueReferenceRb
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (v ValueReferenceRb) Ptr() *ValueReferenceRb {
+	return &v
 }

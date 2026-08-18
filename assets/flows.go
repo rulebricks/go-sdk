@@ -10,18 +10,18 @@ import (
 )
 
 var (
-	deleteRuleRequestFieldID = big.NewInt(1 << 0)
+	deleteFlowRequestFieldID = big.NewInt(1 << 0)
 )
 
-type DeleteRuleRequest struct {
-	// The ID of the rule to delete.
+type DeleteFlowRequest struct {
+	// The ID of the flow to delete.
 	ID string `json:"id" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (d *DeleteRuleRequest) require(field *big.Int) {
+func (d *DeleteFlowRequest) require(field *big.Int) {
 	if d.explicitFields == nil {
 		d.explicitFields = big.NewInt(0)
 	}
@@ -30,23 +30,23 @@ func (d *DeleteRuleRequest) require(field *big.Int) {
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteRuleRequest) SetID(id string) {
+func (d *DeleteFlowRequest) SetID(id string) {
 	d.ID = id
-	d.require(deleteRuleRequestFieldID)
+	d.require(deleteFlowRequestFieldID)
 }
 
-func (d *DeleteRuleRequest) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteRuleRequest
+func (d *DeleteFlowRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeleteFlowRequest
 	var body unmarshaler
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
-	*d = DeleteRuleRequest(body)
+	*d = DeleteFlowRequest(body)
 	return nil
 }
 
-func (d *DeleteRuleRequest) MarshalJSON() ([]byte, error) {
-	type embed DeleteRuleRequest
+func (d *DeleteFlowRequest) MarshalJSON() ([]byte, error) {
+	type embed DeleteFlowRequest
 	var marshaler = struct {
 		embed
 	}{
@@ -57,12 +57,12 @@ func (d *DeleteRuleRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	listRulesRequestFieldFolder    = big.NewInt(1 << 0)
-	listRulesRequestFieldUserGroup = big.NewInt(1 << 1)
-	listRulesRequestFieldName      = big.NewInt(1 << 2)
+	listFlowsRequestFieldFolder    = big.NewInt(1 << 0)
+	listFlowsRequestFieldUserGroup = big.NewInt(1 << 1)
+	listFlowsRequestFieldName      = big.NewInt(1 << 2)
 )
 
-type ListRulesRequest struct {
+type ListFlowsRequest struct {
 	// Filter results by folder name or folder ID.
 	Folder *string `json:"-" url:"folder,omitempty"`
 	// Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
@@ -74,7 +74,7 @@ type ListRulesRequest struct {
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (l *ListRulesRequest) require(field *big.Int) {
+func (l *ListFlowsRequest) require(field *big.Int) {
 	if l.explicitFields == nil {
 		l.explicitFields = big.NewInt(0)
 	}
@@ -83,38 +83,41 @@ func (l *ListRulesRequest) require(field *big.Int) {
 
 // SetFolder sets the Folder field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListRulesRequest) SetFolder(folder *string) {
+func (l *ListFlowsRequest) SetFolder(folder *string) {
 	l.Folder = folder
-	l.require(listRulesRequestFieldFolder)
+	l.require(listFlowsRequestFieldFolder)
 }
 
 // SetUserGroup sets the UserGroup field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListRulesRequest) SetUserGroup(userGroup *string) {
+func (l *ListFlowsRequest) SetUserGroup(userGroup *string) {
 	l.UserGroup = userGroup
-	l.require(listRulesRequestFieldUserGroup)
+	l.require(listFlowsRequestFieldUserGroup)
 }
 
 // SetName sets the Name field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (l *ListRulesRequest) SetName(name *string) {
+func (l *ListFlowsRequest) SetName(name *string) {
 	l.Name = name
-	l.require(listRulesRequestFieldName)
+	l.require(listFlowsRequestFieldName)
 }
 
 var (
-	pullRulesRequestFieldID = big.NewInt(1 << 0)
+	pullFlowsRequestFieldID   = big.NewInt(1 << 0)
+	pullFlowsRequestFieldSlug = big.NewInt(1 << 1)
 )
 
-type PullRulesRequest struct {
-	// The ID of the rule to export.
-	ID string `json:"-" url:"id"`
+type PullFlowsRequest struct {
+	// The ID of the flow to export (provide `id` or `slug`).
+	ID *string `json:"-" url:"id,omitempty"`
+	// The slug of the flow to export (provide `id` or `slug`).
+	Slug *string `json:"-" url:"slug,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (p *PullRulesRequest) require(field *big.Int) {
+func (p *PullFlowsRequest) require(field *big.Int) {
 	if p.explicitFields == nil {
 		p.explicitFields = big.NewInt(0)
 	}
@@ -123,48 +126,55 @@ func (p *PullRulesRequest) require(field *big.Int) {
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PullRulesRequest) SetID(id string) {
+func (p *PullFlowsRequest) SetID(id *string) {
 	p.ID = id
-	p.require(pullRulesRequestFieldID)
+	p.require(pullFlowsRequestFieldID)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PullFlowsRequest) SetSlug(slug *string) {
+	p.Slug = slug
+	p.require(pullFlowsRequestFieldSlug)
 }
 
 var (
-	importRuleRequestFieldRule = big.NewInt(1 << 0)
+	importFlowRequestFieldFlow = big.NewInt(1 << 0)
 )
 
-type ImportRuleRequest struct {
-	Rule *sdk.RuleImportPayload `json:"rule" url:"-"`
+type ImportFlowRequest struct {
+	Flow *sdk.FlowImportPayload `json:"flow" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (i *ImportRuleRequest) require(field *big.Int) {
+func (i *ImportFlowRequest) require(field *big.Int) {
 	if i.explicitFields == nil {
 		i.explicitFields = big.NewInt(0)
 	}
 	i.explicitFields.Or(i.explicitFields, field)
 }
 
-// SetRule sets the Rule field and marks it as non-optional;
+// SetFlow sets the Flow field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportRuleRequest) SetRule(rule *sdk.RuleImportPayload) {
-	i.Rule = rule
-	i.require(importRuleRequestFieldRule)
+func (i *ImportFlowRequest) SetFlow(flow *sdk.FlowImportPayload) {
+	i.Flow = flow
+	i.require(importFlowRequestFieldFlow)
 }
 
-func (i *ImportRuleRequest) UnmarshalJSON(data []byte) error {
-	type unmarshaler ImportRuleRequest
+func (i *ImportFlowRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportFlowRequest
 	var body unmarshaler
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
-	*i = ImportRuleRequest(body)
+	*i = ImportFlowRequest(body)
 	return nil
 }
 
-func (i *ImportRuleRequest) MarshalJSON() ([]byte, error) {
-	type embed ImportRuleRequest
+func (i *ImportFlowRequest) MarshalJSON() ([]byte, error) {
+	type embed ImportFlowRequest
 	var marshaler = struct {
 		embed
 	}{

@@ -5,6 +5,7 @@ package flows
 import (
 	context "context"
 	sdk "sdk"
+	assets "sdk/assets"
 	core "sdk/core"
 	internal "sdk/internal"
 	option "sdk/option"
@@ -33,13 +34,66 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// List all flows in the organization.
+// List all flows in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
 func (c *Client) List(
 	ctx context.Context,
+	request *assets.ListFlowsRequest,
 	opts ...option.RequestOption,
 ) (sdk.FlowListResponse, error) {
 	response, err := c.WithRawResponse.List(
 		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Create or update a flow from the Rulebricks Flow Schema (a list of `nodes` and `connections`). The server expands the Rulebricks Flow Schema definition into the full flow graph - laying it out, wiring property/control handles, resolving referenced published rules, and backfilling node defaults - so the result both renders in the editor and executes via `/flows/{slug}` without any manual editing. If `id` is provided the matching flow is updated; otherwise a new flow is created (`id`/`slug` auto-generated). Flows auto-publish unless `_publish` is set to `false`.
+func (c *Client) Push(
+	ctx context.Context,
+	request *assets.ImportFlowRequest,
+	opts ...option.RequestOption,
+) (*sdk.FlowImportResponse, error) {
+	response, err := c.WithRawResponse.Push(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Export a flow into the Rulebricks Flow Schema (nodes + connections), the same shape accepted by `/admin/flows/import`. Works for flows built entirely by hand in the editor, so they can be round-tripped or version-controlled. This is distinct from the top-level `/admin/export`, which produces `.rbm` manifests.
+func (c *Client) Pull(
+	ctx context.Context,
+	request *assets.PullFlowsRequest,
+	opts ...option.RequestOption,
+) (*sdk.FlowImportPayload, error) {
+	response, err := c.WithRawResponse.Pull(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Delete a specific flow by its ID.
+func (c *Client) Delete(
+	ctx context.Context,
+	request *assets.DeleteFlowRequest,
+	opts ...option.RequestOption,
+) (*sdk.SuccessMessage, error) {
+	response, err := c.WithRawResponse.Delete(
+		ctx,
+		request,
 		opts...,
 	)
 	if err != nil {

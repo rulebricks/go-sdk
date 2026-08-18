@@ -8,6 +8,8 @@ import (
 	json "encoding/json"
 	http "net/http"
 	os "os"
+	sdk "sdk"
+	assets "sdk/assets"
 	client "sdk/client"
 	option "sdk/option"
 	testing "testing"
@@ -87,8 +89,10 @@ func TestAssetsFlowsListWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithAPIKey("test-value"),
 	)
+	request := &assets.ListFlowsRequest{}
 	_, invocationErr := client.Assets.Flows.List(
 		context.TODO(),
+		request,
 		option.WithHTTPHeader(
 			http.Header{"X-Test-Id": []string{"TestAssetsFlowsListWithWireMock"}},
 		),
@@ -96,4 +100,162 @@ func TestAssetsFlowsListWithWireMock(
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestAssetsFlowsListWithWireMock", "GET", "/admin/flows/list", nil, 1)
+}
+
+func TestAssetsFlowsPushWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
+	)
+	request := &assets.ImportFlowRequest{
+		Flow: &sdk.FlowImportPayload{
+			Name: "Underwriting Flow",
+			Nodes: []*sdk.RulebricksFlowNode{
+				&sdk.RulebricksFlowNode{
+					Ref:  "input",
+					Type: sdk.RulebricksFlowNodeTypeOrigin,
+					Rule: sdk.String(
+						"customer-eligibility",
+					),
+				},
+				&sdk.RulebricksFlowNode{
+					Ref:  "gate",
+					Type: sdk.RulebricksFlowNodeTypeContinueIf,
+					Condition: &sdk.RulebricksFlowNodeCondition{
+						Property: sdk.String(
+							"approved",
+						),
+						Operator: sdk.String(
+							"equals",
+						),
+						Args: []any{
+							true,
+						},
+					},
+				},
+				&sdk.RulebricksFlowNode{
+					Ref:  "enrich",
+					Type: sdk.RulebricksFlowNodeTypeCode,
+					Outputs: []*sdk.RulebricksFlowNodeOutputsItem{
+						&sdk.RulebricksFlowNodeOutputsItem{
+							Key:  "tier",
+							Type: sdk.RulebricksFlowNodeOutputsItemTypeString.Ptr(),
+						},
+					},
+					Code: sdk.String(
+						"outputs.tier = inputs.score > 700 ? 'A' : 'B'",
+					),
+				},
+				&sdk.RulebricksFlowNode{
+					Ref:  "out",
+					Type: sdk.RulebricksFlowNodeTypeResult,
+					Key: sdk.String(
+						"data",
+					),
+				},
+			},
+			Connections: []*sdk.RulebricksFlowConnection{
+				&sdk.RulebricksFlowConnection{
+					From: "input",
+					To:   "gate",
+					Output: sdk.String(
+						"approved",
+					),
+				},
+				&sdk.RulebricksFlowConnection{
+					From: "input",
+					To:   "enrich",
+					Output: sdk.String(
+						"score",
+					),
+					Input: sdk.String(
+						"score",
+					),
+				},
+				&sdk.RulebricksFlowConnection{
+					From: "gate",
+					To:   "out",
+					Control: sdk.Bool(
+						true,
+					),
+				},
+				&sdk.RulebricksFlowConnection{
+					From: "enrich",
+					To:   "out",
+					Output: sdk.String(
+						"tier",
+					),
+				},
+			},
+			Publish: sdk.Bool(
+				true,
+			),
+		},
+	}
+	_, invocationErr := client.Assets.Flows.Push(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssetsFlowsPushWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAssetsFlowsPushWithWireMock", "POST", "/admin/flows/import", nil, 1)
+}
+
+func TestAssetsFlowsPullWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
+	)
+	request := &assets.PullFlowsRequest{}
+	_, invocationErr := client.Assets.Flows.Pull(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssetsFlowsPullWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAssetsFlowsPullWithWireMock", "GET", "/admin/flows/export", nil, 1)
+}
+
+func TestAssetsFlowsDeleteWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
+	)
+	request := &assets.DeleteFlowRequest{
+		ID: "3855f8da-2654-4df9-8903-8f797cbfe8ec",
+	}
+	_, invocationErr := client.Assets.Flows.Delete(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAssetsFlowsDeleteWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAssetsFlowsDeleteWithWireMock", "DELETE", "/admin/flows/delete", nil, 1)
 }

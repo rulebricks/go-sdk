@@ -27,7 +27,7 @@ type CreateRelationshipRequest struct {
 	RelationType CreateRelationshipRequestRelationType `json:"relation_type" url:"-"`
 	// The field key to use as the foreign key.
 	ForeignKeyFact string `json:"foreign_key_fact" url:"-"`
-	// Display name for the relationship.
+	// Optional runtime relationship key. It is normalized to lowercase snake_case; the target context slug is used when omitted.
 	Name *string `json:"name,omitempty" url:"-"`
 	// Description of the relationship.
 	Description *string `json:"description,omitempty" url:"-"`

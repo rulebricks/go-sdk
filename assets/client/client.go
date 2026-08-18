@@ -57,7 +57,7 @@ func (c *Client) GetUsage(
 	return response.Body, nil
 }
 
-// Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm).
+// Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm). Both plain manifests and compressed ones (the compress-json array form produced by exporting with `compress: true`) are accepted and detected automatically. Run Flow (subflow) references between flows in the manifest are resolved to the slugs, IDs, and published versions the flows receive in this workspace.
 func (c *Client) ImportRbm(
 	ctx context.Context,
 	request *sdk.ImportManifestRequest,
@@ -74,7 +74,7 @@ func (c *Client) ImportRbm(
 	return response.Body, nil
 }
 
-// Export selected rules, flows, contexts, and values to an Rulebricks manifest file (*.rbm).
+// Export selected rules, flows, contexts, and values to an Rulebricks manifest file (*.rbm). Dependencies are resolved automatically: exporting a flow includes its rules, contexts, vocabulary values, and any flows referenced by Run Flow nodes (recursively). Set `compress: true` to receive the manifest in compressed form (a compress-json array), which is much smaller and can be saved directly as a .rbm file; the import endpoint accepts both forms.
 func (c *Client) ExportRbm(
 	ctx context.Context,
 	request *sdk.ExportManifestRequest,

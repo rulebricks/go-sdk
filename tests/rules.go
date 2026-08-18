@@ -109,3 +109,43 @@ func (l *ListRulesRequest) SetSlug(slug string) {
 	l.Slug = slug
 	l.require(listRulesRequestFieldSlug)
 }
+
+var (
+	runRulesRequestFieldSlug = big.NewInt(1 << 0)
+)
+
+type RunRulesRequest struct {
+	// The unique identifier for the resource.
+	Slug string               `json:"-" url:"-"`
+	Body *sdk.RunTestsRequest `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (r *RunRulesRequest) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunRulesRequest) SetSlug(slug string) {
+	r.Slug = slug
+	r.require(runRulesRequestFieldSlug)
+}
+
+func (r *RunRulesRequest) UnmarshalJSON(data []byte) error {
+	body := new(sdk.RunTestsRequest)
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	r.Body = body
+	return nil
+}
+
+func (r *RunRulesRequest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.Body)
+}

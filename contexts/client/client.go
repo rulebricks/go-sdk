@@ -124,24 +124,7 @@ func (c *Client) GetPending(
 	return response.Body, nil
 }
 
-// Execute a specific rule using the context instance's state as input.
-func (c *Client) Solve(
-	ctx context.Context,
-	request *sdk.SolveContextsRequest,
-	opts ...option.RequestOption,
-) (*sdk.SolveContextRuleResponse, error) {
-	response, err := c.WithRawResponse.Solve(
-		ctx,
-		request,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return response.Body, nil
-}
-
-// Trigger re-evaluation of all bound rules and flows for the instance.
+// Re-evaluate registered pending rule and flow executions for this instance after their fact or relationship dependencies may have become available. This does not run every bound asset.
 func (c *Client) Cascade(
 	ctx context.Context,
 	request *sdk.CascadeContextsRequest,
@@ -158,13 +141,13 @@ func (c *Client) Cascade(
 	return response.Body, nil
 }
 
-// Execute a specific flow using the context instance's state as input.
-func (c *Client) Execute(
+// Submit an array of records to any context in one synchronous call. Records merge into their context instances (matched by the context's identity fact), bound rules and flows whose inputs became satisfied execute, and the response returns the resolved state of every touched instance. Retries are always safe: merges are idempotent and executions are deduplicated by input hash. Fact history is recorded for tracked facts exactly as on individual writes. Clients chunk large datasets across requests. On the cloud platform, a batch may not exceed the plan's remaining monthly rule executions (402 above it) or a 4.5MB request body, and executed rules count toward plan usage. Private (self-hosted) deployments run batches through the high-performance server with no plan gating, a 10,000-records-per-request default cap (CONTEXT_BATCH_MAX_ITEMS), and NDJSON support (Content-Type: application/x-ndjson).
+func (c *Client) BulkIngest(
 	ctx context.Context,
-	request *sdk.ExecuteContextsRequest,
+	request *sdk.BulkIngestContextsRequest,
 	opts ...option.RequestOption,
-) (*sdk.SolveContextFlowResponse, error) {
-	response, err := c.WithRawResponse.Execute(
+) (*sdk.ContextBatchResponse, error) {
+	response, err := c.WithRawResponse.BulkIngest(
 		ctx,
 		request,
 		opts...,

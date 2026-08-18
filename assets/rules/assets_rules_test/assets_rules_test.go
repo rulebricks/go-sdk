@@ -253,7 +253,7 @@ func TestAssetsRulesPushWithWireMock(
 					},
 					Settings: &sdk.RuleImportRowSettings{
 						Enabled:  true,
-						Priority: 1,
+						Priority: 0,
 						Schedule: []map[string]any{},
 					},
 				},
@@ -269,7 +269,7 @@ func TestAssetsRulesPushWithWireMock(
 					},
 					Settings: &sdk.RuleImportRowSettings{
 						Enabled:  true,
-						Priority: 2,
+						Priority: 0,
 						Schedule: []map[string]any{},
 					},
 				},

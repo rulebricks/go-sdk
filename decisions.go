@@ -11,36 +11,54 @@ import (
 )
 
 var (
-	queryDecisionsRequestFieldSearch   = big.NewInt(1 << 0)
-	queryDecisionsRequestFieldRules    = big.NewInt(1 << 1)
-	queryDecisionsRequestFieldStatuses = big.NewInt(1 << 2)
-	queryDecisionsRequestFieldStart    = big.NewInt(1 << 3)
-	queryDecisionsRequestFieldEnd      = big.NewInt(1 << 4)
-	queryDecisionsRequestFieldCursor   = big.NewInt(1 << 5)
-	queryDecisionsRequestFieldLimit    = big.NewInt(1 << 6)
-	queryDecisionsRequestFieldCount    = big.NewInt(1 << 7)
-	queryDecisionsRequestFieldSlug     = big.NewInt(1 << 8)
+	queryDecisionsRequestFieldSearch        = big.NewInt(1 << 0)
+	queryDecisionsRequestFieldRules         = big.NewInt(1 << 1)
+	queryDecisionsRequestFieldFlows         = big.NewInt(1 << 2)
+	queryDecisionsRequestFieldContexts      = big.NewInt(1 << 3)
+	queryDecisionsRequestFieldTrace         = big.NewInt(1 << 4)
+	queryDecisionsRequestFieldStatuses      = big.NewInt(1 << 5)
+	queryDecisionsRequestFieldIncludeTraces = big.NewInt(1 << 6)
+	queryDecisionsRequestFieldItemFilter    = big.NewInt(1 << 7)
+	queryDecisionsRequestFieldStart         = big.NewInt(1 << 8)
+	queryDecisionsRequestFieldEnd           = big.NewInt(1 << 9)
+	queryDecisionsRequestFieldSort          = big.NewInt(1 << 10)
+	queryDecisionsRequestFieldOrder         = big.NewInt(1 << 11)
+	queryDecisionsRequestFieldCursor        = big.NewInt(1 << 12)
+	queryDecisionsRequestFieldLimit         = big.NewInt(1 << 13)
+	queryDecisionsRequestFieldCount         = big.NewInt(1 << 14)
 )
 
 type QueryDecisionsRequest struct {
-	// Decision data query language expression to filter logs by request/response data. Supports field comparisons (`field=value`, `field>10`), contains (`field:text`), not-contains (`field!:text`), boolean operators (`AND`, `OR`), and parentheses.
+	// Decision data query language expression to filter logs by request/response data. Supports field comparisons (`field=value`, `field>10`), contains (`field:text`), not-contains (`field!:text`), boolean operators (`AND`, `OR`), and parentheses. A bare UUID or 32-hex term resolves as an execution/correlation-id lookup automatically.
 	Search *string `json:"-" url:"search,omitempty"`
-	// Comma-separated list of rule names to filter logs by.
+	// Comma-separated list of rule names, IDs, or slugs to filter logs by. Names match partially; IDs and slugs match exactly.
 	Rules *string `json:"-" url:"rules,omitempty"`
+	// Comma-separated list of flow names, IDs, or slugs to filter logs by. Matches only flow-level execution logs; the rule executions that ran inside a flow are separate records and are not included.
+	Flows *string `json:"-" url:"flows,omitempty"`
+	// Comma-separated list of context names or slugs to filter logs by. Matches the rule and flow executions that were triggered by those contexts (batch and interactive updates).
+	Contexts *string `json:"-" url:"contexts,omitempty"`
+	// Execution-trace correlation id. Returns every decision log from one execution tree: pass a log's `decision.root_flow_execution_id` (or any `flow_execution_id` / `parallel_execution_id`, including a bulk run's per-item `item_execution_ids` entries) to retrieve the flow-level record plus all subflow and rule records from that run. On self-hosted deployments, a log's observability `trace_id` is also accepted. Combine with `rules` or `search` to narrow to a specific rule or payload within the run.
+	Trace *string `json:"-" url:"trace,omitempty"`
 	// Comma-separated list of HTTP status codes to filter logs by.
 	Statuses *string `json:"-" url:"statuses,omitempty"`
-	// Start date for the query range (ISO8601 format).
+	// When `true`, each flow record in the response includes a decompressed `path_trace` field: the run's executed steps with their full inputs and outputs (an object for single runs, a null-aligned array matching the request array for bulk runs). Off by default - traces are stored compressed and can be large, so only enable this when you need them. Ignored in count mode.
+	IncludeTraces *QueryDecisionsRequestIncludeTraces `json:"-" url:"include_traces,omitempty"`
+	// Bulk payload filter in the form `path=value`. For each bulk record in the results (array-shaped request/response), keeps only the items whose payload value at `path` equals `value`, slicing the `request` and `response` arrays and every index-aligned field (`decision.item_execution_ids`, `decision.item_indexes`, `decision.success_idxs`, and `path_trace` when `include_traces=true`) in lockstep so input/output alignment is preserved. Filtered records gain a `matched_items` array with the surviving items' original zero-based positions. Paths use dot notation into each item (`customer.id`, `lines.0.sku`); prefix with `request.` or `response.` to match only that side (unprefixed paths match either side). Values compare as exact scalar strings (`status=200`, `approved=true`). Non-bulk records are returned unchanged; bulk records with no matching items are returned with empty item arrays. Typical use: combine with `search`, `flows`, or `trace` to locate a bulk run, then isolate one item's payloads and its `item_execution_ids` entry without tracking indexes. Ignored in count mode.
+	ItemFilter *string `json:"-" url:"item_filter,omitempty"`
+	// Start date for the query range (ISO8601 format). Hosted queries may span at most 90 days. Persistent self-hosted queries may use any range within local ClickHouse retention; PVC-less archive mode is limited to 7 days. Defaults to the applicable maximum before `end` (or before now).
 	Start *time.Time `json:"-" url:"start,omitempty"`
-	// End date for the query range (ISO8601 format).
+	// End date for the query range (ISO8601 format). Defaults to now. When supplied without `start`, the query covers the preceding 90 days on hosted/table mode or 7 days in PVC-less archive mode.
 	End *time.Time `json:"-" url:"end,omitempty"`
-	// Cursor for pagination (returned from previous query).
+	// Column to sort results by. `time` orders by execution timestamp, `name` by rule/flow name, `status` by HTTP status code, and `type` by operation (solve, bulk-solve, flows, etc.). Defaults to `time`.
+	Sort *QueryDecisionsRequestSort `json:"-" url:"sort,omitempty"`
+	// Sort direction. Defaults to `desc`.
+	Order *QueryDecisionsRequestOrder `json:"-" url:"order,omitempty"`
+	// Opaque pagination token returned by the previous response. Pass it back verbatim to fetch the next page; do not construct or modify cursor values.
 	Cursor *string `json:"-" url:"cursor,omitempty"`
-	// Number of results to return per page (default: 100).
+	// Number of results to return per page (default: 100, maximum: 1000). Logs carry full request/response payloads, so use smaller limits when querying workspaces with large bulk operations. Time-sorted pagination uses a keyset cursor, so its scan cost does not grow with page depth.
 	Limit *int `json:"-" url:"limit,omitempty"`
 	// If set to 'true', returns only the count of matching logs instead of the log data.
 	Count *QueryDecisionsRequestCount `json:"-" url:"count,omitempty"`
-	// (Deprecated) Legacy parameter for filtering by rule slug. Use 'rules' parameter instead.
-	Slug *string `json:"-" url:"slug,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -67,11 +85,46 @@ func (q *QueryDecisionsRequest) SetRules(rules *string) {
 	q.require(queryDecisionsRequestFieldRules)
 }
 
+// SetFlows sets the Flows field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueryDecisionsRequest) SetFlows(flows *string) {
+	q.Flows = flows
+	q.require(queryDecisionsRequestFieldFlows)
+}
+
+// SetContexts sets the Contexts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueryDecisionsRequest) SetContexts(contexts *string) {
+	q.Contexts = contexts
+	q.require(queryDecisionsRequestFieldContexts)
+}
+
+// SetTrace sets the Trace field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueryDecisionsRequest) SetTrace(trace *string) {
+	q.Trace = trace
+	q.require(queryDecisionsRequestFieldTrace)
+}
+
 // SetStatuses sets the Statuses field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (q *QueryDecisionsRequest) SetStatuses(statuses *string) {
 	q.Statuses = statuses
 	q.require(queryDecisionsRequestFieldStatuses)
+}
+
+// SetIncludeTraces sets the IncludeTraces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueryDecisionsRequest) SetIncludeTraces(includeTraces *QueryDecisionsRequestIncludeTraces) {
+	q.IncludeTraces = includeTraces
+	q.require(queryDecisionsRequestFieldIncludeTraces)
+}
+
+// SetItemFilter sets the ItemFilter field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueryDecisionsRequest) SetItemFilter(itemFilter *string) {
+	q.ItemFilter = itemFilter
+	q.require(queryDecisionsRequestFieldItemFilter)
 }
 
 // SetStart sets the Start field and marks it as non-optional;
@@ -86,6 +139,20 @@ func (q *QueryDecisionsRequest) SetStart(start *time.Time) {
 func (q *QueryDecisionsRequest) SetEnd(end *time.Time) {
 	q.End = end
 	q.require(queryDecisionsRequestFieldEnd)
+}
+
+// SetSort sets the Sort field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueryDecisionsRequest) SetSort(sort *QueryDecisionsRequestSort) {
+	q.Sort = sort
+	q.require(queryDecisionsRequestFieldSort)
+}
+
+// SetOrder sets the Order field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueryDecisionsRequest) SetOrder(order *QueryDecisionsRequestOrder) {
+	q.Order = order
+	q.require(queryDecisionsRequestFieldOrder)
 }
 
 // SetCursor sets the Cursor field and marks it as non-optional;
@@ -109,24 +176,20 @@ func (q *QueryDecisionsRequest) SetCount(count *QueryDecisionsRequestCount) {
 	q.require(queryDecisionsRequestFieldCount)
 }
 
-// SetSlug sets the Slug field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (q *QueryDecisionsRequest) SetSlug(slug *string) {
-	q.Slug = slug
-	q.require(queryDecisionsRequestFieldSlug)
-}
-
 // Rule/flow execution log entry with request, response, and decision details.
 var (
-	decisionLogFieldTimestamp   = big.NewInt(1 << 0)
-	decisionLogFieldName        = big.NewInt(1 << 1)
-	decisionLogFieldEndpoint    = big.NewInt(1 << 2)
-	decisionLogFieldStatus      = big.NewInt(1 << 3)
-	decisionLogFieldRequest     = big.NewInt(1 << 4)
-	decisionLogFieldResponse    = big.NewInt(1 << 5)
-	decisionLogFieldDecision    = big.NewInt(1 << 6)
-	decisionLogFieldError       = big.NewInt(1 << 7)
-	decisionLogFieldAbbreviated = big.NewInt(1 << 8)
+	decisionLogFieldTimestamp    = big.NewInt(1 << 0)
+	decisionLogFieldName         = big.NewInt(1 << 1)
+	decisionLogFieldEndpoint     = big.NewInt(1 << 2)
+	decisionLogFieldStatus       = big.NewInt(1 << 3)
+	decisionLogFieldRequest      = big.NewInt(1 << 4)
+	decisionLogFieldResponse     = big.NewInt(1 << 5)
+	decisionLogFieldDecision     = big.NewInt(1 << 6)
+	decisionLogFieldTraceID      = big.NewInt(1 << 7)
+	decisionLogFieldPathTrace    = big.NewInt(1 << 8)
+	decisionLogFieldMatchedItems = big.NewInt(1 << 9)
+	decisionLogFieldError        = big.NewInt(1 << 10)
+	decisionLogFieldAbbreviated  = big.NewInt(1 << 11)
 )
 
 type DecisionLog struct {
@@ -142,11 +205,17 @@ type DecisionLog struct {
 	Request *DecisionLogRequest `json:"request,omitempty" url:"request,omitempty"`
 	// The response payload returned by the rule/flow. Can be an object for single responses or an array for bulk operations.
 	Response *DecisionLogResponse `json:"response,omitempty" url:"response,omitempty"`
-	// Decision details including matched conditions, rows, and evaluation metadata. API-owned metadata keys are normalized to snake_case where known, such as `rule_id`, `rule_slug`, `rule_version`, `success_idxs`, `total_usage`, and `entity_count`; user-defined request/response schema keys are preserved.
+	// Decision details including matched conditions, rows, and evaluation metadata. API-owned metadata keys are normalized to snake_case where known, including rule, flow, context, item, and correlation fields such as `rule_id`, `flow_execution_id`, `root_flow_execution_id`, `parallel_execution_id`, `context_instance_id`, `item_indexes`, and `item_execution_ids` (bulk flow runs' per-item execution ids, aligned 1:1 with the request array). Rule decisions also expose the bounded execution-time vocabulary snapshot under `referenced_values`; `referenced_values_truncated` indicates that one or more payloads or entries were omitted. Executions backed by a frozen published vocabulary include its asset/version pointer under `value_world`. User-defined request/response schema keys are preserved.
 	Decision map[string]any `json:"decision,omitempty" url:"decision,omitempty"`
+	// Observability (OpenTelemetry) trace ID for this execution. Populated on self-hosted deployments only; always null on cloud.
+	TraceID *string `json:"trace_id,omitempty" url:"trace_id,omitempty"`
+	// Decompressed execution path trace for flow records: the executed steps with their inputs and outputs. An object for single flow runs, or a null-aligned array (1:1 with the request array) for bulk runs. Only present when `include_traces=true`; null for non-flow records, runs without a stored trace, and traces dropped by the size cap (see the decision's `path_trace_omitted`).
+	PathTrace *DecisionLogPathTrace `json:"path_trace,omitempty" url:"path_trace,omitempty"`
+	// Only present when `item_filter` was supplied and this record is bulk-shaped: the original zero-based positions (within this record's stored request array) of the items that matched the filter, in order. The record's `request`, `response`, and index-aligned decision fields are sliced to these items; `decision.item_count` keeps the original total. Empty when no items matched. On self-hosted deployments where large bulk runs are logged in chunks, the absolute position within the original API call is `decision.logChunk.offset` plus this value.
+	MatchedItems []int `json:"matched_items,omitempty" url:"matched_items,omitempty"`
 	// Error message if the execution failed.
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
-	// Whether the request/response data was truncated due to size limits.
+	// Whether the request/response data was truncated due to size limits or unavailable payload columns. Responses carry full payloads whenever they were stored.
 	Abbreviated *bool `json:"abbreviated,omitempty" url:"abbreviated,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -204,6 +273,27 @@ func (d *DecisionLog) GetDecision() map[string]any {
 		return nil
 	}
 	return d.Decision
+}
+
+func (d *DecisionLog) GetTraceID() *string {
+	if d == nil {
+		return nil
+	}
+	return d.TraceID
+}
+
+func (d *DecisionLog) GetPathTrace() *DecisionLogPathTrace {
+	if d == nil {
+		return nil
+	}
+	return d.PathTrace
+}
+
+func (d *DecisionLog) GetMatchedItems() []int {
+	if d == nil {
+		return nil
+	}
+	return d.MatchedItems
 }
 
 func (d *DecisionLog) GetError() *string {
@@ -283,6 +373,27 @@ func (d *DecisionLog) SetDecision(decision map[string]any) {
 	d.require(decisionLogFieldDecision)
 }
 
+// SetTraceID sets the TraceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DecisionLog) SetTraceID(traceID *string) {
+	d.TraceID = traceID
+	d.require(decisionLogFieldTraceID)
+}
+
+// SetPathTrace sets the PathTrace field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DecisionLog) SetPathTrace(pathTrace *DecisionLogPathTrace) {
+	d.PathTrace = pathTrace
+	d.require(decisionLogFieldPathTrace)
+}
+
+// SetMatchedItems sets the MatchedItems field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DecisionLog) SetMatchedItems(matchedItems []int) {
+	d.MatchedItems = matchedItems
+	d.require(decisionLogFieldMatchedItems)
+}
+
 // SetError sets the Error field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (d *DecisionLog) SetError(error_ *string) {
@@ -345,6 +456,69 @@ func (d *DecisionLog) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", d)
+}
+
+// Decompressed execution path trace for flow records: the executed steps with their inputs and outputs. An object for single flow runs, or a null-aligned array (1:1 with the request array) for bulk runs. Only present when `include_traces=true`; null for non-flow records, runs without a stored trace, and traces dropped by the size cap (see the decision's `path_trace_omitted`).
+type DecisionLogPathTrace struct {
+	StringUnknownMap             map[string]any
+	StringUnknownMapOptionalList []map[string]any
+
+	typ string
+}
+
+func (d *DecisionLogPathTrace) GetStringUnknownMap() map[string]any {
+	if d == nil {
+		return nil
+	}
+	return d.StringUnknownMap
+}
+
+func (d *DecisionLogPathTrace) GetStringUnknownMapOptionalList() []map[string]any {
+	if d == nil {
+		return nil
+	}
+	return d.StringUnknownMapOptionalList
+}
+
+func (d *DecisionLogPathTrace) UnmarshalJSON(data []byte) error {
+	var valueStringUnknownMap map[string]any
+	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
+		d.typ = "StringUnknownMap"
+		d.StringUnknownMap = valueStringUnknownMap
+		return nil
+	}
+	var valueStringUnknownMapOptionalList []map[string]any
+	if err := json.Unmarshal(data, &valueStringUnknownMapOptionalList); err == nil {
+		d.typ = "StringUnknownMapOptionalList"
+		d.StringUnknownMapOptionalList = valueStringUnknownMapOptionalList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, d)
+}
+
+func (d DecisionLogPathTrace) MarshalJSON() ([]byte, error) {
+	if d.typ == "StringUnknownMap" || d.StringUnknownMap != nil {
+		return json.Marshal(d.StringUnknownMap)
+	}
+	if d.typ == "StringUnknownMapOptionalList" || d.StringUnknownMapOptionalList != nil {
+		return json.Marshal(d.StringUnknownMapOptionalList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", d)
+}
+
+type DecisionLogPathTraceVisitor interface {
+	VisitStringUnknownMap(map[string]any) error
+	VisitStringUnknownMapOptionalList([]map[string]any) error
+}
+
+func (d *DecisionLogPathTrace) Accept(visitor DecisionLogPathTraceVisitor) error {
+	if d.typ == "StringUnknownMap" || d.StringUnknownMap != nil {
+		return visitor.VisitStringUnknownMap(d.StringUnknownMap)
+	}
+	if d.typ == "StringUnknownMapOptionalList" || d.StringUnknownMapOptionalList != nil {
+		return visitor.VisitStringUnknownMapOptionalList(d.StringUnknownMapOptionalList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", d)
 }
 
 // The request payload sent to the rule/flow. Can be an object for single requests or an array for bulk operations.
@@ -420,7 +594,7 @@ var (
 type DecisionLogResponse struct {
 	// Array of decision log entries. Only present when count parameter is not 'true'.
 	Data []*DecisionLog `json:"data,omitempty" url:"data,omitempty"`
-	// Pagination cursor for fetching the next page. Null if no more results. Only present when count parameter is not 'true'.
+	// Opaque pagination token for fetching the next page - pass it back verbatim via the cursor parameter. Null if no more results. Only present when count parameter is not 'true'.
 	Cursor *string `json:"cursor,omitempty" url:"cursor,omitempty"`
 	// Total count of matching logs. Only present when count parameter is 'true'. When this is returned, data and cursor are not included.
 	Count *int `json:"count,omitempty" url:"count,omitempty"`
@@ -549,5 +723,77 @@ func NewQueryDecisionsRequestCountFromString(s string) (QueryDecisionsRequestCou
 }
 
 func (q QueryDecisionsRequestCount) Ptr() *QueryDecisionsRequestCount {
+	return &q
+}
+
+type QueryDecisionsRequestIncludeTraces string
+
+const (
+	QueryDecisionsRequestIncludeTracesTrue  QueryDecisionsRequestIncludeTraces = "true"
+	QueryDecisionsRequestIncludeTracesFalse QueryDecisionsRequestIncludeTraces = "false"
+)
+
+func NewQueryDecisionsRequestIncludeTracesFromString(s string) (QueryDecisionsRequestIncludeTraces, error) {
+	switch s {
+	case "true":
+		return QueryDecisionsRequestIncludeTracesTrue, nil
+	case "false":
+		return QueryDecisionsRequestIncludeTracesFalse, nil
+	}
+	var t QueryDecisionsRequestIncludeTraces
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (q QueryDecisionsRequestIncludeTraces) Ptr() *QueryDecisionsRequestIncludeTraces {
+	return &q
+}
+
+type QueryDecisionsRequestOrder string
+
+const (
+	QueryDecisionsRequestOrderAsc  QueryDecisionsRequestOrder = "asc"
+	QueryDecisionsRequestOrderDesc QueryDecisionsRequestOrder = "desc"
+)
+
+func NewQueryDecisionsRequestOrderFromString(s string) (QueryDecisionsRequestOrder, error) {
+	switch s {
+	case "asc":
+		return QueryDecisionsRequestOrderAsc, nil
+	case "desc":
+		return QueryDecisionsRequestOrderDesc, nil
+	}
+	var t QueryDecisionsRequestOrder
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (q QueryDecisionsRequestOrder) Ptr() *QueryDecisionsRequestOrder {
+	return &q
+}
+
+type QueryDecisionsRequestSort string
+
+const (
+	QueryDecisionsRequestSortTime   QueryDecisionsRequestSort = "time"
+	QueryDecisionsRequestSortName   QueryDecisionsRequestSort = "name"
+	QueryDecisionsRequestSortStatus QueryDecisionsRequestSort = "status"
+	QueryDecisionsRequestSortType   QueryDecisionsRequestSort = "type"
+)
+
+func NewQueryDecisionsRequestSortFromString(s string) (QueryDecisionsRequestSort, error) {
+	switch s {
+	case "time":
+		return QueryDecisionsRequestSortTime, nil
+	case "name":
+		return QueryDecisionsRequestSortName, nil
+	case "status":
+		return QueryDecisionsRequestSortStatus, nil
+	case "type":
+		return QueryDecisionsRequestSortType, nil
+	}
+	var t QueryDecisionsRequestSort
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (q QueryDecisionsRequestSort) Ptr() *QueryDecisionsRequestSort {
 	return &q
 }

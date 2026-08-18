@@ -225,6 +225,91 @@ client.Rules.ParallelSolve(
 </dl>
 </details>
 
+## Infra
+<details><summary><code>client.Infra.Status() -> *sdk.ScaleStatusResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Reports the fleet scale-up state. Worker counts reflect solvers that have actually joined the processing group and can accept work. Self-hosted deployments only.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+client.Infra.Status(
+        context.TODO(),
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Infra.Scale() -> *sdk.ScaleStatusResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Pre-scales the deployment's solver fleet to its maximum capacity ahead of a large batch workload, so the first wave of requests never pays the scale-from-baseline window. Takes no request body: the target is always the deployment's own configured ceiling. The fleet stays warm for a bounded window (default 10 minutes; repeat calls refresh it), after which normal autoscaling reclaims the capacity - an unused warm-up costs at most that window. Poll the GET variant until `status` is `ready` before starting the batch. Self-hosted deployments only.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+client.Infra.Scale(
+        context.TODO(),
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## Flows
 <details><summary><code>client.Flows.Execute(Slug, request) -> sdk.DynamicResponsePayload</code></summary>
 <dl>
@@ -335,8 +420,20 @@ request := &sdk.QueryDecisionsRequest{
         Rules: sdk.String(
             "Lead Qualification,Pricing Calculator",
         ),
+        Flows: sdk.String(
+            "Loan Approval Flow",
+        ),
+        Contexts: sdk.String(
+            "loans",
+        ),
+        Trace: sdk.String(
+            "7db50259-31a0-42c1-aa3c-36409ad3c756",
+        ),
         Statuses: sdk.String(
             "200,400,500",
+        ),
+        ItemFilter: sdk.String(
+            "customer.id=cst_8f3a12",
         ),
     }
 client.Decisions.Query(
@@ -358,7 +455,7 @@ client.Decisions.Query(
 <dl>
 <dd>
 
-**search:** `*string` — Decision data query language expression to filter logs by request/response data. Supports field comparisons (`field=value`, `field>10`), contains (`field:text`), not-contains (`field!:text`), boolean operators (`AND`, `OR`), and parentheses.
+**search:** `*string` — Decision data query language expression to filter logs by request/response data. Supports field comparisons (`field=value`, `field>10`), contains (`field:text`), not-contains (`field!:text`), boolean operators (`AND`, `OR`), and parentheses. A bare UUID or 32-hex term resolves as an execution/correlation-id lookup automatically.
     
 </dd>
 </dl>
@@ -366,7 +463,31 @@ client.Decisions.Query(
 <dl>
 <dd>
 
-**rules:** `*string` — Comma-separated list of rule names to filter logs by.
+**rules:** `*string` — Comma-separated list of rule names, IDs, or slugs to filter logs by. Names match partially; IDs and slugs match exactly.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**flows:** `*string` — Comma-separated list of flow names, IDs, or slugs to filter logs by. Matches only flow-level execution logs; the rule executions that ran inside a flow are separate records and are not included.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**contexts:** `*string` — Comma-separated list of context names or slugs to filter logs by. Matches the rule and flow executions that were triggered by those contexts (batch and interactive updates).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**trace:** `*string` — Execution-trace correlation id. Returns every decision log from one execution tree: pass a log's `decision.root_flow_execution_id` (or any `flow_execution_id` / `parallel_execution_id`, including a bulk run's per-item `item_execution_ids` entries) to retrieve the flow-level record plus all subflow and rule records from that run. On self-hosted deployments, a log's observability `trace_id` is also accepted. Combine with `rules` or `search` to narrow to a specific rule or payload within the run.
     
 </dd>
 </dl>
@@ -382,7 +503,7 @@ client.Decisions.Query(
 <dl>
 <dd>
 
-**start:** `*time.Time` — Start date for the query range (ISO8601 format).
+**includeTraces:** `*sdk.QueryDecisionsRequestIncludeTraces` — When `true`, each flow record in the response includes a decompressed `path_trace` field: the run's executed steps with their full inputs and outputs (an object for single runs, a null-aligned array matching the request array for bulk runs). Off by default - traces are stored compressed and can be large, so only enable this when you need them. Ignored in count mode.
     
 </dd>
 </dl>
@@ -390,7 +511,7 @@ client.Decisions.Query(
 <dl>
 <dd>
 
-**end:** `*time.Time` — End date for the query range (ISO8601 format).
+**itemFilter:** `*string` — Bulk payload filter in the form `path=value`. For each bulk record in the results (array-shaped request/response), keeps only the items whose payload value at `path` equals `value`, slicing the `request` and `response` arrays and every index-aligned field (`decision.item_execution_ids`, `decision.item_indexes`, `decision.success_idxs`, and `path_trace` when `include_traces=true`) in lockstep so input/output alignment is preserved. Filtered records gain a `matched_items` array with the surviving items' original zero-based positions. Paths use dot notation into each item (`customer.id`, `lines.0.sku`); prefix with `request.` or `response.` to match only that side (unprefixed paths match either side). Values compare as exact scalar strings (`status=200`, `approved=true`). Non-bulk records are returned unchanged; bulk records with no matching items are returned with empty item arrays. Typical use: combine with `search`, `flows`, or `trace` to locate a bulk run, then isolate one item's payloads and its `item_execution_ids` entry without tracking indexes. Ignored in count mode.
     
 </dd>
 </dl>
@@ -398,7 +519,7 @@ client.Decisions.Query(
 <dl>
 <dd>
 
-**cursor:** `*string` — Cursor for pagination (returned from previous query).
+**start:** `*time.Time` — Start date for the query range (ISO8601 format). Hosted queries may span at most 90 days. Persistent self-hosted queries may use any range within local ClickHouse retention; PVC-less archive mode is limited to 7 days. Defaults to the applicable maximum before `end` (or before now).
     
 </dd>
 </dl>
@@ -406,7 +527,39 @@ client.Decisions.Query(
 <dl>
 <dd>
 
-**limit:** `*int` — Number of results to return per page (default: 100).
+**end:** `*time.Time` — End date for the query range (ISO8601 format). Defaults to now. When supplied without `start`, the query covers the preceding 90 days on hosted/table mode or 7 days in PVC-less archive mode.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sort:** `*sdk.QueryDecisionsRequestSort` — Column to sort results by. `time` orders by execution timestamp, `name` by rule/flow name, `status` by HTTP status code, and `type` by operation (solve, bulk-solve, flows, etc.). Defaults to `time`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**order:** `*sdk.QueryDecisionsRequestOrder` — Sort direction. Defaults to `desc`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque pagination token returned by the previous response. Pass it back verbatim to fetch the next page; do not construct or modify cursor values.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Number of results to return per page (default: 100, maximum: 1000). Logs carry full request/response payloads, so use smaller limits when querying workspaces with large bulk operations. Time-sorted pagination uses a keyset cursor, so its scan cost does not grow with page depth.
     
 </dd>
 </dl>
@@ -415,14 +568,6 @@ client.Decisions.Query(
 <dd>
 
 **count:** `*sdk.QueryDecisionsRequestCount` — If set to 'true', returns only the count of matching logs instead of the log data.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**slug:** `*string` — (Deprecated) Legacy parameter for filtering by rule slug. Use 'rules' parameter instead.
     
 </dd>
 </dl>
@@ -708,7 +853,7 @@ client.Assets.GetUsage(
 <dl>
 <dd>
 
-Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm).
+Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm). Both plain manifests and compressed ones (the compress-json array form produced by exporting with `compress: true`) are accepted and detected automatically. Run Flow (subflow) references between flows in the manifest are resolved to the slugs, IDs, and published versions the flows receive in this workspace.
 </dd>
 </dl>
 </dd>
@@ -774,7 +919,7 @@ client.Assets.ImportRbm(
 <dl>
 <dd>
 
-**manifest:** `*sdk.ImportManifestRequestManifest` — The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads.
+**manifest:** `*sdk.ImportManifestRequestManifest` — The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads. A compressed manifest is also accepted: the JSON array produced by the compress-json library (for example, the contents of a compressed .rbm file exported with `compress: true`); it is detected and decompressed automatically.
     
 </dd>
 </dl>
@@ -822,7 +967,7 @@ client.Assets.ImportRbm(
 <dl>
 <dd>
 
-Export selected rules, flows, contexts, and values to an Rulebricks manifest file (*.rbm).
+Export selected rules, flows, contexts, and values to an Rulebricks manifest file (*.rbm). Dependencies are resolved automatically: exporting a flow includes its rules, contexts, vocabulary values, and any flows referenced by Run Flow nodes (recursively). Set `compress: true` to receive the manifest in compressed form (a compress-json array), which is much smaller and can be saved directly as a .rbm file; the import endpoint accepts both forms.
 </dd>
 </dl>
 </dd>
@@ -910,6 +1055,14 @@ client.Assets.ExportRbm(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**compress:** `*bool` — If true, the manifest in the response is returned in compressed form: the JSON array produced by the compress-json library instead of a plain object. Compressed manifests are substantially smaller, can be saved directly as a .rbm file, and are accepted by the import endpoint as-is. Intended for raw HTTP usage and file tooling; typed SDK clients should omit this flag, since the generated response type models the manifest as an object.
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -919,7 +1072,7 @@ client.Assets.ExportRbm(
 </details>
 
 ## Values
-<details><summary><code>client.Values.List() -> sdk.DynamicValueListResponse</code></summary>
+<details><summary><code>client.Values.List() -> *sdk.ListValuesResponse</code></summary>
 <dl>
 <dd>
 
@@ -931,7 +1084,7 @@ client.Assets.ExportRbm(
 <dl>
 <dd>
 
-Retrieve all dynamic values for the authenticated user. Use the 'include' parameter to control whether usage information is returned.
+Retrieve vocabulary values for the authenticated user. Results are scoped to the API key holder's user groups. Optionally filter by user group name or ID when the API key has access to that group. Use the 'include' parameter to control whether usage information is returned. Small workspaces may omit pagination to receive the full catalog as an array (legacy behavior); workspaces above the catalog threshold must paginate with 'limit'/'cursor', which returns { data, next_cursor, total? } ordered by name. The 'prefix' and 'type' filters narrow results to a collection or value type.
 </dd>
 </dl>
 </dd>
@@ -970,7 +1123,47 @@ client.Values.List(
 <dl>
 <dd>
 
-**name:** `*string` — Query all dynamic values containing a specific name
+**name:** `*string` — Query all vocabulary values containing a specific name
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**prefix:** `*string` — Only return values whose name starts with this collection prefix (e.g. 'Countries.').
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**type_:** `*string` — Only return values of this type (string, number, boolean, list, date, function).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Page size (default 100, max 1000). Providing limit or cursor switches the response to the paginated { data, next_cursor } envelope.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque pagination cursor from a previous page's next_cursor.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
     
 </dd>
 </dl>
@@ -982,6 +1175,14 @@ client.Values.List(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**resolve:** `*bool` — By default, payloads containing value-to-value references are returned materialized (references replaced with their resolved values). Pass 'false' to return stored payloads as-is, with { "$rb": "globalValue", "id": "..." } reference markers intact, so the reference graph round-trips.
+    
+</dd>
+</dl>
 </dd>
 </dl>
 
@@ -990,7 +1191,7 @@ client.Values.List(
 </dl>
 </details>
 
-<details><summary><code>client.Values.Update(request) -> sdk.DynamicValueListResponse</code></summary>
+<details><summary><code>client.Values.Update(request) -> *sdk.UpdateValuesResponse</code></summary>
 <dl>
 <dd>
 
@@ -1002,7 +1203,7 @@ client.Values.List(
 <dl>
 <dd>
 
-Update existing dynamic values or add new ones for the authenticated user. Supports both flat and nested object structures. Nested objects are automatically flattened using dot notation and keys are converted to readable format (e.g., 'user_name' becomes 'User Name', nested 'user.contact_info.email' becomes 'User.Contact Info.Email').
+Update existing vocabulary values or add new ones for the authenticated user. Supports both flat and nested object structures. Nested objects are automatically flattened using dot notation with keys preserved exactly as sent (e.g. nested 'user_profile.first_name' becomes the value name 'user_profile.first_name'). Writes are set-based upserts keyed by value name - existing values keep their ids, so rule references stay valid - and each call is idempotent, so retrying a failed request is always safe. Imports of any size go through this endpoint (POST /values/bulk is an equivalent alias): drive large dictionaries as a sequence of chunked calls, each bounded by your deployment's request body limit. Payloads may compose values from other values with reference markers: { "$ref": "<value name>" } references a value by name (existing values first, then values created by the same request), and { "$rb": "globalValue", "id": "<value id>" } references by id. A scalar payload may be a single reference; list payloads may mix literal items and references. References are validated (existence, type match, cycles) before anything is written. Workspaces at or below the catalog threshold receive the full value list back (legacy behavior); larger workspaces receive summary counts ({ created, updated, processed }).
 </dd>
 </dl>
 </dd>
@@ -1051,7 +1252,7 @@ client.Values.Update(
 <dl>
 <dd>
 
-**values:** `map[string]any` — A dictionary of keys and values to update or add. Supports both flat key-value pairs and nested objects. Nested objects will be automatically flattened using dot notation with readable key names (e.g., 'user.contact_info.email' becomes 'User.Contact Info.Email').
+**values:** `map[string]any` — A dictionary of keys and values to update or add. Supports both flat key-value pairs and nested objects. Nested objects are automatically flattened using dot notation with keys preserved exactly as sent (e.g. 'user.contact_info.email' stays 'user.contact_info.email'). Individual payloads may be value-to-value references (see ValueReference): a scalar payload may be a single { "$ref": "<value name>" } marker, and list payloads may mix literal items with reference markers.
     
 </dd>
 </dl>
@@ -1067,7 +1268,7 @@ client.Values.Update(
 <dl>
 <dd>
 
-**metadataByName:** `map[string]map[string]any` — Optional metadata keyed by dynamic value name. This is the canonical snake_case field; legacy clients may still send `metadataByName`.
+**metadataByName:** `map[string]map[string]any` — Optional metadata keyed by vocabulary value name. This is the canonical snake_case field; legacy clients may still send `metadataByName`. System-owned keys (managedBy, source, lockedReason, previousTokens, and archive/tombstone fields) are stripped from user payloads - managed provenance and archive state cannot be forged.
     
 </dd>
 </dl>
@@ -1079,7 +1280,7 @@ client.Values.Update(
 </dl>
 </details>
 
-<details><summary><code>client.Values.Delete() -> *sdk.SuccessMessage</code></summary>
+<details><summary><code>client.Values.Delete() -> *sdk.DeleteValueResponse</code></summary>
 <dl>
 <dd>
 
@@ -1091,7 +1292,7 @@ client.Values.Update(
 <dl>
 <dd>
 
-Delete a specific dynamic value for the authenticated user by its ID.
+Delete a specific vocabulary value for the authenticated user by its ID. Deletion is blocked while the value is referenced by any rule or flow. Values whose entire payload references the deleted value are deleted with it (cascade), and list values referencing it lose the referencing items; both effects are reported in the response.
 </dd>
 </dl>
 </dd>
@@ -1128,7 +1329,414 @@ client.Values.Delete(
 <dl>
 <dd>
 
-**id:** `string` — ID of the dynamic value to delete
+**id:** `string` — ID of the vocabulary value to delete
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Values.Sync(request) -> *sdk.SyncValuesResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Declaratively makes a collection exactly equal to the payload. Values in the payload are upserted (Existing values keep their IDs), and values under the collection that are absent from the payload are archived by default. The `sync` endpoint supports uploading a particularly large amount of values (100k+) in chunks, using the `sync_id` parameter to track the run.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.SyncValuesRequest{
+        Collection: "Medical Codes",
+        Values: map[string]any{
+            "A123": "A123",
+            "B456": "B456",
+            "C789": "C789",
+        },
+    }
+client.Values.Sync(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**collection:** `string` — Collection path to sync (e.g. 'Medical Codes'). Only values under this path are affected.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**values:** `map[string]any` — Desired members of the collection, keyed relative to the collection path ('A123' becomes 'Medical Codes.A123'). Nested objects flatten with dot notation, and payloads may use ValueReference markers. An empty object empties the collection. May be omitted on a pure finalize call (sync_id + complete).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**syncID:** `*string` — Identifier for a chunked run. Repeat the call with the same sync_id for each chunk of the desired state; nothing is removed until a call with complete: true. Abandoned runs are purged after 24 hours without removing anything.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**complete:** `*bool` — Marks the run as complete, triggering the removal sweep. Implicitly true when sync_id is omitted (single-request syncs), false otherwise.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**permanentlyDelete:** `*bool` — Hard-delete removed values instead of archiving them. Removals still referenced by a rule, flow, or surviving value are archived instead and reported in 'blocked'. Self-hosted deployments retain tombstones regardless.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**dryRun:** `*bool` — Compute and return the full diff without writing anything. Only supported for single-request syncs (omit sync_id).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userGroups:** `[]string` — Optional array of user group names to assign to written values, matching POST /values.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadataByName:** `map[string]map[string]any` — Optional metadata keyed by FULL value name (including the collection prefix).
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Objects
+<details><summary><code>client.Objects.List() -> []*sdk.WorkspaceObject</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's objects (JSON Schemas). Results are scoped to the API key holder's user groups, matching the visibility model of values, rules, and flows: group-restricted keys only see objects whose user_groups overlap theirs.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+client.Objects.List(
+        context.TODO(),
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Objects.Upsert(request) -> *sdk.UpsertObjectResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates or updates an object by ID or name and syncs enum values it generates. Objects help workspace admins programmatically determine multiple collections of values based on Rulebricks' contracts with external systems from a single JSON Schema source.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.UpsertObjectRequest{
+        Name: sdk.String(
+            "Claim",
+        ),
+        Content: `{
+          "type": "object",
+          "properties": {
+            "countryCode": { "type": "string", "title": "Country Code", "enum": ["US", "CA", "GB"] }
+          }
+        }`,
+        UserGroups: []string{
+            "underwriting",
+        },
+    }
+client.Objects.Upsert(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `*string` — Object ID to update. Omit to resolve by name (creating the object when the name is new).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `*string` — Object name. Required when ID is omitted; used to resolve the existing object or to name a new one.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**content:** `string` — The object's JSON Schema as a string. Enums in the schema become the object's managed values.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userGroups:** `[]string` — User groups for the object, propagated to every value it generates. Omit to keep the current groups.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**dryRun:** `*bool` — Preview the value diff (would_sync / would_archive) without writing anything.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**expectedUpdatedAt:** `*string` — Optimistic concurrency: reject with 409 when the object's updated_at no longer matches.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Objects.Get(ObjectID) -> *sdk.WorkspaceObject</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Fetches one object by ID or exact name.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.GetObjectsRequest{
+        ObjectID: "objectId",
+    }
+client.Objects.Get(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**objectID:** `string` — Object ID or exact name
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Objects.Delete(ObjectID) -> *sdk.DeleteObjectResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes the object. Its generated values always lose their management lock; by default they are also archived (published rules keep resolving them by id). Pass values=detach to keep them active as ordinary, hand-editable values instead. Requires the manage objects entitlement.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.DeleteObjectsRequest{
+        ObjectID: "objectId",
+    }
+client.Objects.Delete(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**objectID:** `string` — Object ID or exact name
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**values:** `*sdk.DeleteObjectsRequestValues` — What happens to the values this object generated: 'archive' (default) or 'detach'.
     
 </dd>
 </dl>
@@ -1200,6 +1808,14 @@ client.Contexts.Get(
 <dd>
 
 **instance:** `string` — The unique identifier for the context instance.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**includeRelations:** `*string` — Comma-separated relationship names to include in the response under a 'relations' key (has_many relations return a list of related instance states; has_one/belongs_to return a single state or null). Use '*' for all relationships. Omitted by default - related instances are never fetched into the payload unrequested.
     
 </dd>
 </dl>
@@ -1519,94 +2135,6 @@ client.Contexts.GetPending(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Solve(Slug, Instance, RuleSlug, request) -> *sdk.SolveContextRuleResponse</code></summary>
-<dl>
-<dd>
-
-#### 📝 Description
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-Execute a specific rule using the context instance's state as input.
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### 🔌 Usage
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-```go
-request := &sdk.SolveContextsRequest{
-        Slug: "customer",
-        Instance: "cust-12345",
-        RuleSlug: "eligibility-check",
-        Body: map[string]any{},
-    }
-client.Contexts.Solve(
-        context.TODO(),
-        request,
-    )
-}
-```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**slug:** `string` — The unique slug for the context.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**instance:** `string` — The unique identifier for the context instance.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**ruleSlug:** `string` — The unique slug for the rule.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**request:** `sdk.SolveContextRuleRequest` 
-    
-</dd>
-</dl>
-</dd>
-</dl>
-
-
-</dd>
-</dl>
-</details>
-
 <details><summary><code>client.Contexts.Cascade(Slug, Instance, request) -> *sdk.CascadeContextResponse</code></summary>
 <dl>
 <dd>
@@ -1619,7 +2147,7 @@ client.Contexts.Solve(
 <dl>
 <dd>
 
-Trigger re-evaluation of all bound rules and flows for the instance.
+Re-evaluate registered pending rule and flow executions for this instance after their fact or relationship dependencies may have become available. This does not run every bound asset.
 </dd>
 </dl>
 </dd>
@@ -1686,7 +2214,7 @@ client.Contexts.Cascade(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Execute(Slug, Instance, FlowSlug, request) -> *sdk.SolveContextFlowResponse</code></summary>
+<details><summary><code>client.Contexts.BulkIngest(Slug, request) -> *sdk.ContextBatchResponse</code></summary>
 <dl>
 <dd>
 
@@ -1698,7 +2226,7 @@ client.Contexts.Cascade(
 <dl>
 <dd>
 
-Execute a specific flow using the context instance's state as input.
+Submit an array of records to any context in one synchronous call. Records merge into their context instances (matched by the context's identity fact), bound rules and flows whose inputs became satisfied execute, and the response returns the resolved state of every touched instance. Retries are always safe: merges are idempotent and executions are deduplicated by input hash. Fact history is recorded for tracked facts exactly as on individual writes. Clients chunk large datasets across requests. On the cloud platform, a batch may not exceed the plan's remaining monthly rule executions (402 above it) or a 4.5MB request body, and executed rules count toward plan usage. Private (self-hosted) deployments run batches through the high-performance server with no plan gating, a 10,000-records-per-request default cap (CONTEXT_BATCH_MAX_ITEMS), and NDJSON support (Content-Type: application/x-ndjson).
 </dd>
 </dl>
 </dd>
@@ -1713,13 +2241,20 @@ Execute a specific flow using the context instance's state as input.
 <dd>
 
 ```go
-request := &sdk.ExecuteContextsRequest{
-        Slug: "customer",
-        Instance: "cust-12345",
-        FlowSlug: "onboarding-flow",
-        Body: map[string]any{},
+request := &sdk.BulkIngestContextsRequest{
+        Slug: "loan-application",
+        Body: []sdk.DynamicRequestPayload{
+            map[string]any{
+                "amount": 12000,
+                "loan_id": "APP-1",
+            },
+            map[string]any{
+                "amount": 7300,
+                "loan_id": "APP-2",
+            },
+        },
     }
-client.Contexts.Execute(
+client.Contexts.BulkIngest(
         context.TODO(),
         request,
     )
@@ -1746,7 +2281,7 @@ client.Contexts.Execute(
 <dl>
 <dd>
 
-**instance:** `string` — The unique identifier for the context instance.
+**include:** `*string` — Comma-separated list of per-instance fields to include in results (instance_id is always present). Omit to include everything. Valid fields: positions, is_new, status, have, need, state, expires_at, executions, executed, triggered, reason. Useful for keeping response size proportional to outcomes rather than data volume, e.g. include=status,executed.
     
 </dd>
 </dl>
@@ -1754,15 +2289,7 @@ client.Contexts.Execute(
 <dl>
 <dd>
 
-**flowSlug:** `string` — The unique slug for the flow.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**request:** `sdk.SolveContextFlowRequest` 
+**request:** `[]sdk.DynamicRequestPayload` 
     
 </dd>
 </dl>
@@ -2036,7 +2563,7 @@ request := &assets.ImportRuleRequest{
                     },
                     Settings: &sdk.RuleImportRowSettings{
                         Enabled: true,
-                        Priority: 1,
+                        Priority: 0,
                         Schedule: []map[string]any{},
                     },
                 },
@@ -2052,7 +2579,7 @@ request := &assets.ImportRuleRequest{
                     },
                     Settings: &sdk.RuleImportRowSettings{
                         Enabled: true,
-                        Priority: 2,
+                        Priority: 0,
                         Schedule: []map[string]any{},
                     },
                 },
@@ -2103,7 +2630,7 @@ client.Assets.Rules.Push(
 <dl>
 <dd>
 
-List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, or by user group name or ID when the API key has access to that group.
+List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
 </dd>
 </dl>
 </dd>
@@ -2142,7 +2669,7 @@ client.Assets.Rules.List(
 <dl>
 <dd>
 
-**folder:** `*string` — Filter rules by folder name or folder ID
+**folder:** `*string` — Filter results by folder name or folder ID.
     
 </dd>
 </dl>
@@ -2150,7 +2677,15 @@ client.Assets.Rules.List(
 <dl>
 <dd>
 
-**userGroup:** `*string` — Filter rules by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+**userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `*string` — Filter results by name using a case-insensitive substring match.
     
 </dd>
 </dl>
@@ -2175,7 +2710,7 @@ client.Assets.Rules.List(
 <dl>
 <dd>
 
-List all flows in the organization.
+List all flows in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
 </dd>
 </dl>
 </dd>
@@ -2190,11 +2725,315 @@ List all flows in the organization.
 <dd>
 
 ```go
+request := &assets.ListFlowsRequest{}
 client.Assets.Flows.List(
         context.TODO(),
+        request,
     )
 }
 ```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**folder:** `*string` — Filter results by folder name or folder ID.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `*string` — Filter results by name using a case-insensitive substring match.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Assets.Flows.Push(request) -> *sdk.FlowImportResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Create or update a flow from the Rulebricks Flow Schema (a list of `nodes` and `connections`). The server expands the Rulebricks Flow Schema definition into the full flow graph - laying it out, wiring property/control handles, resolving referenced published rules, and backfilling node defaults - so the result both renders in the editor and executes via `/flows/{slug}` without any manual editing. If `id` is provided the matching flow is updated; otherwise a new flow is created (`id`/`slug` auto-generated). Flows auto-publish unless `_publish` is set to `false`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &assets.ImportFlowRequest{
+        Flow: &sdk.FlowImportPayload{
+            Name: "Underwriting Flow",
+            Nodes: []*sdk.RulebricksFlowNode{
+                &sdk.RulebricksFlowNode{
+                    Ref: "input",
+                    Type: sdk.RulebricksFlowNodeTypeOrigin,
+                    Rule: sdk.String(
+                        "customer-eligibility",
+                    ),
+                },
+                &sdk.RulebricksFlowNode{
+                    Ref: "gate",
+                    Type: sdk.RulebricksFlowNodeTypeContinueIf,
+                    Condition: &sdk.RulebricksFlowNodeCondition{
+                        Property: sdk.String(
+                            "approved",
+                        ),
+                        Operator: sdk.String(
+                            "equals",
+                        ),
+                        Args: []any{
+                            true,
+                        },
+                    },
+                },
+                &sdk.RulebricksFlowNode{
+                    Ref: "enrich",
+                    Type: sdk.RulebricksFlowNodeTypeCode,
+                    Outputs: []*sdk.RulebricksFlowNodeOutputsItem{
+                        &sdk.RulebricksFlowNodeOutputsItem{
+                            Key: "tier",
+                            Type: sdk.RulebricksFlowNodeOutputsItemTypeString.Ptr(),
+                        },
+                    },
+                    Code: sdk.String(
+                        "outputs.tier = inputs.score > 700 ? 'A' : 'B'",
+                    ),
+                },
+                &sdk.RulebricksFlowNode{
+                    Ref: "out",
+                    Type: sdk.RulebricksFlowNodeTypeResult,
+                    Key: sdk.String(
+                        "data",
+                    ),
+                },
+            },
+            Connections: []*sdk.RulebricksFlowConnection{
+                &sdk.RulebricksFlowConnection{
+                    From: "input",
+                    To: "gate",
+                    Output: sdk.String(
+                        "approved",
+                    ),
+                },
+                &sdk.RulebricksFlowConnection{
+                    From: "input",
+                    To: "enrich",
+                    Output: sdk.String(
+                        "score",
+                    ),
+                    Input: sdk.String(
+                        "score",
+                    ),
+                },
+                &sdk.RulebricksFlowConnection{
+                    From: "gate",
+                    To: "out",
+                    Control: sdk.Bool(
+                        true,
+                    ),
+                },
+                &sdk.RulebricksFlowConnection{
+                    From: "enrich",
+                    To: "out",
+                    Output: sdk.String(
+                        "tier",
+                    ),
+                },
+            },
+            Publish: sdk.Bool(
+                true,
+            ),
+        },
+    }
+client.Assets.Flows.Push(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**flow:** `*sdk.FlowImportPayload` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Assets.Flows.Pull() -> *sdk.FlowImportPayload</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Export a flow into the Rulebricks Flow Schema (nodes + connections), the same shape accepted by `/admin/flows/import`. Works for flows built entirely by hand in the editor, so they can be round-tripped or version-controlled. This is distinct from the top-level `/admin/export`, which produces `.rbm` manifests.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &assets.PullFlowsRequest{}
+client.Assets.Flows.Pull(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `*string` — The ID of the flow to export (provide `id` or `slug`).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**slug:** `*string` — The slug of the flow to export (provide `id` or `slug`).
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Assets.Flows.Delete(request) -> *sdk.SuccessMessage</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Delete a specific flow by its ID.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &assets.DeleteFlowRequest{
+        ID: "3855f8da-2654-4df9-8903-8f797cbfe8ec",
+    }
+client.Assets.Flows.Delete(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `string` — The ID of the flow to delete.
+    
 </dd>
 </dl>
 </dd>
@@ -2233,11 +3072,36 @@ Retrieve all rule folders for the authenticated user.
 <dd>
 
 ```go
+request := &assets.ListFoldersRequest{}
 client.Assets.Folders.List(
         context.TODO(),
+        request,
     )
 }
 ```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `*string` — Filter results by name using a case-insensitive substring match.
+    
 </dd>
 </dl>
 </dd>
@@ -2260,7 +3124,7 @@ client.Assets.Folders.List(
 <dl>
 <dd>
 
-Create a new rule folder or update an existing one for the authenticated user.
+Create a new folder or update an existing one for the authenticated user. Folders are typed to organize rules (the default), flows, or contexts.
 </dd>
 </dl>
 </dd>
@@ -2317,6 +3181,14 @@ client.Assets.Folders.Upsert(
 <dd>
 
 **description:** `*string` — Description of the folder
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**type_:** `*assets.UpsertFolderRequestType` — The type of assets the folder organizes. Applies on creation; ignored when updating an existing folder.
     
 </dd>
 </dl>
@@ -2402,7 +3274,7 @@ client.Assets.Folders.Delete(
 <dl>
 <dd>
 
-Retrieve all contexts for the authenticated user.
+Retrieve all contexts for the authenticated user. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
 </dd>
 </dl>
 </dd>
@@ -2417,11 +3289,44 @@ Retrieve all contexts for the authenticated user.
 <dd>
 
 ```go
+request := &contexts.ListObjectsRequest{}
 client.Contexts.Objects.List(
         context.TODO(),
+        request,
     )
 }
 ```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**folder:** `*string` — Filter results by folder name or folder ID.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `*string` — Filter results by name using a case-insensitive substring match.
+    
 </dd>
 </dl>
 </dd>
@@ -2432,7 +3337,7 @@ client.Contexts.Objects.List(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Objects.Create(request) -> sdk.CreateContextResponse</code></summary>
+<details><summary><code>client.Contexts.Objects.Create(request) -> *sdk.CreateContextResponse</code></summary>
 <dl>
 <dd>
 
@@ -2464,29 +3369,31 @@ request := &contexts.CreateContextRequest{
         Description: sdk.String(
             "Represents a customer in the system",
         ),
-        Schema: []*contexts.CreateContextRequestSchemaItem{
-            &contexts.CreateContextRequestSchemaItem{
-                Key: sdk.String(
-                    "email",
-                ),
-                Name: sdk.String(
-                    "Email",
-                ),
-                Type: sdk.String(
-                    "string",
-                ),
+        Schema: &sdk.ContextSchema{
+            Base: []*sdk.ContextSchemaField{
+                &sdk.ContextSchemaField{
+                    Key: sdk.String(
+                        "email",
+                    ),
+                    Name: sdk.String(
+                        "Email",
+                    ),
+                    Type: sdk.ContextSchemaFieldTypeString.Ptr(),
+                    Required: sdk.Bool(
+                        true,
+                    ),
+                },
+                &sdk.ContextSchemaField{
+                    Key: sdk.String(
+                        "age",
+                    ),
+                    Name: sdk.String(
+                        "Age",
+                    ),
+                    Type: sdk.ContextSchemaFieldTypeNumber.Ptr(),
+                },
             },
-            &contexts.CreateContextRequestSchemaItem{
-                Key: sdk.String(
-                    "age",
-                ),
-                Name: sdk.String(
-                    "Age",
-                ),
-                Type: sdk.String(
-                    "number",
-                ),
-            },
+            Derived: []*sdk.ContextSchemaField{},
         },
         IdentityFact: "email",
     }
@@ -2509,15 +3416,7 @@ client.Contexts.Objects.Create(
 <dl>
 <dd>
 
-**name:** `string` — The name of the context.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**slug:** `*string` — Optional custom slug. Auto-generated if not provided.
+**name:** `string` — The name of the context. The context's slug is generated from it (suffixed on collision).
     
 </dd>
 </dl>
@@ -2533,7 +3432,7 @@ client.Contexts.Objects.Create(
 <dl>
 <dd>
 
-**schema:** `[]*contexts.CreateContextRequestSchemaItem` — Initial schema fields for the context. At least one field must be defined.
+**schema:** `*sdk.ContextSchema` — The context's schema: an object with `base` (stored facts; at least one required) and optional `derived` (expression-computed facts) field arrays.
     
 </dd>
 </dl>
@@ -2541,7 +3440,7 @@ client.Contexts.Objects.Create(
 <dl>
 <dd>
 
-**identityFact:** `string` — The field key to use as the unique identifier for instances. Must be a key from the schema.
+**identityFact:** `string` — The fact key to use as the unique identifier for instances. Must be a key from schema.base.
     
 </dd>
 </dl>
@@ -2557,7 +3456,7 @@ client.Contexts.Objects.Create(
 <dl>
 <dd>
 
-**ttlSeconds:** `*int` — Time-to-live in seconds for live context instances. Instances expire after this duration.
+**ttlSeconds:** `*int` — Time-to-live in seconds for live context instances (60 seconds to 30 days). Instances expire after this duration; each write extends the expiry.
     
 </dd>
 </dl>
@@ -2573,23 +3472,7 @@ client.Contexts.Objects.Create(
 <dl>
 <dd>
 
-**onSchemaMismatch:** `*contexts.CreateContextRequestOnSchemaMismatch` — How to handle fields that don't match the schema.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**webhookOnSolve:** `*string` — Webhook URL called when a rule or flow successfully solves.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**webhookOnExpire:** `*string` — Webhook URL called when a live context expires due to TTL.
+**onSchemaMismatch:** `*contexts.CreateContextRequestOnSchemaMismatch` — How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
     
 </dd>
 </dl>
@@ -2725,15 +3608,7 @@ client.Contexts.Objects.Update(
 <dl>
 <dd>
 
-**name:** `*string` — The name of the context.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**slug:** `*string` — The slug of the context.
+**name:** `*string` — The name of the context. Changing it regenerates the context's slug.
     
 </dd>
 </dl>
@@ -2749,7 +3624,15 @@ client.Contexts.Objects.Update(
 <dl>
 <dd>
 
-**schema:** `[]*contexts.UpdateContextRequestSchemaItem` — Updated schema fields for the context.
+**schema:** `*sdk.ContextSchema` — Updated schema for the context: an object with `base` and optional `derived` field arrays.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**identityFact:** `*string` — The fact key to use as the unique identifier for instances. Must be a key from schema.base. Caution: changing this on a context with live instances changes how future writes resolve instances.
     
 </dd>
 </dl>
@@ -2765,7 +3648,7 @@ client.Contexts.Objects.Update(
 <dl>
 <dd>
 
-**ttlSeconds:** `*int` — Time-to-live in seconds for live context instances. Instances expire after this duration.
+**ttlSeconds:** `*int` — Time-to-live in seconds for live context instances (60 seconds to 30 days). Instances expire after this duration.
     
 </dd>
 </dl>
@@ -2781,23 +3664,7 @@ client.Contexts.Objects.Update(
 <dl>
 <dd>
 
-**onSchemaMismatch:** `*contexts.UpdateContextRequestOnSchemaMismatch` — How to handle fields that don't match the schema.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**webhookOnSolve:** `*string` — Webhook URL called when a rule or flow successfully solves.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**webhookOnExpire:** `*string` — Webhook URL called when a live context expires due to TTL.
+**onSchemaMismatch:** `*contexts.UpdateContextRequestOnSchemaMismatch` — How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
     
 </dd>
 </dl>
@@ -2965,7 +3832,7 @@ request := &contexts.CreateRelationshipRequest{
         RelationType: contexts.CreateRelationshipRequestRelationTypeHasMany,
         ForeignKeyFact: "customer_id",
         Name: sdk.String(
-            "Customer Orders",
+            "customer_orders",
         ),
     }
 client.Contexts.Relationships.Create(
@@ -3019,7 +3886,7 @@ client.Contexts.Relationships.Create(
 <dl>
 <dd>
 
-**name:** `*string` — Display name for the relationship.
+**name:** `*string` — Optional runtime relationship key. It is normalized to lowercase snake_case; the target context slug is used when omitted.
     
 </dd>
 </dl>
@@ -3320,6 +4187,80 @@ client.Tests.Rules.Delete(
 </dl>
 </details>
 
+<details><summary><code>client.Tests.Rules.Run(Slug, request) -> *sdk.RunTestsResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Executes every test in the rule's test suite (or only the critical tests when `critical_only` is true) and returns a summary of which passed, which failed, and whether any CRITICAL test failed. Use the `critical_failure` flag as the signal for whether a release should be blocked.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &tests.RunRulesRequest{
+        Slug: "slug",
+        Body: &sdk.RunTestsRequest{
+            CriticalOnly: sdk.Bool(
+                false,
+            ),
+        },
+    }
+client.Tests.Rules.Run(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique identifier for the resource.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `*sdk.RunTestsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## Tests Flows
 <details><summary><code>client.Tests.Flows.List(Slug) -> sdk.TestListResponse</code></summary>
 <dl>
@@ -3520,6 +4461,80 @@ client.Tests.Flows.Delete(
 <dd>
 
 **testID:** `string` — The ID of the test.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Tests.Flows.Run(Slug, request) -> *sdk.RunTestsResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Executes every test in the flow's test suite (or only the critical tests when `critical_only` is true) against the flow's current graph and returns a summary of which passed, which failed, and whether any CRITICAL test failed.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &tests.RunFlowsRequest{
+        Slug: "slug",
+        Body: &sdk.RunTestsRequest{
+            CriticalOnly: sdk.Bool(
+                false,
+            ),
+        },
+    }
+client.Tests.Flows.Run(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique identifier for the resource.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `*sdk.RunTestsRequest` 
     
 </dd>
 </dl>

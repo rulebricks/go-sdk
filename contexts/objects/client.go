@@ -34,13 +34,15 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Retrieve all contexts for the authenticated user.
+// Retrieve all contexts for the authenticated user. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
 func (c *Client) List(
 	ctx context.Context,
+	request *contexts.ListObjectsRequest,
 	opts ...option.RequestOption,
 ) (sdk.ContextListResponse, error) {
 	response, err := c.WithRawResponse.List(
 		ctx,
+		request,
 		opts...,
 	)
 	if err != nil {
@@ -54,7 +56,7 @@ func (c *Client) Create(
 	ctx context.Context,
 	request *contexts.CreateContextRequest,
 	opts ...option.RequestOption,
-) (sdk.CreateContextResponse, error) {
+) (*sdk.CreateContextResponse, error) {
 	response, err := c.WithRawResponse.Create(
 		ctx,
 		request,

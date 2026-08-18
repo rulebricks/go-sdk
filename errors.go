@@ -31,6 +31,54 @@ func (b *BadRequestError) Unwrap() error {
 	return b.APIError
 }
 
+// The sync run already completed (send a fresh sync_id for a new run) or a pure finalize call targeted a run with nothing staged.
+type ConflictError struct {
+	*core.APIError
+	Body *Error
+}
+
+func (c *ConflictError) UnmarshalJSON(data []byte) error {
+	var body *Error
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	c.StatusCode = 409
+	c.Body = body
+	return nil
+}
+
+func (c *ConflictError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Body)
+}
+
+func (c *ConflictError) Unwrap() error {
+	return c.APIError
+}
+
+// Request too large: over the byte limit (4.5MB on cloud; the cloud platform returns this as a plain-text response), or on self-hosted deployments over the per-request record cap (default 10,000; operator-configurable via CONTEXT_BATCH_MAX_ITEMS). Send additional chunks in separate requests.
+type ContentTooLargeError struct {
+	*core.APIError
+	Body *Error
+}
+
+func (c *ContentTooLargeError) UnmarshalJSON(data []byte) error {
+	var body *Error
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	c.StatusCode = 413
+	c.Body = body
+	return nil
+}
+
+func (c *ContentTooLargeError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Body)
+}
+
+func (c *ContentTooLargeError) Unwrap() error {
+	return c.APIError
+}
+
 // Forbidden - Plan limit reached
 type ForbiddenError struct {
 	*core.APIError
@@ -101,4 +149,52 @@ func (n *NotFoundError) MarshalJSON() ([]byte, error) {
 
 func (n *NotFoundError) Unwrap() error {
 	return n.APIError
+}
+
+// Cloud platform only: the batch contains more records than the plan's remaining monthly rule executions. Send a smaller batch or upgrade the plan.
+type PaymentRequiredError struct {
+	*core.APIError
+	Body *Error
+}
+
+func (p *PaymentRequiredError) UnmarshalJSON(data []byte) error {
+	var body *Error
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	p.StatusCode = 402
+	p.Body = body
+	return nil
+}
+
+func (p *PaymentRequiredError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.Body)
+}
+
+func (p *PaymentRequiredError) Unwrap() error {
+	return p.APIError
+}
+
+// Fleet state could not be read (message broker unreachable).
+type ServiceUnavailableError struct {
+	*core.APIError
+	Body any
+}
+
+func (s *ServiceUnavailableError) UnmarshalJSON(data []byte) error {
+	var body any
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	s.StatusCode = 503
+	s.Body = body
+	return nil
+}
+
+func (s *ServiceUnavailableError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.Body)
+}
+
+func (s *ServiceUnavailableError) Unwrap() error {
+	return s.APIError
 }

@@ -34,6 +34,7 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 
 func (r *RawClient) List(
 	ctx context.Context,
+	request *contexts.ListObjectsRequest,
 	opts ...option.RequestOption,
 ) (*core.Response[sdk.ContextListResponse], error) {
 	options := core.NewRequestOptions(opts...)
@@ -43,6 +44,13 @@ func (r *RawClient) List(
 		"https%3A%2F%2Frulebricks.com/api/v1",
 	)
 	endpointURL := baseURL + "/admin/contexts"
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
@@ -77,7 +85,7 @@ func (r *RawClient) Create(
 	ctx context.Context,
 	request *contexts.CreateContextRequest,
 	opts ...option.RequestOption,
-) (*core.Response[sdk.CreateContextResponse], error) {
+) (*core.Response[*sdk.CreateContextResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -90,7 +98,7 @@ func (r *RawClient) Create(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response sdk.CreateContextResponse
+	var response *sdk.CreateContextResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -110,7 +118,7 @@ func (r *RawClient) Create(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[sdk.CreateContextResponse]{
+	return &core.Response[*sdk.CreateContextResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

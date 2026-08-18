@@ -37,10 +37,12 @@ func NewClient(options *core.RequestOptions) *Client {
 // Retrieve all rule folders for the authenticated user.
 func (c *Client) List(
 	ctx context.Context,
+	request *assets.ListFoldersRequest,
 	opts ...option.RequestOption,
 ) (sdk.FolderListResponse, error) {
 	response, err := c.WithRawResponse.List(
 		ctx,
+		request,
 		opts...,
 	)
 	if err != nil {
@@ -49,7 +51,7 @@ func (c *Client) List(
 	return response.Body, nil
 }
 
-// Create a new rule folder or update an existing one for the authenticated user.
+// Create a new folder or update an existing one for the authenticated user. Folders are typed to organize rules (the default), flows, or contexts.
 func (c *Client) Upsert(
 	ctx context.Context,
 	request *assets.UpsertFolderRequest,

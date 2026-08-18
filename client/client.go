@@ -8,7 +8,9 @@ import (
 	core "sdk/core"
 	decisions "sdk/decisions"
 	flows "sdk/flows"
+	infra "sdk/infra"
 	internal "sdk/internal"
+	objects "sdk/objects"
 	option "sdk/option"
 	rules "sdk/rules"
 	testsclient "sdk/tests/client"
@@ -18,11 +20,13 @@ import (
 
 type Client struct {
 	Rules     *rules.Client
+	Infra     *infra.Client
 	Flows     *flows.Client
 	Decisions *decisions.Client
 	Users     *client.Client
 	Assets    *assetsclient.Client
 	Values    *values.Client
+	Objects   *objects.Client
 	Contexts  *contextsclient.Client
 	Tests     *testsclient.Client
 
@@ -35,11 +39,13 @@ func NewClient(opts ...option.RequestOption) *Client {
 	options := core.NewRequestOptions(opts...)
 	return &Client{
 		Rules:     rules.NewClient(options),
+		Infra:     infra.NewClient(options),
 		Flows:     flows.NewClient(options),
 		Decisions: decisions.NewClient(options),
 		Users:     client.NewClient(options),
 		Assets:    assetsclient.NewClient(options),
 		Values:    values.NewClient(options),
+		Objects:   objects.NewClient(options),
 		Contexts:  contextsclient.NewClient(options),
 		Tests:     testsclient.NewClient(options),
 		options:   options,
