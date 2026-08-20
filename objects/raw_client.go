@@ -88,7 +88,6 @@ func (r *RawClient) Upsert(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	headers.Add("Content-Type", "application/json")
 	var response *sdk.UpsertObjectResponse
 	raw, err := r.caller.Call(
 		ctx,

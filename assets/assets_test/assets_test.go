@@ -115,17 +115,11 @@ func TestAssetsImportRbmWithWireMock(
 			Version: sdk.String(
 				"1.0",
 			),
-			Rules: []map[string]any{
-				map[string]any{
-					"name": "Pricing Rule",
-					"slug": "pricing-rule",
-				},
+			Rules: []*sdk.ManifestLabeledAsset{
+				&sdk.ManifestLabeledAsset{},
 			},
-			Flows: []map[string]any{
-				map[string]any{
-					"name": "Onboarding Flow",
-					"slug": "onboarding-flow",
-				},
+			Flows: []*sdk.ManifestLabeledAsset{
+				&sdk.ManifestLabeledAsset{},
 			},
 			Entities: []map[string]any{
 				map[string]any{

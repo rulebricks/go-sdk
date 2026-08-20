@@ -1270,9 +1270,9 @@ type ExportManifestResponseManifest struct {
 	// Exported vocabulary values.
 	Values []map[string]any `json:"values,omitempty" url:"values,omitempty"`
 	// Exported rules.
-	Rules []map[string]any `json:"rules,omitempty" url:"rules,omitempty"`
+	Rules []*ManifestLabeledAsset `json:"rules,omitempty" url:"rules,omitempty"`
 	// Exported flows.
-	Flows []map[string]any `json:"flows,omitempty" url:"flows,omitempty"`
+	Flows []*ManifestLabeledAsset `json:"flows,omitempty" url:"flows,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1323,14 +1323,14 @@ func (e *ExportManifestResponseManifest) GetValues() []map[string]any {
 	return e.Values
 }
 
-func (e *ExportManifestResponseManifest) GetRules() []map[string]any {
+func (e *ExportManifestResponseManifest) GetRules() []*ManifestLabeledAsset {
 	if e == nil {
 		return nil
 	}
 	return e.Rules
 }
 
-func (e *ExportManifestResponseManifest) GetFlows() []map[string]any {
+func (e *ExportManifestResponseManifest) GetFlows() []*ManifestLabeledAsset {
 	if e == nil {
 		return nil
 	}
@@ -1395,14 +1395,14 @@ func (e *ExportManifestResponseManifest) SetValues(values []map[string]any) {
 
 // SetRules sets the Rules field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponseManifest) SetRules(rules []map[string]any) {
+func (e *ExportManifestResponseManifest) SetRules(rules []*ManifestLabeledAsset) {
 	e.Rules = rules
 	e.require(exportManifestResponseManifestFieldRules)
 }
 
 // SetFlows sets the Flows field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (e *ExportManifestResponseManifest) SetFlows(flows []map[string]any) {
+func (e *ExportManifestResponseManifest) SetFlows(flows []*ManifestLabeledAsset) {
 	e.Flows = flows
 	e.require(exportManifestResponseManifestFieldFlows)
 }
@@ -1474,7 +1474,7 @@ type ImportManifestResponse struct {
 	Created []*ImportManifestResponseCreatedItem `json:"created,omitempty" url:"created,omitempty"`
 	// Assets that were updated during import.
 	Updated []*ImportManifestResponseUpdatedItem `json:"updated,omitempty" url:"updated,omitempty"`
-	// Assets that were skipped during import.
+	// Assets that were skipped during import. Object-managed values are listed here with a reason such as 'Collection is managed by a workspace object' or 'Value is managed by a workspace object'; they do not cause a whole-import 409.
 	Skipped []*ImportManifestResponseSkippedItem `json:"skipped,omitempty" url:"skipped,omitempty"`
 	// Any errors encountered during import.
 	Errors []*ImportManifestResponseErrorsItem `json:"errors,omitempty" url:"errors,omitempty"`
@@ -2293,6 +2293,185 @@ func (i *ImportManifestResponseUpdatedItem) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
+// A rule or flow entry in an RBM manifest. The full asset document is preserved for round-trip compatibility.
+var (
+	manifestLabeledAssetFieldData = big.NewInt(1 << 0)
+)
+
+type ManifestLabeledAsset struct {
+	Data *ManifestLabeledAssetData `json:"data,omitempty" url:"data,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (m *ManifestLabeledAsset) GetData() *ManifestLabeledAssetData {
+	if m == nil {
+		return nil
+	}
+	return m.Data
+}
+
+func (m *ManifestLabeledAsset) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.ExtraProperties
+}
+
+func (m *ManifestLabeledAsset) require(field *big.Int) {
+	if m.explicitFields == nil {
+		m.explicitFields = big.NewInt(0)
+	}
+	m.explicitFields.Or(m.explicitFields, field)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *ManifestLabeledAsset) SetData(data *ManifestLabeledAssetData) {
+	m.Data = data
+	m.require(manifestLabeledAssetFieldData)
+}
+
+func (m *ManifestLabeledAsset) UnmarshalJSON(data []byte) error {
+	type embed ManifestLabeledAsset
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*m = ManifestLabeledAsset(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.ExtraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *ManifestLabeledAsset) MarshalJSON() ([]byte, error) {
+	type embed ManifestLabeledAsset
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, m.ExtraProperties)
+}
+
+func (m *ManifestLabeledAsset) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+var (
+	manifestLabeledAssetDataFieldLabels = big.NewInt(1 << 0)
+)
+
+type ManifestLabeledAssetData struct {
+	Labels *AssetLabels `json:"labels,omitempty" url:"labels,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (m *ManifestLabeledAssetData) GetLabels() *AssetLabels {
+	if m == nil {
+		return nil
+	}
+	return m.Labels
+}
+
+func (m *ManifestLabeledAssetData) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.ExtraProperties
+}
+
+func (m *ManifestLabeledAssetData) require(field *big.Int) {
+	if m.explicitFields == nil {
+		m.explicitFields = big.NewInt(0)
+	}
+	m.explicitFields.Or(m.explicitFields, field)
+}
+
+// SetLabels sets the Labels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *ManifestLabeledAssetData) SetLabels(labels *AssetLabels) {
+	m.Labels = labels
+	m.require(manifestLabeledAssetDataFieldLabels)
+}
+
+func (m *ManifestLabeledAssetData) UnmarshalJSON(data []byte) error {
+	type embed ManifestLabeledAssetData
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*m = ManifestLabeledAssetData(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.ExtraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *ManifestLabeledAssetData) MarshalJSON() ([]byte, error) {
+	type embed ManifestLabeledAssetData
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, m.ExtraProperties)
+}
+
+func (m *ManifestLabeledAssetData) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
 var (
 	usageStatisticsFieldPlan                       = big.NewInt(1 << 0)
 	usageStatisticsFieldMonthlyPeriodStart         = big.NewInt(1 << 1)
@@ -2767,14 +2946,14 @@ type ImportManifestRequestManifest struct {
 	// Manifest format version.
 	Version *string `json:"version,omitempty" url:"version,omitempty"`
 	// Rules to import.
-	Rules []map[string]any `json:"rules,omitempty" url:"rules,omitempty"`
+	Rules []*ManifestLabeledAsset `json:"rules,omitempty" url:"rules,omitempty"`
 	// Flows to import.
-	Flows []map[string]any `json:"flows,omitempty" url:"flows,omitempty"`
+	Flows []*ManifestLabeledAsset `json:"flows,omitempty" url:"flows,omitempty"`
 	// Contexts to import.
 	Entities []map[string]any `json:"entities,omitempty" url:"entities,omitempty"`
 	// Alias for `entities`, accepted so manifests produced by the export endpoint (which names this array `contexts`) can be imported without modification. Ignored when `entities` is present and non-empty.
 	Contexts []map[string]any `json:"contexts,omitempty" url:"contexts,omitempty"`
-	// Vocabulary values to import.
+	// Vocabulary values to import. Entries in object-managed namespaces are skipped and reported instead of being overwritten.
 	Values []map[string]any `json:"values,omitempty" url:"values,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2791,14 +2970,14 @@ func (i *ImportManifestRequestManifest) GetVersion() *string {
 	return i.Version
 }
 
-func (i *ImportManifestRequestManifest) GetRules() []map[string]any {
+func (i *ImportManifestRequestManifest) GetRules() []*ManifestLabeledAsset {
 	if i == nil {
 		return nil
 	}
 	return i.Rules
 }
 
-func (i *ImportManifestRequestManifest) GetFlows() []map[string]any {
+func (i *ImportManifestRequestManifest) GetFlows() []*ManifestLabeledAsset {
 	if i == nil {
 		return nil
 	}
@@ -2849,14 +3028,14 @@ func (i *ImportManifestRequestManifest) SetVersion(version *string) {
 
 // SetRules sets the Rules field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestRequestManifest) SetRules(rules []map[string]any) {
+func (i *ImportManifestRequestManifest) SetRules(rules []*ManifestLabeledAsset) {
 	i.Rules = rules
 	i.require(importManifestRequestManifestFieldRules)
 }
 
 // SetFlows sets the Flows field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (i *ImportManifestRequestManifest) SetFlows(flows []map[string]any) {
+func (i *ImportManifestRequestManifest) SetFlows(flows []*ManifestLabeledAsset) {
 	i.Flows = flows
 	i.require(importManifestRequestManifestFieldFlows)
 }

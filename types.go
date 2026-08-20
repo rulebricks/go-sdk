@@ -10,6 +10,9 @@ import (
 	time "time"
 )
 
+// Lowercase alphanumeric labels assigned to a rule or flow.
+type AssetLabels = []string
+
 // Base properties for a context.
 var (
 	contextBaseFieldID                   = big.NewInt(1 << 0)
@@ -3918,10 +3921,11 @@ var (
 	flowDetailFieldSlug        = big.NewInt(1 << 3)
 	flowDetailFieldPublished   = big.NewInt(1 << 4)
 	flowDetailFieldUpdatedAt   = big.NewInt(1 << 5)
-	flowDetailFieldOriginRule  = big.NewInt(1 << 6)
-	flowDetailFieldContext     = big.NewInt(1 << 7)
-	flowDetailFieldUserGroups  = big.NewInt(1 << 8)
-	flowDetailFieldFolder      = big.NewInt(1 << 9)
+	flowDetailFieldLabels      = big.NewInt(1 << 6)
+	flowDetailFieldOriginRule  = big.NewInt(1 << 7)
+	flowDetailFieldContext     = big.NewInt(1 << 8)
+	flowDetailFieldUserGroups  = big.NewInt(1 << 9)
+	flowDetailFieldFolder      = big.NewInt(1 << 10)
 )
 
 type FlowDetail struct {
@@ -3936,7 +3940,8 @@ type FlowDetail struct {
 	// Whether the flow is published.
 	Published *bool `json:"published,omitempty" url:"published,omitempty"`
 	// The date this flow was last updated.
-	UpdatedAt *time.Time `json:"updated_at,omitempty" url:"updated_at,omitempty"`
+	UpdatedAt *time.Time   `json:"updated_at,omitempty" url:"updated_at,omitempty"`
+	Labels    *AssetLabels `json:"labels,omitempty" url:"labels,omitempty"`
 	// The origin rule that this flow starts from. Flows execute starting from this rule's outputs.
 	OriginRule *FlowDetailOriginRule `json:"origin_rule,omitempty" url:"origin_rule,omitempty"`
 	// The context this flow is bound to (via its origin rule). Flows inherit context binding from their origin rule.
@@ -3993,6 +3998,13 @@ func (f *FlowDetail) GetUpdatedAt() *time.Time {
 		return nil
 	}
 	return f.UpdatedAt
+}
+
+func (f *FlowDetail) GetLabels() *AssetLabels {
+	if f == nil {
+		return nil
+	}
+	return f.Labels
 }
 
 func (f *FlowDetail) GetOriginRule() *FlowDetailOriginRule {
@@ -4077,6 +4089,13 @@ func (f *FlowDetail) SetPublished(published *bool) {
 func (f *FlowDetail) SetUpdatedAt(updatedAt *time.Time) {
 	f.UpdatedAt = updatedAt
 	f.require(flowDetailFieldUpdatedAt)
+}
+
+// SetLabels sets the Labels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowDetail) SetLabels(labels *AssetLabels) {
+	f.Labels = labels
+	f.require(flowDetailFieldLabels)
 }
 
 // SetOriginRule sets the OriginRule field and marks it as non-optional;
@@ -4521,19 +4540,21 @@ func (f *FlowExecutionError) String() string {
 var (
 	flowImportPayloadFieldName        = big.NewInt(1 << 0)
 	flowImportPayloadFieldDescription = big.NewInt(1 << 1)
-	flowImportPayloadFieldNodes       = big.NewInt(1 << 2)
-	flowImportPayloadFieldConnections = big.NewInt(1 << 3)
-	flowImportPayloadFieldPublish     = big.NewInt(1 << 4)
-	flowImportPayloadFieldID          = big.NewInt(1 << 5)
-	flowImportPayloadFieldStableID    = big.NewInt(1 << 6)
-	flowImportPayloadFieldSlug        = big.NewInt(1 << 7)
+	flowImportPayloadFieldLabels      = big.NewInt(1 << 2)
+	flowImportPayloadFieldNodes       = big.NewInt(1 << 3)
+	flowImportPayloadFieldConnections = big.NewInt(1 << 4)
+	flowImportPayloadFieldPublish     = big.NewInt(1 << 5)
+	flowImportPayloadFieldID          = big.NewInt(1 << 6)
+	flowImportPayloadFieldStableID    = big.NewInt(1 << 7)
+	flowImportPayloadFieldSlug        = big.NewInt(1 << 8)
 )
 
 type FlowImportPayload struct {
 	// Flow name.
 	Name string `json:"name" url:"name"`
 	// Optional flow description.
-	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	Description *string      `json:"description,omitempty" url:"description,omitempty"`
+	Labels      *AssetLabels `json:"labels,omitempty" url:"labels,omitempty"`
 	// The flow's nodes. Exactly one must be an `origin`.
 	Nodes []*RulebricksFlowNode `json:"nodes" url:"nodes"`
 	// Property and control connections between node refs.
@@ -4567,6 +4588,13 @@ func (f *FlowImportPayload) GetDescription() *string {
 		return nil
 	}
 	return f.Description
+}
+
+func (f *FlowImportPayload) GetLabels() *AssetLabels {
+	if f == nil {
+		return nil
+	}
+	return f.Labels
 }
 
 func (f *FlowImportPayload) GetNodes() []*RulebricksFlowNode {
@@ -4637,6 +4665,13 @@ func (f *FlowImportPayload) SetName(name string) {
 func (f *FlowImportPayload) SetDescription(description *string) {
 	f.Description = description
 	f.require(flowImportPayloadFieldDescription)
+}
+
+// SetLabels sets the Labels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowImportPayload) SetLabels(labels *AssetLabels) {
+	f.Labels = labels
+	f.require(flowImportPayloadFieldLabels)
 }
 
 // SetNodes sets the Nodes field and marks it as non-optional;
@@ -5074,6 +5109,210 @@ func NewFolderTypeFromString(s string) (FolderType, error) {
 
 func (f FolderType) Ptr() *FolderType {
 	return &f
+}
+
+var (
+	objectUpsertConflictResponseFieldError      = big.NewInt(1 << 0)
+	objectUpsertConflictResponseFieldCollisions = big.NewInt(1 << 1)
+)
+
+type ObjectUpsertConflictResponse struct {
+	// Conflict message.
+	Error string `json:"error" url:"error"`
+	// Values the object would generate but cannot adopt or overwrite. Present for value-name collisions and omitted for conflicts without colliding values.
+	Collisions []*ObjectValueCollision `json:"collisions,omitempty" url:"collisions,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *ObjectUpsertConflictResponse) GetError() string {
+	if o == nil {
+		return ""
+	}
+	return o.Error
+}
+
+func (o *ObjectUpsertConflictResponse) GetCollisions() []*ObjectValueCollision {
+	if o == nil {
+		return nil
+	}
+	return o.Collisions
+}
+
+func (o *ObjectUpsertConflictResponse) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *ObjectUpsertConflictResponse) require(field *big.Int) {
+	if o.explicitFields == nil {
+		o.explicitFields = big.NewInt(0)
+	}
+	o.explicitFields.Or(o.explicitFields, field)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *ObjectUpsertConflictResponse) SetError(error_ string) {
+	o.Error = error_
+	o.require(objectUpsertConflictResponseFieldError)
+}
+
+// SetCollisions sets the Collisions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *ObjectUpsertConflictResponse) SetCollisions(collisions []*ObjectValueCollision) {
+	o.Collisions = collisions
+	o.require(objectUpsertConflictResponseFieldCollisions)
+}
+
+func (o *ObjectUpsertConflictResponse) UnmarshalJSON(data []byte) error {
+	type unmarshaler ObjectUpsertConflictResponse
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = ObjectUpsertConflictResponse(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *ObjectUpsertConflictResponse) MarshalJSON() ([]byte, error) {
+	type embed ObjectUpsertConflictResponse
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *ObjectUpsertConflictResponse) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
+}
+
+var (
+	objectValueCollisionFieldName       = big.NewInt(1 << 0)
+	objectValueCollisionFieldExistingID = big.NewInt(1 << 1)
+)
+
+type ObjectValueCollision struct {
+	// Managed value name the submitted object would generate.
+	Name string `json:"name" url:"name"`
+	// ID of the existing value that the object does not own.
+	ExistingID string `json:"existingId" url:"existingId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *ObjectValueCollision) GetName() string {
+	if o == nil {
+		return ""
+	}
+	return o.Name
+}
+
+func (o *ObjectValueCollision) GetExistingID() string {
+	if o == nil {
+		return ""
+	}
+	return o.ExistingID
+}
+
+func (o *ObjectValueCollision) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *ObjectValueCollision) require(field *big.Int) {
+	if o.explicitFields == nil {
+		o.explicitFields = big.NewInt(0)
+	}
+	o.explicitFields.Or(o.explicitFields, field)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *ObjectValueCollision) SetName(name string) {
+	o.Name = name
+	o.require(objectValueCollisionFieldName)
+}
+
+// SetExistingID sets the ExistingID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *ObjectValueCollision) SetExistingID(existingID string) {
+	o.ExistingID = existingID
+	o.require(objectValueCollisionFieldExistingID)
+}
+
+func (o *ObjectValueCollision) UnmarshalJSON(data []byte) error {
+	type unmarshaler ObjectValueCollision
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = ObjectValueCollision(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *ObjectValueCollision) MarshalJSON() ([]byte, error) {
+	type embed ObjectValueCollision
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *ObjectValueCollision) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
 }
 
 // Reported in a parallel-solve response slot when an individual rule or flow could not be executed. The reserved `$error` key cannot collide with a rule/flow's own output fields.
@@ -5641,14 +5880,15 @@ var (
 	ruleDetailFieldSlug           = big.NewInt(1 << 3)
 	ruleDetailFieldCreatedAt      = big.NewInt(1 << 4)
 	ruleDetailFieldUpdatedAt      = big.NewInt(1 << 5)
-	ruleDetailFieldPublished      = big.NewInt(1 << 6)
-	ruleDetailFieldNoConditions   = big.NewInt(1 << 7)
-	ruleDetailFieldMetadata       = big.NewInt(1 << 8)
-	ruleDetailFieldUserGroups     = big.NewInt(1 << 9)
-	ruleDetailFieldFolder         = big.NewInt(1 << 10)
-	ruleDetailFieldContext        = big.NewInt(1 << 11)
-	ruleDetailFieldRequestSchema  = big.NewInt(1 << 12)
-	ruleDetailFieldResponseSchema = big.NewInt(1 << 13)
+	ruleDetailFieldLabels         = big.NewInt(1 << 6)
+	ruleDetailFieldPublished      = big.NewInt(1 << 7)
+	ruleDetailFieldNoConditions   = big.NewInt(1 << 8)
+	ruleDetailFieldMetadata       = big.NewInt(1 << 9)
+	ruleDetailFieldUserGroups     = big.NewInt(1 << 10)
+	ruleDetailFieldFolder         = big.NewInt(1 << 11)
+	ruleDetailFieldContext        = big.NewInt(1 << 12)
+	ruleDetailFieldRequestSchema  = big.NewInt(1 << 13)
+	ruleDetailFieldResponseSchema = big.NewInt(1 << 14)
 )
 
 type RuleDetail struct {
@@ -5663,7 +5903,8 @@ type RuleDetail struct {
 	// The date this rule was created.
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
 	// The date this rule was last updated.
-	UpdatedAt *time.Time `json:"updated_at,omitempty" url:"updated_at,omitempty"`
+	UpdatedAt *time.Time   `json:"updated_at,omitempty" url:"updated_at,omitempty"`
+	Labels    *AssetLabels `json:"labels,omitempty" url:"labels,omitempty"`
 	// Whether the rule is currently published.
 	Published *bool `json:"published,omitempty" url:"published,omitempty"`
 	// The number of condition rows configured for the rule. Uses the published condition count when the rule is published, otherwise the draft condition count.
@@ -5727,6 +5968,13 @@ func (r *RuleDetail) GetUpdatedAt() *time.Time {
 		return nil
 	}
 	return r.UpdatedAt
+}
+
+func (r *RuleDetail) GetLabels() *AssetLabels {
+	if r == nil {
+		return nil
+	}
+	return r.Labels
 }
 
 func (r *RuleDetail) GetPublished() *bool {
@@ -5839,6 +6087,13 @@ func (r *RuleDetail) SetCreatedAt(createdAt *time.Time) {
 func (r *RuleDetail) SetUpdatedAt(updatedAt *time.Time) {
 	r.UpdatedAt = updatedAt
 	r.require(ruleDetailFieldUpdatedAt)
+}
+
+// SetLabels sets the Labels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleDetail) SetLabels(labels *AssetLabels) {
+	r.Labels = labels
+	r.require(ruleDetailFieldLabels)
 }
 
 // SetPublished sets the Published field and marks it as non-optional;
@@ -6072,7 +6327,94 @@ func (r *RuleDetailContext) String() string {
 }
 
 // The exported rule object containing all rule definition data. This payload intentionally preserves raw rule document casing (for example, `requestSchema`, `sampleRequest`, and `createdAt`) so it can round-trip through `/admin/rules/import` and `.rbm` workflows.
-type RuleExport = map[string]any
+var (
+	ruleExportFieldLabels = big.NewInt(1 << 0)
+)
+
+type RuleExport struct {
+	Labels *AssetLabels `json:"labels,omitempty" url:"labels,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	ExtraProperties map[string]interface{} `json:"-" url:"-"`
+
+	rawJSON json.RawMessage
+}
+
+func (r *RuleExport) GetLabels() *AssetLabels {
+	if r == nil {
+		return nil
+	}
+	return r.Labels
+}
+
+func (r *RuleExport) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.ExtraProperties
+}
+
+func (r *RuleExport) require(field *big.Int) {
+	if r.explicitFields == nil {
+		r.explicitFields = big.NewInt(0)
+	}
+	r.explicitFields.Or(r.explicitFields, field)
+}
+
+// SetLabels sets the Labels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleExport) SetLabels(labels *AssetLabels) {
+	r.Labels = labels
+	r.require(ruleExportFieldLabels)
+}
+
+func (r *RuleExport) UnmarshalJSON(data []byte) error {
+	type embed RuleExport
+	var unmarshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*r = RuleExport(unmarshaler.embed)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.ExtraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *RuleExport) MarshalJSON() ([]byte, error) {
+	type embed RuleExport
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return internal.MarshalJSONWithExtraProperties(explicitMarshaler, r.ExtraProperties)
+}
+
+func (r *RuleExport) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
 
 // A single rule row containing request conditions and response output.
 var (
@@ -6200,27 +6542,28 @@ var (
 	ruleImportPayloadFieldSlug                    = big.NewInt(1 << 2)
 	ruleImportPayloadFieldName                    = big.NewInt(1 << 3)
 	ruleImportPayloadFieldDescription             = big.NewInt(1 << 4)
-	ruleImportPayloadFieldCreatedAt               = big.NewInt(1 << 5)
-	ruleImportPayloadFieldUpdatedAt               = big.NewInt(1 << 6)
-	ruleImportPayloadFieldPublished               = big.NewInt(1 << 7)
-	ruleImportPayloadFieldMetadata                = big.NewInt(1 << 8)
-	ruleImportPayloadFieldPublish                 = big.NewInt(1 << 9)
-	ruleImportPayloadFieldUnpublish               = big.NewInt(1 << 10)
-	ruleImportPayloadFieldRequestSchema           = big.NewInt(1 << 11)
-	ruleImportPayloadFieldResponseSchema          = big.NewInt(1 << 12)
-	ruleImportPayloadFieldSampleRequest           = big.NewInt(1 << 13)
-	ruleImportPayloadFieldTestRequest             = big.NewInt(1 << 14)
-	ruleImportPayloadFieldSampleResponse          = big.NewInt(1 << 15)
-	ruleImportPayloadFieldConditions              = big.NewInt(1 << 16)
-	ruleImportPayloadFieldGroups                  = big.NewInt(1 << 17)
-	ruleImportPayloadFieldSettings                = big.NewInt(1 << 18)
-	ruleImportPayloadFieldTestSuite               = big.NewInt(1 << 19)
-	ruleImportPayloadFieldHistory                 = big.NewInt(1 << 20)
-	ruleImportPayloadFieldPublishedAt             = big.NewInt(1 << 21)
-	ruleImportPayloadFieldPublishedRequestSchema  = big.NewInt(1 << 22)
-	ruleImportPayloadFieldPublishedResponseSchema = big.NewInt(1 << 23)
-	ruleImportPayloadFieldPublishedConditions     = big.NewInt(1 << 24)
-	ruleImportPayloadFieldPublishedGroups         = big.NewInt(1 << 25)
+	ruleImportPayloadFieldLabels                  = big.NewInt(1 << 5)
+	ruleImportPayloadFieldCreatedAt               = big.NewInt(1 << 6)
+	ruleImportPayloadFieldUpdatedAt               = big.NewInt(1 << 7)
+	ruleImportPayloadFieldPublished               = big.NewInt(1 << 8)
+	ruleImportPayloadFieldMetadata                = big.NewInt(1 << 9)
+	ruleImportPayloadFieldPublish                 = big.NewInt(1 << 10)
+	ruleImportPayloadFieldUnpublish               = big.NewInt(1 << 11)
+	ruleImportPayloadFieldRequestSchema           = big.NewInt(1 << 12)
+	ruleImportPayloadFieldResponseSchema          = big.NewInt(1 << 13)
+	ruleImportPayloadFieldSampleRequest           = big.NewInt(1 << 14)
+	ruleImportPayloadFieldTestRequest             = big.NewInt(1 << 15)
+	ruleImportPayloadFieldSampleResponse          = big.NewInt(1 << 16)
+	ruleImportPayloadFieldConditions              = big.NewInt(1 << 17)
+	ruleImportPayloadFieldGroups                  = big.NewInt(1 << 18)
+	ruleImportPayloadFieldSettings                = big.NewInt(1 << 19)
+	ruleImportPayloadFieldTestSuite               = big.NewInt(1 << 20)
+	ruleImportPayloadFieldHistory                 = big.NewInt(1 << 21)
+	ruleImportPayloadFieldPublishedAt             = big.NewInt(1 << 22)
+	ruleImportPayloadFieldPublishedRequestSchema  = big.NewInt(1 << 23)
+	ruleImportPayloadFieldPublishedResponseSchema = big.NewInt(1 << 24)
+	ruleImportPayloadFieldPublishedConditions     = big.NewInt(1 << 25)
+	ruleImportPayloadFieldPublishedGroups         = big.NewInt(1 << 26)
 )
 
 type RuleImportPayload struct {
@@ -6233,7 +6576,8 @@ type RuleImportPayload struct {
 	// Rule name.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// Rule description.
-	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	Description *string      `json:"description,omitempty" url:"description,omitempty"`
+	Labels      *AssetLabels `json:"labels,omitempty" url:"labels,omitempty"`
 	// Creation timestamp.
 	CreatedAt *time.Time `json:"createdAt,omitempty" url:"createdAt,omitempty"`
 	// Last update timestamp.
@@ -6318,6 +6662,13 @@ func (r *RuleImportPayload) GetDescription() *string {
 		return nil
 	}
 	return r.Description
+}
+
+func (r *RuleImportPayload) GetLabels() *AssetLabels {
+	if r == nil {
+		return nil
+	}
+	return r.Labels
 }
 
 func (r *RuleImportPayload) GetCreatedAt() *time.Time {
@@ -6514,6 +6865,13 @@ func (r *RuleImportPayload) SetName(name *string) {
 func (r *RuleImportPayload) SetDescription(description *string) {
 	r.Description = description
 	r.require(ruleImportPayloadFieldDescription)
+}
+
+// SetLabels sets the Labels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RuleImportPayload) SetLabels(labels *AssetLabels) {
+	r.Labels = labels
+	r.require(ruleImportPayloadFieldLabels)
 }
 
 // SetCreatedAt sets the CreatedAt field and marks it as non-optional;

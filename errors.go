@@ -34,11 +34,11 @@ func (b *BadRequestError) Unwrap() error {
 // Conflict - The publish conflicted with a concurrent publish of the same rule (retry the request), or the import attempted to change the slug of an already-published rule (slugs are immutable after publish).
 type ConflictError struct {
 	*core.APIError
-	Body *Error
+	Body any
 }
 
 func (c *ConflictError) UnmarshalJSON(data []byte) error {
-	var body *Error
+	var body any
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}

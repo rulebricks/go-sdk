@@ -298,7 +298,7 @@ client.Infra.Status(
 <dl>
 <dd>
 
-Pre-scales the deployment's solver fleet to its maximum capacity ahead of a large batch workload, so the first wave of requests never pays the scale-from-baseline window. Takes no request body: the target is always the deployment's own configured ceiling. The fleet stays warm for a bounded window (default 10 minutes; repeat calls refresh it), after which normal autoscaling reclaims the capacity - an unused warm-up costs at most that window. Poll the GET variant until `status` is `ready` before starting the batch. Self-hosted deployments only.
+Scales up the deployment's solver fleet to its maximum capacity ahead of a known incoming batch workload. Usually takes 1-2 minutes to complete. This is completely optional, the solver fleet will scale up automatically as needed anyway. Self-hosted deployments only.
 </dd>
 </dl>
 </dd>
@@ -880,7 +880,7 @@ client.Assets.GetUsage(
 <dl>
 <dd>
 
-Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm). Both plain manifests and compressed ones (the compress-json array form produced by exporting with `compress: true`) are accepted and detected automatically. Run Flow (subflow) references between flows in the manifest are resolved to the slugs, IDs, and published versions the flows receive in this workspace.
+Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm).
 </dd>
 </dl>
 </dd>
@@ -900,17 +900,11 @@ request := &sdk.ImportManifestRequest{
             Version: sdk.String(
                 "1.0",
             ),
-            Rules: []map[string]any{
-                map[string]any{
-                    "name": "Pricing Rule",
-                    "slug": "pricing-rule",
-                },
+            Rules: []*sdk.ManifestLabeledAsset{
+                &sdk.ManifestLabeledAsset{},
             },
-            Flows: []map[string]any{
-                map[string]any{
-                    "name": "Onboarding Flow",
-                    "slug": "onboarding-flow",
-                },
+            Flows: []*sdk.ManifestLabeledAsset{
+                &sdk.ManifestLabeledAsset{},
             },
             Entities: []map[string]any{
                 map[string]any{
@@ -1230,7 +1224,7 @@ client.Values.List(
 <dl>
 <dd>
 
-Update existing vocabulary values or add new ones for the authenticated user. Supports both flat and nested object structures. Nested objects are automatically flattened using dot notation with keys preserved exactly as sent (e.g. nested 'user_profile.first_name' becomes the value name 'user_profile.first_name'). Writes are set-based upserts keyed by value name - existing values keep their ids, so rule references stay valid - and each call is idempotent, so retrying a failed request is always safe. Imports of any size go through this endpoint (POST /values/bulk is an equivalent alias): drive large dictionaries as a sequence of chunked calls, each bounded by your deployment's request body limit. Payloads may compose values from other values with reference markers: { "$ref": "<value name>" } references a value by name (existing values first, then values created by the same request), and { "$rb": "globalValue", "id": "<value id>" } references by id. A scalar payload may be a single reference; list payloads may mix literal items and references. References are validated (existence, type match, cycles) before anything is written. Workspaces at or below the catalog threshold receive the full value list back (legacy behavior); larger workspaces receive summary counts ({ created, updated, processed }).
+Update existing vocabulary values or add new ones for the authenticated user. Supports both flat and nested object structures.
 </dd>
 </dl>
 </dd>
@@ -1279,7 +1273,7 @@ client.Values.Update(
 <dl>
 <dd>
 
-**values:** `map[string]any` — A dictionary of keys and values to update or add. Supports both flat key-value pairs and nested objects. Nested objects are automatically flattened using dot notation with keys preserved exactly as sent (e.g. 'user.contact_info.email' stays 'user.contact_info.email'). Individual payloads may be value-to-value references (see ValueReference): a scalar payload may be a single { "$ref": "<value name>" } marker, and list payloads may mix literal items with reference markers.
+**values:** `map[string]any` — A dictionary of keys and values to update or add. This developer-facing sync contract preserves source names and nesting: nested objects are flattened using dot notation while every key segment stays exactly as sent (e.g. 'user.contact_info.email' stays 'user.contact_info.email'). Individual payloads may be value-to-value references (see ValueReference): a scalar payload may be a single { "$ref": "<value name>" } marker, and list payloads may mix literal items with reference markers.
     
 </dd>
 </dl>
@@ -1503,7 +1497,7 @@ client.Values.Sync(
 <dl>
 <dd>
 
-Lists the workspace's objects (JSON Schemas). Results are scoped to the API key holder's user groups, matching the visibility model of values, rules, and flows: group-restricted keys only see objects whose user_groups overlap theirs.
+Lists the workspace's objects (JSON Schemas). The provided API key must have permission to view vocabulary values. Results are scoped to the API key holder's user groups.
 </dd>
 </dl>
 </dd>
@@ -1545,7 +1539,7 @@ client.Objects.List(
 <dl>
 <dd>
 
-Creates or updates an object by ID or name and syncs enum values it generates. Objects help workspace admins programmatically determine multiple collections of values based on Rulebricks' contracts with external systems from a single JSON Schema source.
+Creates or updates an object by ID or name and syncs enum values it generates. `content` and at least one of `id` or `name` are required. Objects help workspace admins programmatically determine multiple collections of values based on Rulebricks' contracts with external systems from a single JSON Schema source. Renaming the object's display name does not move its managed collection paths: those paths derive from schema field keys. When a schema field key itself is renamed, `field_rename` can preserve the generated values' identities.
 </dd>
 </dl>
 </dd>
@@ -1561,17 +1555,17 @@ Creates or updates an object by ID or name and syncs enum values it generates. O
 
 ```go
 request := &sdk.UpsertObjectRequest{
-        Name: sdk.String(
-            "Claim",
-        ),
-        Content: `{
-          "type": "object",
-          "properties": {
-            "countryCode": { "type": "string", "title": "Country Code", "enum": ["US", "CA", "GB"] }
-          }
-        }`,
-        UserGroups: []string{
-            "underwriting",
+        Unknown: map[string]any{
+            "content": `{
+              "type": "object",
+              "properties": {
+                "countryCode": { "type": "string", "title": "Country Code", "enum": ["US", "CA", "GB"] }
+              }
+            }`,
+            "name": "Claim",
+            "user_groups": []any{
+                "underwriting",
+            },
         },
     }
 client.Objects.Upsert(
@@ -1593,48 +1587,8 @@ client.Objects.Upsert(
 <dl>
 <dd>
 
-**id:** `*string` — Object ID to update. Omit to resolve by name (creating the object when the name is new).
-    
-</dd>
-</dl>
+**request:** `*sdk.UpsertObjectRequest`
 
-<dl>
-<dd>
-
-**name:** `*string` — Object name. Required when ID is omitted; used to resolve the existing object or to name a new one.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**content:** `string` — The object's JSON Schema as a string. Enums in the schema become the object's managed values.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**userGroups:** `[]string` — User groups for the object, propagated to every value it generates. Omit to keep the current groups.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**dryRun:** `*bool` — Preview the value diff (would_sync / would_archive) without writing anything.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**expectedUpdatedAt:** `*string` — Optimistic concurrency: reject with 409 when the object's updated_at no longer matches.
-    
 </dd>
 </dl>
 </dd>
@@ -1657,7 +1611,7 @@ client.Objects.Upsert(
 <dl>
 <dd>
 
-Fetches one object by ID or exact name.
+Fetches one object by ID or exact name. The provided API key must have permission to view vocabulary values.
 </dd>
 </dl>
 </dd>
@@ -1718,7 +1672,7 @@ client.Objects.Get(
 <dl>
 <dd>
 
-Deletes the object. Its generated values always lose their management lock; by default they are also archived (published rules keep resolving them by id). Pass values=detach to keep them active as ordinary, hand-editable values instead. Requires the manage objects entitlement.
+Deletes the object. By default, unused values are permanently deleted while values referenced by draft, current, or historical rules, flows, or other vocabulary values are archived. Pass values=detach to keep every generated value active as an ordinary, hand-editable value.
 </dd>
 </dl>
 </dd>
@@ -1763,7 +1717,7 @@ client.Objects.Delete(
 <dl>
 <dd>
 
-**values:** `*sdk.DeleteObjectsRequestValues` — What happens to the values this object generated: 'archive' (default) or 'detach'.
+**values:** `*sdk.DeleteObjectsRequestValues` — What happens to generated values: 'archive' (default) permanently deletes unused values and archives referenced values; 'detach' retains all values as active ordinary values.
     
 </dd>
 </dl>
@@ -2253,7 +2207,7 @@ client.Contexts.Cascade(
 <dl>
 <dd>
 
-Submit an array of records to any context in one synchronous call. Records merge into their context instances (matched by the context's identity fact), bound rules and flows whose inputs became satisfied execute, and the response returns the resolved state of every touched instance. Retries are always safe: merges are idempotent and executions are deduplicated by input hash. Fact history is recorded for tracked facts exactly as on individual writes. Clients chunk large datasets across requests. On the cloud platform, a batch may not exceed the plan's remaining monthly rule executions (402 above it) or a 4.5MB request body, and executed rules count toward plan usage. Private (self-hosted) deployments run batches through the high-performance server with no plan gating, a 10,000-records-per-request default cap (CONTEXT_BATCH_MAX_ITEMS), and NDJSON support (Content-Type: application/x-ndjson).
+Submit an array of records to any context in one synchronous call. Records merge into their context instances (matched by the context's identity fact), bound rules and flows whose inputs became satisfied execute, and the response returns the resolved state of every touched instance. Retries are always safe: merges are idempotent and executions are deduplicated by input hash. Fact history is recorded for tracked facts exactly as on individual writes. Clients chunk large datasets across requests.
 </dd>
 </dl>
 </dd>
@@ -2390,7 +2344,7 @@ client.Assets.Rules.Delete(
 </dl>
 </details>
 
-<details><summary><code>client.Assets.Rules.Pull() -> sdk.RuleExport</code></summary>
+<details><summary><code>client.Assets.Rules.Pull() -> *sdk.RuleExport</code></summary>
 <dl>
 <dd>
 
@@ -2451,7 +2405,7 @@ client.Assets.Rules.Pull(
 </dl>
 </details>
 
-<details><summary><code>client.Assets.Rules.Push(request) -> sdk.RuleExport</code></summary>
+<details><summary><code>client.Assets.Rules.Push(request) -> *sdk.RuleExport</code></summary>
 <dl>
 <dd>
 
@@ -2657,7 +2611,7 @@ client.Assets.Rules.Push(
 <dl>
 <dd>
 
-List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
+List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, labels, user group name or ID when the API key has access to that group, or by name.
 </dd>
 </dl>
 </dd>
@@ -2704,6 +2658,14 @@ client.Assets.Rules.List(
 <dl>
 <dd>
 
+**labels:** `*string` — Filter results to assets containing all comma-separated labels.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
     
 </dd>
@@ -2737,7 +2699,7 @@ client.Assets.Rules.List(
 <dl>
 <dd>
 
-List all flows in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
+List all flows in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, labels, user group name or ID when the API key has access to that group, or by name.
 </dd>
 </dl>
 </dd>
@@ -2774,6 +2736,14 @@ client.Assets.Flows.List(
 
 **folder:** `*string` — Filter results by folder name or folder ID.
     
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**labels:** `*string` — Filter results to assets containing all comma-separated labels.
+
 </dd>
 </dl>
 

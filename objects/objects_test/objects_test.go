@@ -111,17 +111,17 @@ func TestObjectsUpsertWithWireMock(
 		option.WithAPIKey("test-value"),
 	)
 	request := &sdk.UpsertObjectRequest{
-		Name: sdk.String(
-			"Claim",
-		),
-		Content: `{
-              "type": "object",
-              "properties": {
-                "countryCode": { "type": "string", "title": "Country Code", "enum": ["US", "CA", "GB"] }
-              }
-            }`,
-		UserGroups: []string{
-			"underwriting",
+		Unknown: map[string]any{
+			"content": `{
+                  "type": "object",
+                  "properties": {
+                    "countryCode": { "type": "string", "title": "Country Code", "enum": ["US", "CA", "GB"] }
+                  }
+                }`,
+			"name": "Claim",
+			"user_groups": []any{
+				"underwriting",
+			},
 		},
 	}
 	_, invocationErr := client.Objects.Upsert(

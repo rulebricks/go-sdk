@@ -58,13 +58,16 @@ func (d *DeleteRuleRequest) MarshalJSON() ([]byte, error) {
 
 var (
 	listRulesRequestFieldFolder    = big.NewInt(1 << 0)
-	listRulesRequestFieldUserGroup = big.NewInt(1 << 1)
-	listRulesRequestFieldName      = big.NewInt(1 << 2)
+	listRulesRequestFieldLabels    = big.NewInt(1 << 1)
+	listRulesRequestFieldUserGroup = big.NewInt(1 << 2)
+	listRulesRequestFieldName      = big.NewInt(1 << 3)
 )
 
 type ListRulesRequest struct {
 	// Filter results by folder name or folder ID.
 	Folder *string `json:"-" url:"folder,omitempty"`
+	// Filter results to assets containing all comma-separated labels.
+	Labels []*string `json:"-" url:"labels,omitempty"`
 	// Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
 	UserGroup *string `json:"-" url:"user_group,omitempty"`
 	// Filter results by name using a case-insensitive substring match.
@@ -86,6 +89,13 @@ func (l *ListRulesRequest) require(field *big.Int) {
 func (l *ListRulesRequest) SetFolder(folder *string) {
 	l.Folder = folder
 	l.require(listRulesRequestFieldFolder)
+}
+
+// SetLabels sets the Labels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListRulesRequest) SetLabels(labels []*string) {
+	l.Labels = labels
+	l.require(listRulesRequestFieldLabels)
 }
 
 // SetUserGroup sets the UserGroup field and marks it as non-optional;

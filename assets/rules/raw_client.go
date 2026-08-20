@@ -80,7 +80,7 @@ func (r *RawClient) Pull(
 	ctx context.Context,
 	request *assets.PullRulesRequest,
 	opts ...option.RequestOption,
-) (*core.Response[sdk.RuleExport], error) {
+) (*core.Response[*sdk.RuleExport], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -99,7 +99,7 @@ func (r *RawClient) Pull(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response sdk.RuleExport
+	var response *sdk.RuleExport
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -118,7 +118,7 @@ func (r *RawClient) Pull(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[sdk.RuleExport]{
+	return &core.Response[*sdk.RuleExport]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -129,7 +129,7 @@ func (r *RawClient) Push(
 	ctx context.Context,
 	request *assets.ImportRuleRequest,
 	opts ...option.RequestOption,
-) (*core.Response[sdk.RuleExport], error) {
+) (*core.Response[*sdk.RuleExport], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -142,7 +142,7 @@ func (r *RawClient) Push(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response sdk.RuleExport
+	var response *sdk.RuleExport
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -162,7 +162,7 @@ func (r *RawClient) Push(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[sdk.RuleExport]{
+	return &core.Response[*sdk.RuleExport]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

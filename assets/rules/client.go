@@ -56,7 +56,7 @@ func (c *Client) Pull(
 	ctx context.Context,
 	request *assets.PullRulesRequest,
 	opts ...option.RequestOption,
-) (sdk.RuleExport, error) {
+) (*sdk.RuleExport, error) {
 	response, err := c.WithRawResponse.Pull(
 		ctx,
 		request,
@@ -73,7 +73,7 @@ func (c *Client) Push(
 	ctx context.Context,
 	request *assets.ImportRuleRequest,
 	opts ...option.RequestOption,
-) (sdk.RuleExport, error) {
+) (*sdk.RuleExport, error) {
 	response, err := c.WithRawResponse.Push(
 		ctx,
 		request,
@@ -85,7 +85,7 @@ func (c *Client) Push(
 	return response.Body, nil
 }
 
-// List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
+// List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, labels, user group name or ID when the API key has access to that group, or by name.
 func (c *Client) List(
 	ctx context.Context,
 	request *assets.ListRulesRequest,
