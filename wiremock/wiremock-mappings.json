@@ -248,7 +248,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"data\": [\n    {\n      \"timestamp\": \"2024-12-17T10:30:00Z\",\n      \"name\": \"Lead Qualification\",\n      \"endpoint\": \"/api/v1/solve/lead-qual\",\n      \"status\": 200,\n      \"request\": {\n        \"key\": \"value\"\n      },\n      \"response\": {\n        \"key\": \"value\"\n      },\n      \"decision\": {\n        \"key\": \"value\"\n      },\n      \"trace_id\": \"trace_id\",\n      \"path_trace\": {\n        \"key\": \"value\"\n      },\n      \"matched_items\": [\n        1\n      ],\n      \"abbreviated\": false,\n      \"error\": \"error\"\n    }\n  ],\n  \"cursor\": \"eyJ0IjoiMTc1MzY1MDAwMDEyMyIsInMiOjB9\",\n  \"count\": 1\n}",
+        "body": "{\n  \"data\": [\n    {\n      \"timestamp\": \"2024-12-17T10:30:00Z\",\n      \"name\": \"Lead Qualification\",\n      \"endpoint\": \"/api/v1/solve/lead-qual\",\n      \"status\": 200,\n      \"request\": {\n        \"key\": \"value\"\n      },\n      \"response\": {\n        \"key\": \"value\"\n      },\n      \"decision\": {\n        \"key\": \"value\"\n      },\n      \"trace_id\": \"trace_id\",\n      \"path_trace\": {\n        \"key\": \"value\"\n      },\n      \"matched_items\": [\n        1\n      ],\n      \"abbreviated\": false,\n      \"error\": {\n        \"key\": \"value\"\n      }\n    }\n  ],\n  \"cursor\": \"eyJ0IjoiMTc1MzY1MDAwMDEyMyIsInMiOjB9\",\n  \"count\": 1\n}",
         "headers": {
           "Content-Type": "application/json"
         }

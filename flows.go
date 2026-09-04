@@ -4,6 +4,7 @@ package api
 
 import (
 	json "encoding/json"
+	fmt "fmt"
 	big "math/big"
 )
 
@@ -16,8 +17,8 @@ type ExecuteFlowsRequest struct {
 	// The unique identifier for the resource.
 	Slug string `json:"-" url:"-"`
 	// The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
-	Version string                `json:"-" url:"-"`
-	Body    DynamicRequestPayload `json:"-" url:"-"`
+	Version string                       `json:"-" url:"-"`
+	Body    *FlowExecutionRequestPayload `json:"-" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -45,7 +46,7 @@ func (e *ExecuteFlowsRequest) SetVersion(version string) {
 }
 
 func (e *ExecuteFlowsRequest) UnmarshalJSON(data []byte) error {
-	var body DynamicRequestPayload
+	body := new(FlowExecutionRequestPayload)
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -55,4 +56,130 @@ func (e *ExecuteFlowsRequest) UnmarshalJSON(data []byte) error {
 
 func (e *ExecuteFlowsRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Body)
+}
+
+// A single flow input object or an array of input objects for bulk execution.
+type FlowExecutionRequestPayload struct {
+	DynamicRequestPayload     DynamicRequestPayload
+	DynamicRequestPayloadList []DynamicRequestPayload
+
+	typ string
+}
+
+func (f *FlowExecutionRequestPayload) GetDynamicRequestPayload() DynamicRequestPayload {
+	if f == nil {
+		return nil
+	}
+	return f.DynamicRequestPayload
+}
+
+func (f *FlowExecutionRequestPayload) GetDynamicRequestPayloadList() []DynamicRequestPayload {
+	if f == nil {
+		return nil
+	}
+	return f.DynamicRequestPayloadList
+}
+
+func (f *FlowExecutionRequestPayload) UnmarshalJSON(data []byte) error {
+	var valueDynamicRequestPayload DynamicRequestPayload
+	if err := json.Unmarshal(data, &valueDynamicRequestPayload); err == nil {
+		f.typ = "DynamicRequestPayload"
+		f.DynamicRequestPayload = valueDynamicRequestPayload
+		return nil
+	}
+	var valueDynamicRequestPayloadList []DynamicRequestPayload
+	if err := json.Unmarshal(data, &valueDynamicRequestPayloadList); err == nil {
+		f.typ = "DynamicRequestPayloadList"
+		f.DynamicRequestPayloadList = valueDynamicRequestPayloadList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, f)
+}
+
+func (f FlowExecutionRequestPayload) MarshalJSON() ([]byte, error) {
+	if f.typ == "DynamicRequestPayload" || f.DynamicRequestPayload != nil {
+		return json.Marshal(f.DynamicRequestPayload)
+	}
+	if f.typ == "DynamicRequestPayloadList" || f.DynamicRequestPayloadList != nil {
+		return json.Marshal(f.DynamicRequestPayloadList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+type FlowExecutionRequestPayloadVisitor interface {
+	VisitDynamicRequestPayload(DynamicRequestPayload) error
+	VisitDynamicRequestPayloadList([]DynamicRequestPayload) error
+}
+
+func (f *FlowExecutionRequestPayload) Accept(visitor FlowExecutionRequestPayloadVisitor) error {
+	if f.typ == "DynamicRequestPayload" || f.DynamicRequestPayload != nil {
+		return visitor.VisitDynamicRequestPayload(f.DynamicRequestPayload)
+	}
+	if f.typ == "DynamicRequestPayloadList" || f.DynamicRequestPayloadList != nil {
+		return visitor.VisitDynamicRequestPayloadList(f.DynamicRequestPayloadList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+// A single flow output object or an array of output objects for bulk execution.
+type FlowExecutionResponsePayload struct {
+	DynamicResponsePayload     DynamicResponsePayload
+	DynamicResponsePayloadList []DynamicResponsePayload
+
+	typ string
+}
+
+func (f *FlowExecutionResponsePayload) GetDynamicResponsePayload() DynamicResponsePayload {
+	if f == nil {
+		return nil
+	}
+	return f.DynamicResponsePayload
+}
+
+func (f *FlowExecutionResponsePayload) GetDynamicResponsePayloadList() []DynamicResponsePayload {
+	if f == nil {
+		return nil
+	}
+	return f.DynamicResponsePayloadList
+}
+
+func (f *FlowExecutionResponsePayload) UnmarshalJSON(data []byte) error {
+	var valueDynamicResponsePayload DynamicResponsePayload
+	if err := json.Unmarshal(data, &valueDynamicResponsePayload); err == nil {
+		f.typ = "DynamicResponsePayload"
+		f.DynamicResponsePayload = valueDynamicResponsePayload
+		return nil
+	}
+	var valueDynamicResponsePayloadList []DynamicResponsePayload
+	if err := json.Unmarshal(data, &valueDynamicResponsePayloadList); err == nil {
+		f.typ = "DynamicResponsePayloadList"
+		f.DynamicResponsePayloadList = valueDynamicResponsePayloadList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, f)
+}
+
+func (f FlowExecutionResponsePayload) MarshalJSON() ([]byte, error) {
+	if f.typ == "DynamicResponsePayload" || f.DynamicResponsePayload != nil {
+		return json.Marshal(f.DynamicResponsePayload)
+	}
+	if f.typ == "DynamicResponsePayloadList" || f.DynamicResponsePayloadList != nil {
+		return json.Marshal(f.DynamicResponsePayloadList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+type FlowExecutionResponsePayloadVisitor interface {
+	VisitDynamicResponsePayload(DynamicResponsePayload) error
+	VisitDynamicResponsePayloadList([]DynamicResponsePayload) error
+}
+
+func (f *FlowExecutionResponsePayload) Accept(visitor FlowExecutionResponsePayloadVisitor) error {
+	if f.typ == "DynamicResponsePayload" || f.DynamicResponsePayload != nil {
+		return visitor.VisitDynamicResponsePayload(f.DynamicResponsePayload)
+	}
+	if f.typ == "DynamicResponsePayloadList" || f.DynamicResponsePayloadList != nil {
+		return visitor.VisitDynamicResponsePayloadList(f.DynamicResponsePayloadList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", f)
 }

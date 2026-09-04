@@ -445,15 +445,16 @@ var (
 	cascadeResultFieldContext          = big.NewInt(1 << 0)
 	cascadeResultFieldRule             = big.NewInt(1 << 1)
 	cascadeResultFieldFlow             = big.NewInt(1 << 2)
-	cascadeResultFieldStatus           = big.NewInt(1 << 3)
-	cascadeResultFieldResult           = big.NewInt(1 << 4)
-	cascadeResultFieldAutoExecuted     = big.NewInt(1 << 5)
-	cascadeResultFieldWrittenToContext = big.NewInt(1 << 6)
-	cascadeResultFieldError            = big.NewInt(1 << 7)
-	cascadeResultFieldRateLimited      = big.NewInt(1 << 8)
-	cascadeResultFieldUsageLimited     = big.NewInt(1 << 9)
-	cascadeResultFieldNeed             = big.NewInt(1 << 10)
-	cascadeResultFieldCascaded         = big.NewInt(1 << 11)
+	cascadeResultFieldExecutionID      = big.NewInt(1 << 3)
+	cascadeResultFieldStatus           = big.NewInt(1 << 4)
+	cascadeResultFieldResult           = big.NewInt(1 << 5)
+	cascadeResultFieldAutoExecuted     = big.NewInt(1 << 6)
+	cascadeResultFieldWrittenToContext = big.NewInt(1 << 7)
+	cascadeResultFieldError            = big.NewInt(1 << 8)
+	cascadeResultFieldRateLimited      = big.NewInt(1 << 9)
+	cascadeResultFieldUsageLimited     = big.NewInt(1 << 10)
+	cascadeResultFieldNeed             = big.NewInt(1 << 11)
+	cascadeResultFieldCascaded         = big.NewInt(1 << 12)
 )
 
 type CascadeResult struct {
@@ -463,6 +464,8 @@ type CascadeResult struct {
 	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
 	// The flow slug (if this was a flow evaluation).
 	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
+	// Flow entries only: the run's execution ID, accepted by `/decisions/query` `trace`.
+	ExecutionID *string `json:"execution_id,omitempty" url:"execution_id,omitempty"`
 	// Whether the evaluation succeeded, failed, remains pending, or was skipped because the same inputs already completed successfully.
 	Status *CascadeResultStatus `json:"status,omitempty" url:"status,omitempty"`
 	// The evaluation output.
@@ -508,6 +511,13 @@ func (c *CascadeResult) GetFlow() *string {
 		return nil
 	}
 	return c.Flow
+}
+
+func (c *CascadeResult) GetExecutionID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ExecutionID
 }
 
 func (c *CascadeResult) GetStatus() *CascadeResultStatus {
@@ -606,6 +616,13 @@ func (c *CascadeResult) SetRule(rule *string) {
 func (c *CascadeResult) SetFlow(flow *string) {
 	c.Flow = flow
 	c.require(cascadeResultFieldFlow)
+}
+
+// SetExecutionID sets the ExecutionID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CascadeResult) SetExecutionID(executionID *string) {
+	c.ExecutionID = executionID
+	c.require(cascadeResultFieldExecutionID)
 }
 
 // SetStatus sets the Status field and marks it as non-optional;
@@ -1106,7 +1123,7 @@ type ContextBatchResponseResultsItem struct {
 	// Resolved instance state after merging and any executions, including computed facts.
 	State     map[string]any `json:"state,omitempty" url:"state,omitempty"`
 	ExpiresAt *time.Time     `json:"expires_at,omitempty" url:"expires_at,omitempty"`
-	// Per-asset record of the last run: input hash, status, timestamp, trace IDs, error.
+	// Per-asset record of the last run: input hash, status, timestamp, trace IDs, `execution_id` for flows, error.
 	Executions map[string]any `json:"executions,omitempty" url:"executions,omitempty"`
 	// Assets evaluated for this instance in this request.
 	Executed []*ContextBatchResponseResultsItemExecutedItem `json:"executed,omitempty" url:"executed,omitempty"`
@@ -1358,16 +1375,19 @@ var (
 	contextBatchResponseResultsItemExecutedItemFieldType             = big.NewInt(1 << 0)
 	contextBatchResponseResultsItemExecutedItemFieldSlug             = big.NewInt(1 << 1)
 	contextBatchResponseResultsItemExecutedItemFieldStatus           = big.NewInt(1 << 2)
-	contextBatchResponseResultsItemExecutedItemFieldError            = big.NewInt(1 << 3)
-	contextBatchResponseResultsItemExecutedItemFieldWrittenToContext = big.NewInt(1 << 4)
+	contextBatchResponseResultsItemExecutedItemFieldExecutionID      = big.NewInt(1 << 3)
+	contextBatchResponseResultsItemExecutedItemFieldError            = big.NewInt(1 << 4)
+	contextBatchResponseResultsItemExecutedItemFieldWrittenToContext = big.NewInt(1 << 5)
 )
 
 type ContextBatchResponseResultsItemExecutedItem struct {
-	Type             *ContextBatchResponseResultsItemExecutedItemType   `json:"type,omitempty" url:"type,omitempty"`
-	Slug             *string                                            `json:"slug,omitempty" url:"slug,omitempty"`
-	Status           *ContextBatchResponseResultsItemExecutedItemStatus `json:"status,omitempty" url:"status,omitempty"`
-	Error            *string                                            `json:"error,omitempty" url:"error,omitempty"`
-	WrittenToContext []string                                           `json:"written_to_context,omitempty" url:"written_to_context,omitempty"`
+	Type   *ContextBatchResponseResultsItemExecutedItemType   `json:"type,omitempty" url:"type,omitempty"`
+	Slug   *string                                            `json:"slug,omitempty" url:"slug,omitempty"`
+	Status *ContextBatchResponseResultsItemExecutedItemStatus `json:"status,omitempty" url:"status,omitempty"`
+	// Flow entries only: the run's execution ID, accepted by `/decisions/query` `trace`.
+	ExecutionID      *string  `json:"execution_id,omitempty" url:"execution_id,omitempty"`
+	Error            *string  `json:"error,omitempty" url:"error,omitempty"`
+	WrittenToContext []string `json:"written_to_context,omitempty" url:"written_to_context,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1395,6 +1415,13 @@ func (c *ContextBatchResponseResultsItemExecutedItem) GetStatus() *ContextBatchR
 		return nil
 	}
 	return c.Status
+}
+
+func (c *ContextBatchResponseResultsItemExecutedItem) GetExecutionID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ExecutionID
 }
 
 func (c *ContextBatchResponseResultsItemExecutedItem) GetError() *string {
@@ -1444,6 +1471,13 @@ func (c *ContextBatchResponseResultsItemExecutedItem) SetSlug(slug *string) {
 func (c *ContextBatchResponseResultsItemExecutedItem) SetStatus(status *ContextBatchResponseResultsItemExecutedItemStatus) {
 	c.Status = status
 	c.require(contextBatchResponseResultsItemExecutedItemFieldStatus)
+}
+
+// SetExecutionID sets the ExecutionID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBatchResponseResultsItemExecutedItem) SetExecutionID(executionID *string) {
+	c.ExecutionID = executionID
+	c.require(contextBatchResponseResultsItemExecutedItemFieldExecutionID)
 }
 
 // SetError sets the Error field and marks it as non-optional;
@@ -2511,7 +2545,7 @@ type ContextInstanceState struct {
 	Need []string `json:"need,omitempty" url:"need,omitempty"`
 	// Related instance data, present only when include_relations was requested. Keys are relationship names; has_many relations map to a list of related instance states, has_one/belongs_to to a single state or null.
 	Relations map[string]any `json:"relations,omitempty" url:"relations,omitempty"`
-	// Per-asset execution metadata, present after a bound rule or flow has run for this instance.
+	// Per-asset execution metadata, including `execution_id` for flow runs, present after a bound rule or flow has run for this instance.
 	Executions map[string]any `json:"executions,omitempty" url:"executions,omitempty"`
 	// When the instance was first created.
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`

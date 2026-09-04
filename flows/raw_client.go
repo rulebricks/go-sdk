@@ -35,7 +35,7 @@ func (r *RawClient) Execute(
 	ctx context.Context,
 	request *sdk.ExecuteFlowsRequest,
 	opts ...option.RequestOption,
-) (*core.Response[sdk.DynamicResponsePayload], error) {
+) (*core.Response[*sdk.FlowExecutionResponsePayload], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -56,7 +56,7 @@ func (r *RawClient) Execute(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response sdk.DynamicResponsePayload
+	var response *sdk.FlowExecutionResponsePayload
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -76,7 +76,7 @@ func (r *RawClient) Execute(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[sdk.DynamicResponsePayload]{
+	return &core.Response[*sdk.FlowExecutionResponsePayload]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

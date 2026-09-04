@@ -329,7 +329,7 @@ client.Infra.Scale(
 </details>
 
 ## Flows
-<details><summary><code>client.Flows.Execute(Slug, Version, request) -> sdk.DynamicResponsePayload</code></summary>
+<details><summary><code>client.Flows.Execute(Slug, Version, request) -> *sdk.FlowExecutionResponsePayload</code></summary>
 <dl>
 <dd>
 
@@ -359,10 +359,12 @@ Execute a flow by slug and optional version. Policy failures return `{ error }` 
 request := &sdk.ExecuteFlowsRequest{
         Slug: "slug",
         Version: "version",
-        Body: map[string]any{
-            "age": 30,
-            "email": "jdoe@acme.co",
-            "name": "John Doe",
+        Body: &sdk.FlowExecutionRequestPayload{
+            DynamicRequestPayload: map[string]any{
+                "age": 30,
+                "email": "jdoe@acme.co",
+                "name": "John Doe",
+            },
         },
     }
 client.Flows.Execute(
@@ -400,7 +402,7 @@ client.Flows.Execute(
 <dl>
 <dd>
 
-**request:** `sdk.DynamicRequestPayload`
+**request:** `*sdk.FlowExecutionRequestPayload`
 
 </dd>
 </dl>

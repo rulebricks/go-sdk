@@ -91,10 +91,12 @@ func TestFlowsExecuteWithWireMock(
 	request := &sdk.ExecuteFlowsRequest{
 		Slug:    "slug",
 		Version: "version",
-		Body: map[string]any{
-			"age":   30,
-			"email": "jdoe@acme.co",
-			"name":  "John Doe",
+		Body: &sdk.FlowExecutionRequestPayload{
+			DynamicRequestPayload: map[string]any{
+				"age":   30,
+				"email": "jdoe@acme.co",
+				"name":  "John Doe",
+			},
 		},
 	}
 	_, invocationErr := client.Flows.Execute(

@@ -38,7 +38,7 @@ func (c *Client) Execute(
 	ctx context.Context,
 	request *sdk.ExecuteFlowsRequest,
 	opts ...option.RequestOption,
-) (sdk.DynamicResponsePayload, error) {
+) (*sdk.FlowExecutionResponsePayload, error) {
 	response, err := c.WithRawResponse.Execute(
 		ctx,
 		request,

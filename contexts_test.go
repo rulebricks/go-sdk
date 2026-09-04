@@ -893,6 +893,14 @@ func TestSettersCascadeResult(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetExecutionID", func(t *testing.T) {
+		obj := &CascadeResult{}
+		var fernTestValueExecutionID *string
+		obj.SetExecutionID(fernTestValueExecutionID)
+		assert.Equal(t, fernTestValueExecutionID, obj.ExecutionID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetStatus", func(t *testing.T) {
 		obj := &CascadeResult{}
 		var fernTestValueStatus *CascadeResultStatus
@@ -1065,6 +1073,39 @@ func TestGettersCascadeResult(t *testing.T) {
 			}
 		}()
 		_ = obj.GetFlow() // Should return zero value
+	})
+
+	t.Run("GetExecutionID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CascadeResult{}
+		var expected *string
+		obj.ExecutionID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetExecutionID(), "getter should return the property value")
+	})
+
+	t.Run("GetExecutionID_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CascadeResult{}
+		obj.ExecutionID = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetExecutionID(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetExecutionID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CascadeResult
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetExecutionID() // Should return zero value
 	})
 
 	t.Run("GetStatus", func(t *testing.T) {
@@ -1437,6 +1478,37 @@ func TestSettersMarkExplicitCascadeResult(t *testing.T) {
 
 		// Act
 		obj.SetFlow(fernTestValueFlow)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetExecutionID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CascadeResult{}
+		var fernTestValueExecutionID *string
+
+		// Act
+		obj.SetExecutionID(fernTestValueExecutionID)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -3521,6 +3593,14 @@ func TestSettersContextBatchResponseResultsItemExecutedItem(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetExecutionID", func(t *testing.T) {
+		obj := &ContextBatchResponseResultsItemExecutedItem{}
+		var fernTestValueExecutionID *string
+		obj.SetExecutionID(fernTestValueExecutionID)
+		assert.Equal(t, fernTestValueExecutionID, obj.ExecutionID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetError", func(t *testing.T) {
 		obj := &ContextBatchResponseResultsItemExecutedItem{}
 		var fernTestValueError *string
@@ -3637,6 +3717,39 @@ func TestGettersContextBatchResponseResultsItemExecutedItem(t *testing.T) {
 			}
 		}()
 		_ = obj.GetStatus() // Should return zero value
+	})
+
+	t.Run("GetExecutionID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ContextBatchResponseResultsItemExecutedItem{}
+		var expected *string
+		obj.ExecutionID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetExecutionID(), "getter should return the property value")
+	})
+
+	t.Run("GetExecutionID_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ContextBatchResponseResultsItemExecutedItem{}
+		obj.ExecutionID = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetExecutionID(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetExecutionID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ContextBatchResponseResultsItemExecutedItem
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetExecutionID() // Should return zero value
 	})
 
 	t.Run("GetError", func(t *testing.T) {
@@ -3778,6 +3891,37 @@ func TestSettersMarkExplicitContextBatchResponseResultsItemExecutedItem(t *testi
 
 		// Act
 		obj.SetStatus(fernTestValueStatus)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetExecutionID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ContextBatchResponseResultsItemExecutedItem{}
+		var fernTestValueExecutionID *string
+
+		// Act
+		obj.SetExecutionID(fernTestValueExecutionID)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)

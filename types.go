@@ -11385,11 +11385,12 @@ type SolveContextFlowRequest = map[string]any
 
 // Response after executing a flow against a context instance.
 var (
-	solveContextFlowResponseFieldStatus  = big.NewInt(1 << 0)
-	solveContextFlowResponseFieldContext = big.NewInt(1 << 1)
-	solveContextFlowResponseFieldFlow    = big.NewInt(1 << 2)
-	solveContextFlowResponseFieldResult  = big.NewInt(1 << 3)
-	solveContextFlowResponseFieldUsage   = big.NewInt(1 << 4)
+	solveContextFlowResponseFieldStatus      = big.NewInt(1 << 0)
+	solveContextFlowResponseFieldContext     = big.NewInt(1 << 1)
+	solveContextFlowResponseFieldFlow        = big.NewInt(1 << 2)
+	solveContextFlowResponseFieldExecutionID = big.NewInt(1 << 3)
+	solveContextFlowResponseFieldResult      = big.NewInt(1 << 4)
+	solveContextFlowResponseFieldUsage       = big.NewInt(1 << 5)
 )
 
 type SolveContextFlowResponse struct {
@@ -11399,6 +11400,8 @@ type SolveContextFlowResponse struct {
 	Context *string `json:"context,omitempty" url:"context,omitempty"`
 	// The slug of the flow that was executed.
 	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
+	// The flow run's execution ID, accepted by `/decisions/query` `trace`.
+	ExecutionID *string `json:"execution_id,omitempty" url:"execution_id,omitempty"`
 	// The flow execution output.
 	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
 	// Resource usage information for the flow execution.
@@ -11430,6 +11433,13 @@ func (s *SolveContextFlowResponse) GetFlow() *string {
 		return nil
 	}
 	return s.Flow
+}
+
+func (s *SolveContextFlowResponse) GetExecutionID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.ExecutionID
 }
 
 func (s *SolveContextFlowResponse) GetResult() map[string]any {
@@ -11479,6 +11489,13 @@ func (s *SolveContextFlowResponse) SetContext(context *string) {
 func (s *SolveContextFlowResponse) SetFlow(flow *string) {
 	s.Flow = flow
 	s.require(solveContextFlowResponseFieldFlow)
+}
+
+// SetExecutionID sets the ExecutionID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SolveContextFlowResponse) SetExecutionID(executionID *string) {
+	s.ExecutionID = executionID
+	s.require(solveContextFlowResponseFieldExecutionID)
 }
 
 // SetResult sets the Result field and marks it as non-optional;
