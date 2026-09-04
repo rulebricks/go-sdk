@@ -103,6 +103,30 @@ func (f *ForbiddenError) Unwrap() error {
 	return f.APIError
 }
 
+// Execution infrastructure timed out.
+type GatewayTimeoutError struct {
+	*core.APIError
+	Body any
+}
+
+func (g *GatewayTimeoutError) UnmarshalJSON(data []byte) error {
+	var body any
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	g.StatusCode = 504
+	g.Body = body
+	return nil
+}
+
+func (g *GatewayTimeoutError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(g.Body)
+}
+
+func (g *GatewayTimeoutError) Unwrap() error {
+	return g.APIError
+}
+
 // Internal server error
 type InternalServerError struct {
 	*core.APIError
@@ -175,7 +199,7 @@ func (p *PaymentRequiredError) Unwrap() error {
 	return p.APIError
 }
 
-// Fleet state could not be read (message broker unreachable).
+// Execution infrastructure is temporarily unavailable.
 type ServiceUnavailableError struct {
 	*core.APIError
 	Body any

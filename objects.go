@@ -308,7 +308,7 @@ func (d *DeleteObjectResponseValues) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
-// `content` is always required, together with at least one of `id` or `name`. Supplying both updates the object selected by `id` and may change its display name.
+// Requires `content` and either `id` or `name`.
 type UpsertObjectRequest struct {
 	Unknown any
 
@@ -350,16 +350,79 @@ func (u *UpsertObjectRequest) Accept(visitor UpsertObjectRequestVisitor) error {
 	return fmt.Errorf("type %T does not include a non-empty union type", u)
 }
 
-// Optional single-field rename hint for an update. When `content` replaces an existing schema field key with a new key, this hint preserves matching managed enum value IDs instead of archiving and recreating them.
+// JSON Schema object or serialized JSON string. Enums become managed values.
+type UpsertObjectRequestContent struct {
+	String           string
+	StringUnknownMap map[string]any
+
+	typ string
+}
+
+func (u *UpsertObjectRequestContent) GetString() string {
+	if u == nil {
+		return ""
+	}
+	return u.String
+}
+
+func (u *UpsertObjectRequestContent) GetStringUnknownMap() map[string]any {
+	if u == nil {
+		return nil
+	}
+	return u.StringUnknownMap
+}
+
+func (u *UpsertObjectRequestContent) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		u.typ = "String"
+		u.String = valueString
+		return nil
+	}
+	var valueStringUnknownMap map[string]any
+	if err := json.Unmarshal(data, &valueStringUnknownMap); err == nil {
+		u.typ = "StringUnknownMap"
+		u.StringUnknownMap = valueStringUnknownMap
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, u)
+}
+
+func (u UpsertObjectRequestContent) MarshalJSON() ([]byte, error) {
+	if u.typ == "String" || u.String != "" {
+		return json.Marshal(u.String)
+	}
+	if u.typ == "StringUnknownMap" || u.StringUnknownMap != nil {
+		return json.Marshal(u.StringUnknownMap)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+type UpsertObjectRequestContentVisitor interface {
+	VisitString(string) error
+	VisitStringUnknownMap(map[string]any) error
+}
+
+func (u *UpsertObjectRequestContent) Accept(visitor UpsertObjectRequestContentVisitor) error {
+	if u.typ == "String" || u.String != "" {
+		return visitor.VisitString(u.String)
+	}
+	if u.typ == "StringUnknownMap" || u.StringUnknownMap != nil {
+		return visitor.VisitStringUnknownMap(u.StringUnknownMap)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", u)
+}
+
+// Renames a field while preserving generated value IDs.
 var (
 	upsertObjectRequestFieldRenameFieldFromKey = big.NewInt(1 << 0)
 	upsertObjectRequestFieldRenameFieldToKey   = big.NewInt(1 << 1)
 )
 
 type UpsertObjectRequestFieldRename struct {
-	// Previous schema field key or schemaPath present on the stored object.
+	// Existing field key or schema path.
 	FromKey string `json:"from_key" url:"from_key"`
-	// Replacement schema field key or schemaPath present in the submitted content.
+	// New field key or schema path.
 	ToKey string `json:"to_key" url:"to_key"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -461,12 +524,12 @@ var (
 )
 
 type UpsertObjectResponse struct {
-	// Present and true for a dry-run response; no object or managed values were written.
+	// True when no changes were written.
 	DryRun *bool `json:"dry_run,omitempty" url:"dry_run,omitempty"`
 	// True when the object was created by this call.
 	Created *bool            `json:"created,omitempty" url:"created,omitempty"`
 	Object  *WorkspaceObject `json:"object,omitempty" url:"object,omitempty"`
-	// Managed-value sync results (or would_sync / would_archive for dry runs).
+	// Managed-value sync results.
 	Values *UpsertObjectResponseValues `json:"values,omitempty" url:"values,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -588,7 +651,7 @@ func (u *UpsertObjectResponse) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
-// Managed-value sync results (or would_sync / would_archive for dry runs).
+// Managed-value sync results.
 var (
 	upsertObjectResponseValuesFieldSynced       = big.NewInt(1 << 0)
 	upsertObjectResponseValuesFieldArchived     = big.NewInt(1 << 1)
@@ -599,7 +662,7 @@ var (
 type UpsertObjectResponseValues struct {
 	// Managed values created or updated.
 	Synced *int `json:"synced,omitempty" url:"synced,omitempty"`
-	// Previously generated values archived because the schema no longer declares them.
+	// Generated values removed from the schema.
 	Archived *int `json:"archived,omitempty" url:"archived,omitempty"`
 	// Dry run: managed values that would be synced.
 	WouldSync *int `json:"would_sync,omitempty" url:"would_sync,omitempty"`
@@ -842,7 +905,7 @@ var (
 type WorkspaceObject struct {
 	// Unique identifier for the object.
 	ID string `json:"id" url:"id"`
-	// Display name (unique in practice per workspace). Changing it does not move managed collection paths, which derive from schema field keys.
+	// Object display name. Renaming it does not move managed collections.
 	Name string `json:"name" url:"name"`
 	// The object's JSON Schema, as a string.
 	Content string `json:"content" url:"content"`
@@ -850,7 +913,7 @@ type WorkspaceObject struct {
 	SchemaType *string `json:"schema_type,omitempty" url:"schema_type,omitempty"`
 	// Original import format ('json', 'csv', or 'ddl').
 	SourceFormat *string `json:"source_format,omitempty" url:"source_format,omitempty"`
-	// Flattened field descriptors derived from the schema. Fields inside arrays of objects use an item-relative key (for example, 'status'), a scope naming the containing array (for example, 'boss'), and a schemaPath for locating the field in the source schema (for example, 'boss[].status'). The object remains a single stored API resource.
+	// Flattened fields derived from the schema.
 	ParsedFields []*WorkspaceObjectParsedFieldsItem `json:"parsed_fields,omitempty" url:"parsed_fields,omitempty"`
 	// User groups this object (and every value it generates) is visible to. Empty means workspace-wide.
 	UserGroups []string `json:"user_groups,omitempty" url:"user_groups,omitempty"`
@@ -1086,13 +1149,13 @@ var (
 )
 
 type WorkspaceObjectParsedFieldsItem struct {
-	// Rule-facing field key. Array-item fields use a key relative to their scope and never include [] notation.
+	// Rule-facing field key.
 	Key *string `json:"key,omitempty" url:"key,omitempty"`
 	// Containing array path for a derived item field. Omitted for root fields.
 	Scope *string `json:"scope,omitempty" url:"scope,omitempty"`
-	// Source-schema path used for editing and enum collection derivation; may include [] markers.
+	// Path in the source schema.
 	SchemaPath *string `json:"schemaPath,omitempty" url:"schemaPath,omitempty"`
-	// Display-only, fully qualified label for an array-item scope, including the stored object name and every nesting level (for example, 'Inventory Warehouses Cars'). It does not identify a stored object or control managed collection paths; those derive from schema field keys/schemaPath.
+	// Display label for an array-item field.
 	DerivedObjectName *string `json:"derivedObjectName,omitempty" url:"derivedObjectName,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

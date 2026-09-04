@@ -99,55 +99,6 @@ func TestAssetsGetUsageWithWireMock(
 	VerifyRequestCount(t, "TestAssetsGetUsageWithWireMock", "GET", "/admin/usage", nil, 1)
 }
 
-func TestAssetsImportRbmWithWireMock(
-	t *testing.T,
-) {
-	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
-	if WireMockBaseURL == "" {
-		WireMockBaseURL = "http://localhost:8080"
-	}
-	client := client.NewClient(
-		option.WithBaseURL(WireMockBaseURL),
-		option.WithAPIKey("test-value"),
-	)
-	request := &sdk.ImportManifestRequest{
-		Manifest: &sdk.ImportManifestRequestManifest{
-			Version: sdk.String(
-				"1.0",
-			),
-			Rules: []*sdk.ManifestLabeledAsset{
-				&sdk.ManifestLabeledAsset{},
-			},
-			Flows: []*sdk.ManifestLabeledAsset{
-				&sdk.ManifestLabeledAsset{},
-			},
-			Entities: []map[string]any{
-				map[string]any{
-					"name": "Customer",
-					"slug": "customer",
-				},
-			},
-			Values: []map[string]any{
-				map[string]any{
-					"name":  "tax_rate",
-					"value": 0.08,
-				},
-			},
-		},
-		ConflictStrategy: sdk.ImportManifestRequestConflictStrategyUpdate.Ptr(),
-	}
-	_, invocationErr := client.Assets.ImportRbm(
-		context.TODO(),
-		request,
-		option.WithHTTPHeader(
-			http.Header{"X-Test-Id": []string{"TestAssetsImportRbmWithWireMock"}},
-		),
-	)
-
-	require.NoError(t, invocationErr, "Client method call should succeed")
-	VerifyRequestCount(t, "TestAssetsImportRbmWithWireMock", "POST", "/admin/import", nil, 1)
-}
-
 func TestAssetsExportRbmWithWireMock(
 	t *testing.T,
 ) {

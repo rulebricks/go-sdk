@@ -125,6 +125,7 @@ func TestTestsRulesCreateWithWireMock(
 			Response: map[string]any{
 				"status": "success",
 			},
+			Policy:   sdk.CreateTestRequestPolicyContains.Ptr(),
 			Critical: true,
 		},
 	}

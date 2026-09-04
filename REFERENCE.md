@@ -56,7 +56,7 @@ client.Rules.Solve(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
@@ -64,15 +64,15 @@ client.Rules.Solve(
 <dd>
 
 **version:** `string` — The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `sdk.DynamicRequestPayload` 
-    
+**request:** `sdk.DynamicRequestPayload`
+
 </dd>
 </dl>
 </dd>
@@ -146,7 +146,7 @@ client.Rules.BulkSolve(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
@@ -154,15 +154,15 @@ client.Rules.BulkSolve(
 <dd>
 
 **version:** `string` — The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `[]sdk.DynamicRequestPayload` 
-    
+**request:** `[]sdk.DynamicRequestPayload`
+
 </dd>
 </dl>
 </dd>
@@ -231,8 +231,8 @@ client.Rules.ParallelSolve(
 <dl>
 <dd>
 
-**request:** `sdk.ParallelSolveRequest` 
-    
+**request:** `sdk.ParallelSolveRequest`
+
 </dd>
 </dl>
 </dd>
@@ -341,7 +341,7 @@ client.Infra.Scale(
 <dl>
 <dd>
 
-Execute a flow by its slug. Optionally target a specific published version (e.g. `3`) or a release environment (e.g. `production`) via the `version` path segment; `latest` (the default) executes the current published version.
+Execute a flow by slug and optional version. Policy failures return `{ error }` with status 200, including per-item errors for bulk requests. Errors: 400 invalid input, 500 unhandled execution failure, 503 unavailable, 504 timeout.
 </dd>
 </dl>
 </dd>
@@ -385,7 +385,7 @@ client.Flows.Execute(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
@@ -393,15 +393,15 @@ client.Flows.Execute(
 <dd>
 
 **version:** `string` — The version of the resource to target: a published version number (e.g. `3`), a release environment slug (e.g. `production`, always lowercase), or `latest` (default) to use the current published version.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `sdk.DynamicRequestPayload` 
-    
+**request:** `sdk.DynamicRequestPayload`
+
 </dd>
 </dl>
 </dd>
@@ -483,7 +483,7 @@ client.Decisions.Query(
 <dd>
 
 **search:** `*string` — Decision data query language expression to filter logs by request/response data. Supports field comparisons (`field=value`, `field>10`), contains (`field:text`), not-contains (`field!:text`), boolean operators (`AND`, `OR`), and parentheses. A bare UUID or 32-hex term resolves as an execution/correlation-id lookup automatically.
-    
+
 </dd>
 </dl>
 
@@ -491,7 +491,7 @@ client.Decisions.Query(
 <dd>
 
 **rules:** `*string` — Comma-separated list of rule names, IDs, or slugs to filter logs by. Names match partially; IDs and slugs match exactly.
-    
+
 </dd>
 </dl>
 
@@ -499,7 +499,7 @@ client.Decisions.Query(
 <dd>
 
 **flows:** `*string` — Comma-separated list of flow names, IDs, or slugs to filter logs by. Matches only flow-level execution logs; the rule executions that ran inside a flow are separate records and are not included.
-    
+
 </dd>
 </dl>
 
@@ -507,7 +507,7 @@ client.Decisions.Query(
 <dd>
 
 **contexts:** `*string` — Comma-separated list of context names or slugs to filter logs by. Matches the rule and flow executions that were triggered by those contexts (batch and interactive updates).
-    
+
 </dd>
 </dl>
 
@@ -515,7 +515,7 @@ client.Decisions.Query(
 <dd>
 
 **trace:** `*string` — Execution-trace correlation id. Returns every decision log from one execution tree: pass a log's `decision.root_flow_execution_id` (or any `flow_execution_id` / `parallel_execution_id`, including a bulk run's per-item `item_execution_ids` entries) to retrieve the flow-level record plus all subflow and rule records from that run. On self-hosted deployments, a log's observability `trace_id` is also accepted. Combine with `rules` or `search` to narrow to a specific rule or payload within the run.
-    
+
 </dd>
 </dl>
 
@@ -523,7 +523,7 @@ client.Decisions.Query(
 <dd>
 
 **statuses:** `*string` — Comma-separated list of HTTP status codes to filter logs by.
-    
+
 </dd>
 </dl>
 
@@ -531,15 +531,15 @@ client.Decisions.Query(
 <dd>
 
 **includeTraces:** `*sdk.QueryDecisionsRequestIncludeTraces` — When `true`, each flow record in the response includes a decompressed `path_trace` field: the run's executed steps with their full inputs and outputs (an object for single runs, a null-aligned array matching the request array for bulk runs). Off by default - traces are stored compressed and can be large, so only enable this when you need them. Ignored in count mode.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**itemFilter:** `*string` — Bulk payload filter in the form `path=value`. For each bulk record in the results (array-shaped request/response), keeps only the items whose payload value at `path` equals `value`, slicing the `request` and `response` arrays and every index-aligned field (`decision.item_execution_ids`, `decision.item_indexes`, `decision.success_idxs`, and `path_trace` when `include_traces=true`) in lockstep so input/output alignment is preserved. Filtered records gain a `matched_items` array with the surviving items' original zero-based positions. Paths use dot notation into each item (`customer.id`, `lines.0.sku`); prefix with `request.` or `response.` to match only that side (unprefixed paths match either side). Values compare as exact scalar strings (`status=200`, `approved=true`). Non-bulk records are returned unchanged; bulk records with no matching items are returned with empty item arrays. Typical use: combine with `search`, `flows`, or `trace` to locate a bulk run, then isolate one item's payloads and its `item_execution_ids` entry without tracking indexes. Ignored in count mode.
-    
+**itemFilter:** `*string` — Bulk payload filter in the form `path=value`. For each bulk record in the results (array-shaped request/response), keeps only the items whose payload value at `path` equals `value`, slicing the `request` and `response` arrays and every index-aligned field (`decision.item_execution_ids`, `decision.item_indexes`, `decision.success_idxs`, and `path_trace` when `include_traces=true`) in lockstep so input/output alignment is preserved. Filtered records gain a `matched_items` array with the surviving items' original zero-based positions. Paths use dot notation into each item (`customer.id`, `lines.0.sku`); prefix with `request.` or `response.` to match only that side (unprefixed paths match either side). Values compare as exact scalar strings (`status=200`, `approved=true`). Non-bulk records are returned unchanged; bulk records with no matching items are returned with empty item arrays. For a bulk solve of a Collect Matches rule, each response item is itself a `{ results: [...] }` envelope, so use a positional path such as `response.results.0.status`. Wildcards are available in `search`, not `item_filter`. Typical use: combine with `search`, `flows`, or `trace` to locate a bulk run, then isolate one item's payloads and its `item_execution_ids` entry without tracking indexes. Ignored in count mode.
+
 </dd>
 </dl>
 
@@ -547,7 +547,7 @@ client.Decisions.Query(
 <dd>
 
 **start:** `*time.Time` — Start date for the query range (ISO8601 format). Hosted queries may span at most 90 days. Persistent self-hosted queries may use any range within local ClickHouse retention; PVC-less archive mode is limited to 7 days. Defaults to the applicable maximum before `end` (or before now).
-    
+
 </dd>
 </dl>
 
@@ -555,7 +555,7 @@ client.Decisions.Query(
 <dd>
 
 **end:** `*time.Time` — End date for the query range (ISO8601 format). Defaults to now. When supplied without `start`, the query covers the preceding 90 days on hosted/table mode or 7 days in PVC-less archive mode.
-    
+
 </dd>
 </dl>
 
@@ -563,7 +563,7 @@ client.Decisions.Query(
 <dd>
 
 **sort:** `*sdk.QueryDecisionsRequestSort` — Column to sort results by. `time` orders by execution timestamp, `name` by rule/flow name, `status` by HTTP status code, and `type` by operation (solve, bulk-solve, flows, etc.). Defaults to `time`.
-    
+
 </dd>
 </dl>
 
@@ -571,7 +571,7 @@ client.Decisions.Query(
 <dd>
 
 **order:** `*sdk.QueryDecisionsRequestOrder` — Sort direction. Defaults to `desc`.
-    
+
 </dd>
 </dl>
 
@@ -579,7 +579,7 @@ client.Decisions.Query(
 <dd>
 
 **cursor:** `*string` — Opaque pagination token returned by the previous response. Pass it back verbatim to fetch the next page; do not construct or modify cursor values.
-    
+
 </dd>
 </dl>
 
@@ -587,7 +587,7 @@ client.Decisions.Query(
 <dd>
 
 **limit:** `*int` — Number of results to return per page (default: 100, maximum: 1000). Logs carry full request/response payloads, so use smaller limits when querying workspaces with large bulk operations. Time-sorted pagination uses a keyset cursor, so its scan cost does not grow with page depth.
-    
+
 </dd>
 </dl>
 
@@ -595,7 +595,7 @@ client.Decisions.Query(
 <dd>
 
 **count:** `*sdk.QueryDecisionsRequestCount` — If set to 'true', returns only the count of matching logs instead of the log data.
-    
+
 </dd>
 </dl>
 </dd>
@@ -662,7 +662,7 @@ client.Users.Invite(
 <dd>
 
 **email:** `string` — Email of the user to invite.
-    
+
 </dd>
 </dl>
 
@@ -670,7 +670,7 @@ client.Users.Invite(
 <dd>
 
 **role:** `*sdk.UserInviteRequestRole` — System or custom role ID to assign to the user. Available system roles include 'admin', 'editor', and 'developer'.
-    
+
 </dd>
 </dl>
 
@@ -678,7 +678,7 @@ client.Users.Invite(
 <dd>
 
 **userGroups:** `[]string` — List of user group names or IDs to assign to the user. All specified groups must exist in your organization.
-    
+
 </dd>
 </dl>
 </dd>
@@ -782,7 +782,7 @@ client.Users.Create(
 <dd>
 
 **email:** `string` — Email address for the new user.
-    
+
 </dd>
 </dl>
 
@@ -790,7 +790,7 @@ client.Users.Create(
 <dd>
 
 **password:** `string` — Password for the new user (minimum 8 characters). The user can log in immediately with this password.
-    
+
 </dd>
 </dl>
 
@@ -798,7 +798,7 @@ client.Users.Create(
 <dd>
 
 **name:** `*string` — Display name for the user.
-    
+
 </dd>
 </dl>
 
@@ -806,7 +806,7 @@ client.Users.Create(
 <dd>
 
 **role:** `*string` — Role to assign to the user. Defaults to 'developer' if not specified.
-    
+
 </dd>
 </dl>
 
@@ -814,7 +814,7 @@ client.Users.Create(
 <dd>
 
 **userGroups:** `[]string` — List of user group names or IDs to assign to the user.
-    
+
 </dd>
 </dl>
 </dd>
@@ -868,7 +868,7 @@ client.Assets.GetUsage(
 </dl>
 </details>
 
-<details><summary><code>client.Assets.ImportRbm(request) -> *sdk.ImportManifestResponse</code></summary>
+<details><summary><code>client.Assets.ImportRbm(request) -> *sdk.ImportRbmAssetsResponse</code></summary>
 <dl>
 <dd>
 
@@ -880,7 +880,7 @@ client.Assets.GetUsage(
 <dl>
 <dd>
 
-Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm).
+Import rules, flows, contexts, and values from a Rulebricks manifest file (*.rbm). Plain JSON remains supported, and clients may send the same JSON envelope gzip-compressed with `Content-Type: application/octet-stream` and `X-Rulebricks-Content-Encoding: gzip`.
 </dd>
 </dl>
 </dd>
@@ -895,77 +895,12 @@ Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rb
 <dd>
 
 ```go
-request := &sdk.ImportManifestRequest{
-        Manifest: &sdk.ImportManifestRequestManifest{
-            Version: sdk.String(
-                "1.0",
-            ),
-            Rules: []*sdk.ManifestLabeledAsset{
-                &sdk.ManifestLabeledAsset{},
-            },
-            Flows: []*sdk.ManifestLabeledAsset{
-                &sdk.ManifestLabeledAsset{},
-            },
-            Entities: []map[string]any{
-                map[string]any{
-                    "name": "Customer",
-                    "slug": "customer",
-                },
-            },
-            Values: []map[string]any{
-                map[string]any{
-                    "name": "tax_rate",
-                    "value": 0.08,
-                },
-            },
-        },
-        ConflictStrategy: sdk.ImportManifestRequestConflictStrategyUpdate.Ptr(),
-    }
 client.Assets.ImportRbm(
         context.TODO(),
         request,
     )
 }
 ```
-</dd>
-</dl>
-</dd>
-</dl>
-
-#### ⚙️ Parameters
-
-<dl>
-<dd>
-
-<dl>
-<dd>
-
-**manifest:** `*sdk.ImportManifestRequestManifest` — The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads. A compressed manifest is also accepted: the JSON array produced by the compress-json library (for example, the contents of a compressed .rbm file exported with `compress: true`); it is detected and decompressed automatically.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**conflictStrategy:** `*sdk.ImportManifestRequestConflictStrategy` — How to handle conflicts with existing assets. 'update' overwrites, 'skip' ignores, 'error' fails.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**targetFolderName:** `*string` — Optional folder name to place imported assets into. Created if it doesn't exist.
-    
-</dd>
-</dl>
-
-<dl>
-<dd>
-
-**legacyRuleMapping:** `map[string]*sdk.ImportManifestRequestLegacyRuleMappingValue` — Optional mapping for legacy flow imports to reuse existing rules.
-    
 </dd>
 </dl>
 </dd>
@@ -988,7 +923,7 @@ client.Assets.ImportRbm(
 <dl>
 <dd>
 
-Export selected rules, flows, contexts, and values to an Rulebricks manifest file (*.rbm). Dependencies are resolved automatically: exporting a flow includes its rules, contexts, vocabulary values, and any flows referenced by Run Flow nodes (recursively). Set `compress: true` to receive the manifest in compressed form (a compress-json array), which is much smaller and can be saved directly as a .rbm file; the import endpoint accepts both forms.
+Export selected rules, flows, contexts, and values to a Rulebricks manifest file (*.rbm). Dependencies are resolved automatically: exporting a flow includes its rules, contexts, vocabulary values, and any flows referenced by Run Flow nodes (recursively). Set `compress: true` to receive the manifest in compressed form (a compress-json array). Set `download: true` to receive that manifest directly as a streamed attachment instead of inside the `{ success, manifest }` envelope.
 </dd>
 </dl>
 </dd>
@@ -1033,7 +968,7 @@ client.Assets.ExportRbm(
 <dd>
 
 **rootType:** `*sdk.ExportManifestRequestRootType` — The type of root asset to export. All dependencies will be included.
-    
+
 </dd>
 </dl>
 
@@ -1041,7 +976,7 @@ client.Assets.ExportRbm(
 <dd>
 
 **rootIDs:** `[]string` — Array of IDs for the root assets to export. Dependencies are automatically resolved.
-    
+
 </dd>
 </dl>
 
@@ -1049,7 +984,7 @@ client.Assets.ExportRbm(
 <dd>
 
 **includeDownstream:** `*bool` — For context exports, whether to include rules and flows bound to the context.
-    
+
 </dd>
 </dl>
 
@@ -1057,7 +992,7 @@ client.Assets.ExportRbm(
 <dd>
 
 **manifestName:** `*string` — Optional name for the exported manifest.
-    
+
 </dd>
 </dl>
 
@@ -1065,7 +1000,7 @@ client.Assets.ExportRbm(
 <dd>
 
 **manifestDescription:** `*string` — Optional description for the exported manifest.
-    
+
 </dd>
 </dl>
 
@@ -1073,7 +1008,7 @@ client.Assets.ExportRbm(
 <dd>
 
 **previewOnly:** `*bool` — If true, returns a preview of what would be exported without the full data.
-    
+
 </dd>
 </dl>
 
@@ -1081,7 +1016,15 @@ client.Assets.ExportRbm(
 <dd>
 
 **compress:** `*bool` — If true, the manifest in the response is returned in compressed form: the JSON array produced by the compress-json library instead of a plain object. Compressed manifests are substantially smaller, can be saved directly as a .rbm file, and are accepted by the import endpoint as-is. Intended for raw HTTP usage and file tooling; typed SDK clients should omit this flag, since the generated response type models the manifest as an object.
-    
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**download:** `*bool` — If true, returns the manifest itself as a streamed application/json attachment with Content-Disposition, rather than the normal `{ success, manifest }` response envelope. Combine with `compress: true` for large .rbm downloads.
+
 </dd>
 </dl>
 </dd>
@@ -1145,7 +1088,7 @@ client.Values.List(
 <dd>
 
 **name:** `*string` — Query all vocabulary values containing a specific name
-    
+
 </dd>
 </dl>
 
@@ -1153,7 +1096,7 @@ client.Values.List(
 <dd>
 
 **prefix:** `*string` — Only return values whose name starts with this collection prefix (e.g. 'Countries.').
-    
+
 </dd>
 </dl>
 
@@ -1161,7 +1104,7 @@ client.Values.List(
 <dd>
 
 **type_:** `*string` — Only return values of this type (string, number, boolean, list, date, function).
-    
+
 </dd>
 </dl>
 
@@ -1169,7 +1112,7 @@ client.Values.List(
 <dd>
 
 **limit:** `*int` — Page size (default 100, max 1000). Providing limit or cursor switches the response to the paginated { data, next_cursor } envelope.
-    
+
 </dd>
 </dl>
 
@@ -1177,7 +1120,7 @@ client.Values.List(
 <dd>
 
 **cursor:** `*string` — Opaque pagination cursor from a previous page's next_cursor.
-    
+
 </dd>
 </dl>
 
@@ -1185,7 +1128,7 @@ client.Values.List(
 <dd>
 
 **userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
-    
+
 </dd>
 </dl>
 
@@ -1193,7 +1136,7 @@ client.Values.List(
 <dd>
 
 **include:** `*string` — Comma-separated list of additional data to include. Use 'usage' to include which rules reference each value.
-    
+
 </dd>
 </dl>
 
@@ -1201,7 +1144,7 @@ client.Values.List(
 <dd>
 
 **resolve:** `*bool` — By default, payloads containing value-to-value references are returned materialized (references replaced with their resolved values). Pass 'false' to return stored payloads as-is, with { "$rb": "globalValue", "id": "..." } reference markers intact, so the reference graph round-trips.
-    
+
 </dd>
 </dl>
 </dd>
@@ -1273,8 +1216,8 @@ client.Values.Update(
 <dl>
 <dd>
 
-**values:** `map[string]any` — A dictionary of keys and values to update or add. This developer-facing sync contract preserves source names and nesting: nested objects are flattened using dot notation while every key segment stays exactly as sent (e.g. 'user.contact_info.email' stays 'user.contact_info.email'). Individual payloads may be value-to-value references (see ValueReference): a scalar payload may be a single { "$ref": "<value name>" } marker, and list payloads may mix literal items with reference markers.
-    
+**values:** `map[string]any` — Values to create or update. Nested objects use dot-separated names and payloads may reference other values.
+
 </dd>
 </dl>
 
@@ -1282,7 +1225,7 @@ client.Values.Update(
 <dd>
 
 **userGroups:** `[]string` — Optional array of user group names or IDs. If omitted and user belongs to user groups, values will be assigned to all user's user groups. Required if values should be restricted to specific user groups.
-    
+
 </dd>
 </dl>
 
@@ -1290,7 +1233,7 @@ client.Values.Update(
 <dd>
 
 **metadataByName:** `map[string]map[string]any` — Optional metadata keyed by vocabulary value name. This is the canonical snake_case field; legacy clients may still send `metadataByName`. System-owned keys (managedBy, source, lockedReason, previousTokens, and archive/tombstone fields) are stripped from user payloads - managed provenance and archive state cannot be forged.
-    
+
 </dd>
 </dl>
 </dd>
@@ -1313,7 +1256,7 @@ client.Values.Update(
 <dl>
 <dd>
 
-Delete a specific vocabulary value for the authenticated user by its ID. Deletion is blocked while the value is referenced by any rule or flow. Values whose entire payload references the deleted value are deleted with it (cascade), and list values referencing it lose the referencing items; both effects are reported in the response.
+Deletes a value by ID. Rule and flow references block deletion; value references are replaced with the deleted value's content.
 </dd>
 </dl>
 </dd>
@@ -1351,7 +1294,7 @@ client.Values.Delete(
 <dd>
 
 **id:** `string` — ID of the vocabulary value to delete
-    
+
 </dd>
 </dl>
 </dd>
@@ -1417,7 +1360,7 @@ client.Values.Sync(
 <dd>
 
 **collection:** `string` — Collection path to sync (e.g. 'Medical Codes'). Only values under this path are affected.
-    
+
 </dd>
 </dl>
 
@@ -1425,7 +1368,7 @@ client.Values.Sync(
 <dd>
 
 **values:** `map[string]any` — Desired members of the collection, keyed relative to the collection path ('A123' becomes 'Medical Codes.A123'). Nested objects flatten with dot notation, and payloads may use ValueReference markers. An empty object empties the collection. May be omitted on a pure finalize call (sync_id + complete).
-    
+
 </dd>
 </dl>
 
@@ -1433,7 +1376,7 @@ client.Values.Sync(
 <dd>
 
 **syncID:** `*string` — Identifier for a chunked run. Repeat the call with the same sync_id for each chunk of the desired state; nothing is removed until a call with complete: true. Abandoned runs are purged after 24 hours without removing anything.
-    
+
 </dd>
 </dl>
 
@@ -1441,7 +1384,7 @@ client.Values.Sync(
 <dd>
 
 **complete:** `*bool` — Marks the run as complete, triggering the removal sweep. Implicitly true when sync_id is omitted (single-request syncs), false otherwise.
-    
+
 </dd>
 </dl>
 
@@ -1449,7 +1392,7 @@ client.Values.Sync(
 <dd>
 
 **permanentlyDelete:** `*bool` — Hard-delete removed values instead of archiving them. Removals still referenced by a rule, flow, or surviving value are archived instead and reported in 'blocked'. Self-hosted deployments retain tombstones regardless.
-    
+
 </dd>
 </dl>
 
@@ -1457,7 +1400,7 @@ client.Values.Sync(
 <dd>
 
 **dryRun:** `*bool` — Compute and return the full diff without writing anything. Only supported for single-request syncs (omit sync_id).
-    
+
 </dd>
 </dl>
 
@@ -1465,7 +1408,7 @@ client.Values.Sync(
 <dd>
 
 **userGroups:** `[]string` — Optional array of user group names to assign to written values, matching POST /values.
-    
+
 </dd>
 </dl>
 
@@ -1473,7 +1416,7 @@ client.Values.Sync(
 <dd>
 
 **metadataByName:** `map[string]map[string]any` — Optional metadata keyed by FULL value name (including the collection prefix).
-    
+
 </dd>
 </dl>
 </dd>
@@ -1539,7 +1482,7 @@ client.Objects.List(
 <dl>
 <dd>
 
-Creates or updates an object by ID or name and syncs enum values it generates. `content` and at least one of `id` or `name` are required. Objects help workspace admins programmatically determine multiple collections of values based on Rulebricks' contracts with external systems from a single JSON Schema source. Renaming the object's display name does not move its managed collection paths: those paths derive from schema field keys. When a schema field key itself is renamed, `field_rename` can preserve the generated values' identities.
+Creates or updates an object and syncs its generated enum values.
 </dd>
 </dl>
 </dd>
@@ -1556,12 +1499,20 @@ Creates or updates an object by ID or name and syncs enum values it generates. `
 ```go
 request := &sdk.UpsertObjectRequest{
         Unknown: map[string]any{
-            "content": `{
-              "type": "object",
-              "properties": {
-                "countryCode": { "type": "string", "title": "Country Code", "enum": ["US", "CA", "GB"] }
-              }
-            }`,
+            "content": map[string]any{
+                "properties": map[string]any{
+                    "countryCode": map[string]any{
+                        "enum": []any{
+                            "US",
+                            "CA",
+                            "GB",
+                        },
+                        "title": "Country Code",
+                        "type": "string",
+                    },
+                },
+                "type": "object",
+            },
             "name": "Claim",
             "user_groups": []any{
                 "underwriting",
@@ -1649,7 +1600,7 @@ client.Objects.Get(
 <dd>
 
 **objectID:** `string` — Object ID or exact name
-    
+
 </dd>
 </dl>
 </dd>
@@ -1710,7 +1661,7 @@ client.Objects.Delete(
 <dd>
 
 **objectID:** `string` — Object ID or exact name
-    
+
 </dd>
 </dl>
 
@@ -1718,7 +1669,7 @@ client.Objects.Delete(
 <dd>
 
 **values:** `*sdk.DeleteObjectsRequestValues` — What happens to generated values: 'archive' (default) permanently deletes unused values and archives referenced values; 'detach' retains all values as active ordinary values.
-    
+
 </dd>
 </dl>
 </dd>
@@ -1781,7 +1732,7 @@ client.Contexts.Get(
 <dd>
 
 **slug:** `string` — The unique slug for the context.
-    
+
 </dd>
 </dl>
 
@@ -1789,7 +1740,7 @@ client.Contexts.Get(
 <dd>
 
 **instance:** `string` — The unique identifier for the context instance.
-    
+
 </dd>
 </dl>
 
@@ -1797,7 +1748,7 @@ client.Contexts.Get(
 <dd>
 
 **includeRelations:** `*string` — Comma-separated relationship names to include in the response under a 'relations' key (has_many relations return a list of related instance states; has_one/belongs_to return a single state or null). Use '*' for all relationships. Omitted by default - related instances are never fetched into the payload unrequested.
-    
+
 </dd>
 </dl>
 </dd>
@@ -1863,7 +1814,7 @@ client.Contexts.Submit(
 <dd>
 
 **slug:** `string` — The unique slug for the context.
-    
+
 </dd>
 </dl>
 
@@ -1871,15 +1822,15 @@ client.Contexts.Submit(
 <dd>
 
 **instance:** `string` — The unique identifier for the context instance.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `sdk.SubmitContextDataRequest` 
-    
+**request:** `sdk.SubmitContextDataRequest`
+
 </dd>
 </dl>
 </dd>
@@ -1941,7 +1892,7 @@ client.Contexts.Delete(
 <dd>
 
 **slug:** `string` — The unique slug for the context.
-    
+
 </dd>
 </dl>
 
@@ -1949,7 +1900,7 @@ client.Contexts.Delete(
 <dd>
 
 **instance:** `string` — The unique identifier for the context instance.
-    
+
 </dd>
 </dl>
 </dd>
@@ -2011,7 +1962,7 @@ client.Contexts.GetHistory(
 <dd>
 
 **slug:** `string` — The unique slug for the context.
-    
+
 </dd>
 </dl>
 
@@ -2019,7 +1970,7 @@ client.Contexts.GetHistory(
 <dd>
 
 **instance:** `string` — The unique identifier for the context instance.
-    
+
 </dd>
 </dl>
 
@@ -2027,7 +1978,7 @@ client.Contexts.GetHistory(
 <dd>
 
 **field:** `*string` — Filter history to a specific field.
-    
+
 </dd>
 </dl>
 
@@ -2035,7 +1986,7 @@ client.Contexts.GetHistory(
 <dd>
 
 **limit:** `*int` — Maximum number of history entries to return.
-    
+
 </dd>
 </dl>
 </dd>
@@ -2097,7 +2048,7 @@ client.Contexts.GetPending(
 <dd>
 
 **slug:** `string` — The unique slug for the context.
-    
+
 </dd>
 </dl>
 
@@ -2105,7 +2056,7 @@ client.Contexts.GetPending(
 <dd>
 
 **instance:** `string` — The unique identifier for the context instance.
-    
+
 </dd>
 </dl>
 </dd>
@@ -2168,7 +2119,7 @@ client.Contexts.Cascade(
 <dd>
 
 **slug:** `string` — The unique slug for the context.
-    
+
 </dd>
 </dl>
 
@@ -2176,15 +2127,15 @@ client.Contexts.Cascade(
 <dd>
 
 **instance:** `string` — The unique identifier for the context instance.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `sdk.CascadeContextRequest` 
-    
+**request:** `sdk.CascadeContextRequest`
+
 </dd>
 </dl>
 </dd>
@@ -2255,7 +2206,7 @@ client.Contexts.BulkIngest(
 <dd>
 
 **slug:** `string` — The unique slug for the context.
-    
+
 </dd>
 </dl>
 
@@ -2263,15 +2214,15 @@ client.Contexts.BulkIngest(
 <dd>
 
 **include:** `*string` — Comma-separated list of per-instance fields to include in results (instance_id is always present). Omit to include everything. Valid fields: positions, is_new, status, have, need, state, expires_at, executions, executed, triggered, reason. Useful for keeping response size proportional to outcomes rather than data volume, e.g. include=status,executed.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `[]sdk.DynamicRequestPayload` 
-    
+**request:** `[]sdk.DynamicRequestPayload`
+
 </dd>
 </dl>
 </dd>
@@ -2333,7 +2284,7 @@ client.Assets.Rules.Delete(
 <dd>
 
 **id:** `string` — The ID of the rule to delete.
-    
+
 </dd>
 </dl>
 </dd>
@@ -2394,7 +2345,7 @@ client.Assets.Rules.Pull(
 <dd>
 
 **id:** `string` — The ID of the rule to export.
-    
+
 </dd>
 </dl>
 </dd>
@@ -2587,8 +2538,8 @@ client.Assets.Rules.Push(
 <dl>
 <dd>
 
-**rule:** `*sdk.RuleImportPayload` 
-    
+**rule:** `*sdk.RuleImportPayload`
+
 </dd>
 </dl>
 </dd>
@@ -2651,7 +2602,7 @@ client.Assets.Rules.List(
 <dd>
 
 **folder:** `*string` — Filter results by folder name or folder ID.
-    
+
 </dd>
 </dl>
 
@@ -2667,7 +2618,7 @@ client.Assets.Rules.List(
 <dd>
 
 **userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
-    
+
 </dd>
 </dl>
 
@@ -2675,7 +2626,7 @@ client.Assets.Rules.List(
 <dd>
 
 **name:** `*string` — Filter results by name using a case-insensitive substring match.
-    
+
 </dd>
 </dl>
 </dd>
@@ -2735,7 +2686,7 @@ client.Assets.Flows.List(
 <dd>
 
 **folder:** `*string` — Filter results by folder name or folder ID.
-    
+
 </dd>
 </dl>
 
@@ -2751,7 +2702,7 @@ client.Assets.Flows.List(
 <dd>
 
 **userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
-    
+
 </dd>
 </dl>
 
@@ -2759,7 +2710,7 @@ client.Assets.Flows.List(
 <dd>
 
 **name:** `*string` — Filter results by name using a case-insensitive substring match.
-    
+
 </dd>
 </dl>
 </dd>
@@ -2901,8 +2852,8 @@ client.Assets.Flows.Push(
 <dl>
 <dd>
 
-**flow:** `*sdk.FlowImportPayload` 
-    
+**flow:** `*sdk.FlowImportPayload`
+
 </dd>
 </dl>
 </dd>
@@ -2961,7 +2912,7 @@ client.Assets.Flows.Pull(
 <dd>
 
 **id:** `*string` — The ID of the flow to export (provide `id` or `slug`).
-    
+
 </dd>
 </dl>
 
@@ -2969,7 +2920,7 @@ client.Assets.Flows.Pull(
 <dd>
 
 **slug:** `*string` — The slug of the flow to export (provide `id` or `slug`).
-    
+
 </dd>
 </dl>
 </dd>
@@ -3030,7 +2981,7 @@ client.Assets.Flows.Delete(
 <dd>
 
 **id:** `string` — The ID of the flow to delete.
-    
+
 </dd>
 </dl>
 </dd>
@@ -3090,7 +3041,7 @@ client.Assets.Folders.List(
 <dd>
 
 **userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
-    
+
 </dd>
 </dl>
 
@@ -3098,7 +3049,7 @@ client.Assets.Folders.List(
 <dd>
 
 **name:** `*string` — Filter results by name using a case-insensitive substring match.
-    
+
 </dd>
 </dl>
 </dd>
@@ -3162,7 +3113,7 @@ client.Assets.Folders.Upsert(
 <dd>
 
 **id:** `*string` — Folder ID (required for updates, omit for creation)
-    
+
 </dd>
 </dl>
 
@@ -3170,7 +3121,7 @@ client.Assets.Folders.Upsert(
 <dd>
 
 **name:** `string` — Name of the folder
-    
+
 </dd>
 </dl>
 
@@ -3178,7 +3129,7 @@ client.Assets.Folders.Upsert(
 <dd>
 
 **description:** `*string` — Description of the folder
-    
+
 </dd>
 </dl>
 
@@ -3186,7 +3137,7 @@ client.Assets.Folders.Upsert(
 <dd>
 
 **type_:** `*assets.UpsertFolderRequestType` — The type of assets the folder organizes. Applies on creation; ignored when updating an existing folder.
-    
+
 </dd>
 </dl>
 </dd>
@@ -3247,7 +3198,7 @@ client.Assets.Folders.Delete(
 <dd>
 
 **id:** `string` — ID of the folder to delete
-    
+
 </dd>
 </dl>
 </dd>
@@ -3258,8 +3209,8 @@ client.Assets.Folders.Delete(
 </dl>
 </details>
 
-## Contexts Objects
-<details><summary><code>client.Contexts.Objects.List() -> sdk.ContextListResponse</code></summary>
+## Assets Contexts
+<details><summary><code>client.Assets.Contexts.List() -> sdk.ContextListResponse</code></summary>
 <dl>
 <dd>
 
@@ -3286,8 +3237,8 @@ Retrieve all contexts for the authenticated user. Results are scoped to the API 
 <dd>
 
 ```go
-request := &contexts.ListObjectsRequest{}
-client.Contexts.Objects.List(
+request := &assets.ListContextsRequest{}
+client.Assets.Contexts.List(
         context.TODO(),
         request,
     )
@@ -3307,7 +3258,7 @@ client.Contexts.Objects.List(
 <dd>
 
 **folder:** `*string` — Filter results by folder name or folder ID.
-    
+
 </dd>
 </dl>
 
@@ -3315,7 +3266,7 @@ client.Contexts.Objects.List(
 <dd>
 
 **userGroup:** `*string` — Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
-    
+
 </dd>
 </dl>
 
@@ -3323,7 +3274,7 @@ client.Contexts.Objects.List(
 <dd>
 
 **name:** `*string` — Filter results by name using a case-insensitive substring match.
-    
+
 </dd>
 </dl>
 </dd>
@@ -3334,7 +3285,7 @@ client.Contexts.Objects.List(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Objects.Create(request) -> *sdk.CreateContextResponse</code></summary>
+<details><summary><code>client.Assets.Contexts.Create(request) -> *sdk.CreateContextResponse</code></summary>
 <dl>
 <dd>
 
@@ -3361,7 +3312,7 @@ Create a new context for the authenticated user.
 <dd>
 
 ```go
-request := &contexts.CreateContextRequest{
+request := &assets.CreateContextRequest{
         Name: "Customer",
         Description: sdk.String(
             "Represents a customer in the system",
@@ -3394,7 +3345,7 @@ request := &contexts.CreateContextRequest{
         },
         IdentityFact: "email",
     }
-client.Contexts.Objects.Create(
+client.Assets.Contexts.Create(
         context.TODO(),
         request,
     )
@@ -3414,7 +3365,7 @@ client.Contexts.Objects.Create(
 <dd>
 
 **name:** `string` — The name of the context. The context's slug is generated from it (suffixed on collision).
-    
+
 </dd>
 </dl>
 
@@ -3422,7 +3373,7 @@ client.Contexts.Objects.Create(
 <dd>
 
 **description:** `*string` — The description of the context.
-    
+
 </dd>
 </dl>
 
@@ -3430,7 +3381,7 @@ client.Contexts.Objects.Create(
 <dd>
 
 **schema:** `*sdk.ContextSchema` — The context's schema: an object with `base` (stored facts; at least one required) and optional `derived` (expression-computed facts) field arrays.
-    
+
 </dd>
 </dl>
 
@@ -3438,7 +3389,7 @@ client.Contexts.Objects.Create(
 <dd>
 
 **identityFact:** `string` — The fact key to use as the unique identifier for instances. Must be a key from schema.base.
-    
+
 </dd>
 </dl>
 
@@ -3446,7 +3397,7 @@ client.Contexts.Objects.Create(
 <dd>
 
 **autoExecuteDecisions:** `*bool` — When true (default), bound rules and flows automatically execute when their inputs are satisfied.
-    
+
 </dd>
 </dl>
 
@@ -3454,7 +3405,7 @@ client.Contexts.Objects.Create(
 <dd>
 
 **ttlSeconds:** `*int` — Time-to-live in seconds for live context instances (60 seconds to 30 days). Instances expire after this duration; each write extends the expiry.
-    
+
 </dd>
 </dl>
 
@@ -3462,15 +3413,15 @@ client.Contexts.Objects.Create(
 <dd>
 
 **historyLimit:** `*int` — Maximum number of history entries to retain per field.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**onSchemaMismatch:** `*contexts.CreateContextRequestOnSchemaMismatch` — How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
-    
+**onSchemaMismatch:** `*assets.CreateContextRequestOnSchemaMismatch` — How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
+
 </dd>
 </dl>
 </dd>
@@ -3481,7 +3432,7 @@ client.Contexts.Objects.Create(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Objects.Get(ID) -> *sdk.ContextDetail</code></summary>
+<details><summary><code>client.Assets.Contexts.Get(ID) -> *sdk.ContextDetail</code></summary>
 <dl>
 <dd>
 
@@ -3508,10 +3459,10 @@ Retrieve a specific context by its ID.
 <dd>
 
 ```go
-request := &contexts.GetObjectsRequest{
+request := &assets.GetContextsRequest{
         ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     }
-client.Contexts.Objects.Get(
+client.Assets.Contexts.Get(
         context.TODO(),
         request,
     )
@@ -3531,7 +3482,7 @@ client.Contexts.Objects.Get(
 <dd>
 
 **id:** `string` — The unique identifier for the context.
-    
+
 </dd>
 </dl>
 </dd>
@@ -3542,7 +3493,7 @@ client.Contexts.Objects.Get(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Objects.Update(ID, request) -> *sdk.UpdateContextResponse</code></summary>
+<details><summary><code>client.Assets.Contexts.Update(ID, request) -> *sdk.UpdateContextResponse</code></summary>
 <dl>
 <dd>
 
@@ -3569,7 +3520,7 @@ Update an existing context's properties and schema.
 <dd>
 
 ```go
-request := &contexts.UpdateContextRequest{
+request := &assets.UpdateContextRequest{
         ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         Name: sdk.String(
             "Updated Customer",
@@ -3578,7 +3529,7 @@ request := &contexts.UpdateContextRequest{
             "Updated description for premium customers",
         ),
     }
-client.Contexts.Objects.Update(
+client.Assets.Contexts.Update(
         context.TODO(),
         request,
     )
@@ -3598,7 +3549,7 @@ client.Contexts.Objects.Update(
 <dd>
 
 **id:** `string` — The unique identifier for the context.
-    
+
 </dd>
 </dl>
 
@@ -3606,7 +3557,7 @@ client.Contexts.Objects.Update(
 <dd>
 
 **name:** `*string` — The name of the context. Changing it regenerates the context's slug.
-    
+
 </dd>
 </dl>
 
@@ -3614,7 +3565,7 @@ client.Contexts.Objects.Update(
 <dd>
 
 **description:** `*string` — The description of the context.
-    
+
 </dd>
 </dl>
 
@@ -3622,7 +3573,7 @@ client.Contexts.Objects.Update(
 <dd>
 
 **schema:** `*sdk.ContextSchema` — Updated schema for the context: an object with `base` and optional `derived` field arrays.
-    
+
 </dd>
 </dl>
 
@@ -3630,7 +3581,7 @@ client.Contexts.Objects.Update(
 <dd>
 
 **identityFact:** `*string` — The fact key to use as the unique identifier for instances. Must be a key from schema.base. Caution: changing this on a context with live instances changes how future writes resolve instances.
-    
+
 </dd>
 </dl>
 
@@ -3638,7 +3589,7 @@ client.Contexts.Objects.Update(
 <dd>
 
 **autoExecuteDecisions:** `*bool` — When true, bound rules and flows automatically execute when their inputs are satisfied.
-    
+
 </dd>
 </dl>
 
@@ -3646,7 +3597,7 @@ client.Contexts.Objects.Update(
 <dd>
 
 **ttlSeconds:** `*int` — Time-to-live in seconds for live context instances (60 seconds to 30 days). Instances expire after this duration.
-    
+
 </dd>
 </dl>
 
@@ -3654,15 +3605,15 @@ client.Contexts.Objects.Update(
 <dd>
 
 **historyLimit:** `*int` — Maximum number of history entries to retain per field.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**onSchemaMismatch:** `*contexts.UpdateContextRequestOnSchemaMismatch` — How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
-    
+**onSchemaMismatch:** `*assets.UpdateContextRequestOnSchemaMismatch` — How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
+
 </dd>
 </dl>
 </dd>
@@ -3673,7 +3624,7 @@ client.Contexts.Objects.Update(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Objects.Delete(ID) -> *sdk.DeleteContextResponse</code></summary>
+<details><summary><code>client.Assets.Contexts.Delete(ID) -> *sdk.DeleteContextResponse</code></summary>
 <dl>
 <dd>
 
@@ -3700,10 +3651,10 @@ Delete a specific context and all its instances.
 <dd>
 
 ```go
-request := &contexts.DeleteObjectsRequest{
+request := &assets.DeleteContextsRequest{
         ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     }
-client.Contexts.Objects.Delete(
+client.Assets.Contexts.Delete(
         context.TODO(),
         request,
     )
@@ -3723,7 +3674,7 @@ client.Contexts.Objects.Delete(
 <dd>
 
 **id:** `string` — The unique identifier for the context.
-    
+
 </dd>
 </dl>
 </dd>
@@ -3734,8 +3685,8 @@ client.Contexts.Objects.Delete(
 </dl>
 </details>
 
-## Contexts Relationships
-<details><summary><code>client.Contexts.Relationships.List(ID) -> *sdk.ContextRelationshipsResponse</code></summary>
+## Assets Contexts Relationships
+<details><summary><code>client.Assets.Contexts.Relationships.List(ID) -> *sdk.ContextRelationshipsResponse</code></summary>
 <dl>
 <dd>
 
@@ -3765,7 +3716,7 @@ List all relationships for a specific context.
 request := &contexts.ListRelationshipsRequest{
         ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     }
-client.Contexts.Relationships.List(
+client.Assets.Contexts.Relationships.List(
         context.TODO(),
         request,
     )
@@ -3785,7 +3736,7 @@ client.Contexts.Relationships.List(
 <dd>
 
 **id:** `string` — The unique identifier for the context.
-    
+
 </dd>
 </dl>
 </dd>
@@ -3796,7 +3747,7 @@ client.Contexts.Relationships.List(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Relationships.Create(ID, request) -> sdk.CreateRelationshipResponse</code></summary>
+<details><summary><code>client.Assets.Contexts.Relationships.Create(ID, request) -> sdk.CreateRelationshipResponse</code></summary>
 <dl>
 <dd>
 
@@ -3832,7 +3783,7 @@ request := &contexts.CreateRelationshipRequest{
             "customer_orders",
         ),
     }
-client.Contexts.Relationships.Create(
+client.Assets.Contexts.Relationships.Create(
         context.TODO(),
         request,
     )
@@ -3852,7 +3803,7 @@ client.Contexts.Relationships.Create(
 <dd>
 
 **id:** `string` — The unique identifier for the context.
-    
+
 </dd>
 </dl>
 
@@ -3860,7 +3811,7 @@ client.Contexts.Relationships.Create(
 <dd>
 
 **toContextID:** `string` — The ID of the target context.
-    
+
 </dd>
 </dl>
 
@@ -3868,7 +3819,7 @@ client.Contexts.Relationships.Create(
 <dd>
 
 **relationType:** `*contexts.CreateRelationshipRequestRelationType` — The type of relationship.
-    
+
 </dd>
 </dl>
 
@@ -3876,7 +3827,7 @@ client.Contexts.Relationships.Create(
 <dd>
 
 **foreignKeyFact:** `string` — The field key to use as the foreign key.
-    
+
 </dd>
 </dl>
 
@@ -3884,7 +3835,7 @@ client.Contexts.Relationships.Create(
 <dd>
 
 **name:** `*string` — Optional runtime relationship key. It is normalized to lowercase snake_case; the target context slug is used when omitted.
-    
+
 </dd>
 </dl>
 
@@ -3892,7 +3843,7 @@ client.Contexts.Relationships.Create(
 <dd>
 
 **description:** `*string` — Description of the relationship.
-    
+
 </dd>
 </dl>
 </dd>
@@ -3903,7 +3854,7 @@ client.Contexts.Relationships.Create(
 </dl>
 </details>
 
-<details><summary><code>client.Contexts.Relationships.Delete(ID, Relationship) -> *sdk.DeleteRelationshipResponse</code></summary>
+<details><summary><code>client.Assets.Contexts.Relationships.Delete(ID, Relationship) -> *sdk.DeleteRelationshipResponse</code></summary>
 <dl>
 <dd>
 
@@ -3934,7 +3885,7 @@ request := &contexts.DeleteRelationshipsRequest{
         ID: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         Relationship: "c3d4e5f6-a7b8-9012-cdef-123456789012",
     }
-client.Contexts.Relationships.Delete(
+client.Assets.Contexts.Relationships.Delete(
         context.TODO(),
         request,
     )
@@ -3954,7 +3905,7 @@ client.Contexts.Relationships.Delete(
 <dd>
 
 **id:** `string` — The unique identifier for the context.
-    
+
 </dd>
 </dl>
 
@@ -3962,7 +3913,7 @@ client.Contexts.Relationships.Delete(
 <dd>
 
 **relationship:** `string` — The unique identifier for the relationship.
-    
+
 </dd>
 </dl>
 </dd>
@@ -4024,7 +3975,7 @@ client.Tests.Rules.List(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 </dd>
@@ -4047,7 +3998,7 @@ client.Tests.Rules.List(
 <dl>
 <dd>
 
-Adds a new test to the test suite of a rule identified by the slug.
+Adds a new test to the rule. `contains` (Contains Data, the default) finds the expected fragment anywhere in the output, `matches` (Matches Exactly) requires complete equality, and `excludes` (Excludes Data) requires the fragment to be absent.
 </dd>
 </dl>
 </dd>
@@ -4072,6 +4023,7 @@ request := &tests.CreateRulesRequest{
             Response: map[string]any{
                 "status": "success",
             },
+            Policy: sdk.CreateTestRequestPolicyContains.Ptr(),
             Critical: true,
         },
     }
@@ -4095,15 +4047,15 @@ client.Tests.Rules.Create(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `*sdk.CreateTestRequest` 
-    
+**request:** `*sdk.CreateTestRequest`
+
 </dd>
 </dl>
 </dd>
@@ -4165,7 +4117,7 @@ client.Tests.Rules.Delete(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
@@ -4173,7 +4125,7 @@ client.Tests.Rules.Delete(
 <dd>
 
 **testID:** `string` — The ID of the test.
-    
+
 </dd>
 </dl>
 </dd>
@@ -4239,15 +4191,15 @@ client.Tests.Rules.Run(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `*sdk.RunTestsRequest` 
-    
+**request:** `*sdk.RunTestsRequest`
+
 </dd>
 </dl>
 </dd>
@@ -4309,7 +4261,7 @@ client.Tests.Flows.List(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 </dd>
@@ -4332,7 +4284,7 @@ client.Tests.Flows.List(
 <dl>
 <dd>
 
-Adds a new test to the test suite of a flow identified by the slug.
+Adds a new test to the flow. `contains` (Contains Data, the default) finds the expected fragment anywhere in the output, `matches` (Matches Exactly) requires complete equality, and `excludes` (Excludes Data) requires the fragment to be absent.
 </dd>
 </dl>
 </dd>
@@ -4357,6 +4309,7 @@ request := &tests.CreateFlowsRequest{
             Response: map[string]any{
                 "status": "success",
             },
+            Policy: sdk.CreateTestRequestPolicyContains.Ptr(),
             Critical: true,
         },
     }
@@ -4380,15 +4333,15 @@ client.Tests.Flows.Create(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `*sdk.CreateTestRequest` 
-    
+**request:** `*sdk.CreateTestRequest`
+
 </dd>
 </dl>
 </dd>
@@ -4450,7 +4403,7 @@ client.Tests.Flows.Delete(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
@@ -4458,7 +4411,7 @@ client.Tests.Flows.Delete(
 <dd>
 
 **testID:** `string` — The ID of the test.
-    
+
 </dd>
 </dl>
 </dd>
@@ -4524,15 +4477,15 @@ client.Tests.Flows.Run(
 <dd>
 
 **slug:** `string` — The unique identifier for the resource.
-    
+
 </dd>
 </dl>
 
 <dl>
 <dd>
 
-**request:** `*sdk.RunTestsRequest` 
-    
+**request:** `*sdk.RunTestsRequest`
+
 </dd>
 </dl>
 </dd>
@@ -4639,7 +4592,7 @@ client.Users.Groups.Create(
 <dd>
 
 **name:** `string` — Unique name of the user group.
-    
+
 </dd>
 </dl>
 
@@ -4647,7 +4600,7 @@ client.Users.Groups.Create(
 <dd>
 
 **description:** `*string` — Description of the user group.
-    
+
 </dd>
 </dl>
 </dd>

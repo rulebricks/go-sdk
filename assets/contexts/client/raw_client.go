@@ -6,6 +6,7 @@ import (
 	context "context"
 	http "net/http"
 	sdk "sdk"
+	assets "sdk/assets"
 	core "sdk/core"
 	internal "sdk/internal"
 	option "sdk/option"
@@ -31,22 +32,18 @@ func NewRawClient(options *core.RequestOptions) *RawClient {
 	}
 }
 
-func (r *RawClient) Get(
+func (r *RawClient) List(
 	ctx context.Context,
-	request *sdk.GetContextsRequest,
+	request *assets.ListContextsRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*sdk.ContextInstanceState], error) {
+) (*core.Response[sdk.ContextListResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
 		r.baseURL,
 		"https%3A%2F%2Frulebricks.com/api/v1",
 	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/%v/%v",
-		request.Slug,
-		request.Instance,
-	)
+	endpointURL := baseURL + "/admin/contexts"
 	queryParams, err := internal.QueryValues(request)
 	if err != nil {
 		return nil, err
@@ -58,7 +55,7 @@ func (r *RawClient) Get(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *sdk.ContextInstanceState
+	var response sdk.ContextListResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -71,41 +68,37 @@ func (r *RawClient) Get(
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
 			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
+			ErrorDecoder:    internal.NewErrorDecoder(assets.ErrorCodes),
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*sdk.ContextInstanceState]{
+	return &core.Response[sdk.ContextListResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
 	}, nil
 }
 
-func (r *RawClient) Submit(
+func (r *RawClient) Create(
 	ctx context.Context,
-	request *sdk.SubmitContextsRequest,
+	request *assets.CreateContextRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*sdk.SubmitContextDataResponse], error) {
+) (*core.Response[*sdk.CreateContextResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
 		r.baseURL,
 		"https%3A%2F%2Frulebricks.com/api/v1",
 	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/%v/%v",
-		request.Slug,
-		request.Instance,
-	)
+	endpointURL := baseURL + "/admin/contexts"
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response *sdk.SubmitContextDataResponse
+	var response *sdk.CreateContextResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -119,13 +112,105 @@ func (r *RawClient) Submit(
 			Client:          options.HTTPClient,
 			Request:         request,
 			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
+			ErrorDecoder:    internal.NewErrorDecoder(assets.ErrorCodes),
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*sdk.SubmitContextDataResponse]{
+	return &core.Response[*sdk.CreateContextResponse]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) Get(
+	ctx context.Context,
+	request *assets.GetContextsRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*sdk.ContextDetail], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https%3A%2F%2Frulebricks.com/api/v1",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/admin/contexts/%v",
+		request.ID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *sdk.ContextDetail
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(assets.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*sdk.ContextDetail]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) Update(
+	ctx context.Context,
+	request *assets.UpdateContextRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*sdk.UpdateContextResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https%3A%2F%2Frulebricks.com/api/v1",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/admin/contexts/%v",
+		request.ID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	headers.Add("Content-Type", "application/json")
+	var response *sdk.UpdateContextResponse
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPut,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(assets.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*sdk.UpdateContextResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,
@@ -134,9 +219,9 @@ func (r *RawClient) Submit(
 
 func (r *RawClient) Delete(
 	ctx context.Context,
-	request *sdk.DeleteContextsRequest,
+	request *assets.DeleteContextsRequest,
 	opts ...option.RequestOption,
-) (*core.Response[*sdk.DeleteContextInstanceResponse], error) {
+) (*core.Response[*sdk.DeleteContextResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -144,15 +229,14 @@ func (r *RawClient) Delete(
 		"https%3A%2F%2Frulebricks.com/api/v1",
 	)
 	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/%v/%v",
-		request.Slug,
-		request.Instance,
+		baseURL+"/admin/contexts/%v",
+		request.ID,
 	)
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response *sdk.DeleteContextInstanceResponse
+	var response *sdk.DeleteContextResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -165,214 +249,13 @@ func (r *RawClient) Delete(
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
 			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
+			ErrorDecoder:    internal.NewErrorDecoder(assets.ErrorCodes),
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*sdk.DeleteContextInstanceResponse]{
-		StatusCode: raw.StatusCode,
-		Header:     raw.Header,
-		Body:       response,
-	}, nil
-}
-
-func (r *RawClient) GetHistory(
-	ctx context.Context,
-	request *sdk.GetHistoryContextsRequest,
-	opts ...option.RequestOption,
-) (*core.Response[*sdk.ContextInstanceHistory], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		r.baseURL,
-		"https%3A%2F%2Frulebricks.com/api/v1",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/%v/%v/history",
-		request.Slug,
-		request.Instance,
-	)
-	queryParams, err := internal.QueryValues(request)
-	if err != nil {
-		return nil, err
-	}
-	if len(queryParams) > 0 {
-		endpointURL += "?" + queryParams.Encode()
-	}
-	headers := internal.MergeHeaders(
-		r.options.ToHeader(),
-		options.ToHeader(),
-	)
-	var response *sdk.ContextInstanceHistory
-	raw, err := r.caller.Call(
-		ctx,
-		&internal.CallParams{
-			URL:             endpointURL,
-			Method:          http.MethodGet,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &core.Response[*sdk.ContextInstanceHistory]{
-		StatusCode: raw.StatusCode,
-		Header:     raw.Header,
-		Body:       response,
-	}, nil
-}
-
-func (r *RawClient) GetPending(
-	ctx context.Context,
-	request *sdk.GetPendingContextsRequest,
-	opts ...option.RequestOption,
-) (*core.Response[*sdk.ContextInstancePendingResponse], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		r.baseURL,
-		"https%3A%2F%2Frulebricks.com/api/v1",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/%v/%v/pending",
-		request.Slug,
-		request.Instance,
-	)
-	headers := internal.MergeHeaders(
-		r.options.ToHeader(),
-		options.ToHeader(),
-	)
-	var response *sdk.ContextInstancePendingResponse
-	raw, err := r.caller.Call(
-		ctx,
-		&internal.CallParams{
-			URL:             endpointURL,
-			Method:          http.MethodGet,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &core.Response[*sdk.ContextInstancePendingResponse]{
-		StatusCode: raw.StatusCode,
-		Header:     raw.Header,
-		Body:       response,
-	}, nil
-}
-
-func (r *RawClient) Cascade(
-	ctx context.Context,
-	request *sdk.CascadeContextsRequest,
-	opts ...option.RequestOption,
-) (*core.Response[*sdk.CascadeContextResponse], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		r.baseURL,
-		"https%3A%2F%2Frulebricks.com/api/v1",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/%v/%v/cascade",
-		request.Slug,
-		request.Instance,
-	)
-	headers := internal.MergeHeaders(
-		r.options.ToHeader(),
-		options.ToHeader(),
-	)
-	headers.Add("Content-Type", "application/json")
-	var response *sdk.CascadeContextResponse
-	raw, err := r.caller.Call(
-		ctx,
-		&internal.CallParams{
-			URL:             endpointURL,
-			Method:          http.MethodPost,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Request:         request,
-			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &core.Response[*sdk.CascadeContextResponse]{
-		StatusCode: raw.StatusCode,
-		Header:     raw.Header,
-		Body:       response,
-	}, nil
-}
-
-func (r *RawClient) BulkIngest(
-	ctx context.Context,
-	request *sdk.BulkIngestContextsRequest,
-	opts ...option.RequestOption,
-) (*core.Response[*sdk.ContextBatchResponse], error) {
-	options := core.NewRequestOptions(opts...)
-	baseURL := internal.ResolveBaseURL(
-		options.BaseURL,
-		r.baseURL,
-		"https%3A%2F%2Frulebricks.com/api/v1",
-	)
-	endpointURL := internal.EncodeURL(
-		baseURL+"/contexts/batch/%v",
-		request.Slug,
-	)
-	queryParams, err := internal.QueryValues(request)
-	if err != nil {
-		return nil, err
-	}
-	if len(queryParams) > 0 {
-		endpointURL += "?" + queryParams.Encode()
-	}
-	headers := internal.MergeHeaders(
-		r.options.ToHeader(),
-		options.ToHeader(),
-	)
-	headers.Add("Content-Type", "application/json")
-	var response *sdk.ContextBatchResponse
-	raw, err := r.caller.Call(
-		ctx,
-		&internal.CallParams{
-			URL:             endpointURL,
-			Method:          http.MethodPost,
-			Headers:         headers,
-			MaxAttempts:     options.MaxAttempts,
-			DisableRetries:  options.DisableRetries,
-			BodyProperties:  options.BodyProperties,
-			QueryParameters: options.QueryParameters,
-			Client:          options.HTTPClient,
-			Request:         request,
-			Response:        &response,
-			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &core.Response[*sdk.ContextBatchResponse]{
+	return &core.Response[*sdk.DeleteContextResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

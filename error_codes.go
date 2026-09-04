@@ -23,6 +23,11 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
+	504: func(apiError *core.APIError) error {
+		return &GatewayTimeoutError{
+			APIError: apiError,
+		}
+	},
 	403: func(apiError *core.APIError) error {
 		return &ForbiddenError{
 			APIError: apiError,

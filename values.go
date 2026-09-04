@@ -249,19 +249,16 @@ func (s *SyncValuesRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-// Result of deleting a vocabulary value, including value-to-value reference effects.
+// Result of deleting a vocabulary value.
 var (
 	deleteValueResponseFieldMessage           = big.NewInt(1 << 0)
-	deleteValueResponseFieldCascadeDeleted    = big.NewInt(1 << 1)
-	deleteValueResponseFieldUpdatedListValues = big.NewInt(1 << 2)
+	deleteValueResponseFieldUpdatedListValues = big.NewInt(1 << 1)
 )
 
 type DeleteValueResponse struct {
-	// Human-readable confirmation.
+	// Confirmation message.
 	Message *string `json:"message,omitempty" url:"message,omitempty"`
-	// Values that were deleted with the target because their entire payload referenced it.
-	CascadeDeleted []*DeleteValueResponseCascadeDeletedItem `json:"cascade_deleted,omitempty" url:"cascade_deleted,omitempty"`
-	// List values that lost item(s) referencing the deleted value but were otherwise kept.
+	// Values updated to replace references to the deleted value.
 	UpdatedListValues []*DeleteValueResponseUpdatedListValuesItem `json:"updated_list_values,omitempty" url:"updated_list_values,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -276,13 +273,6 @@ func (d *DeleteValueResponse) GetMessage() *string {
 		return nil
 	}
 	return d.Message
-}
-
-func (d *DeleteValueResponse) GetCascadeDeleted() []*DeleteValueResponseCascadeDeletedItem {
-	if d == nil {
-		return nil
-	}
-	return d.CascadeDeleted
 }
 
 func (d *DeleteValueResponse) GetUpdatedListValues() []*DeleteValueResponseUpdatedListValuesItem {
@@ -311,13 +301,6 @@ func (d *DeleteValueResponse) require(field *big.Int) {
 func (d *DeleteValueResponse) SetMessage(message *string) {
 	d.Message = message
 	d.require(deleteValueResponseFieldMessage)
-}
-
-// SetCascadeDeleted sets the CascadeDeleted field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteValueResponse) SetCascadeDeleted(cascadeDeleted []*DeleteValueResponseCascadeDeletedItem) {
-	d.CascadeDeleted = cascadeDeleted
-	d.require(deleteValueResponseFieldCascadeDeleted)
 }
 
 // SetUpdatedListValues sets the UpdatedListValues field and marks it as non-optional;
@@ -355,106 +338,6 @@ func (d *DeleteValueResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DeleteValueResponse) String() string {
-	if d == nil {
-		return "<nil>"
-	}
-	if len(d.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(d); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", d)
-}
-
-var (
-	deleteValueResponseCascadeDeletedItemFieldID   = big.NewInt(1 << 0)
-	deleteValueResponseCascadeDeletedItemFieldName = big.NewInt(1 << 1)
-)
-
-type DeleteValueResponseCascadeDeletedItem struct {
-	ID   *string `json:"id,omitempty" url:"id,omitempty"`
-	Name *string `json:"name,omitempty" url:"name,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (d *DeleteValueResponseCascadeDeletedItem) GetID() *string {
-	if d == nil {
-		return nil
-	}
-	return d.ID
-}
-
-func (d *DeleteValueResponseCascadeDeletedItem) GetName() *string {
-	if d == nil {
-		return nil
-	}
-	return d.Name
-}
-
-func (d *DeleteValueResponseCascadeDeletedItem) GetExtraProperties() map[string]interface{} {
-	if d == nil {
-		return nil
-	}
-	return d.extraProperties
-}
-
-func (d *DeleteValueResponseCascadeDeletedItem) require(field *big.Int) {
-	if d.explicitFields == nil {
-		d.explicitFields = big.NewInt(0)
-	}
-	d.explicitFields.Or(d.explicitFields, field)
-}
-
-// SetID sets the ID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteValueResponseCascadeDeletedItem) SetID(id *string) {
-	d.ID = id
-	d.require(deleteValueResponseCascadeDeletedItemFieldID)
-}
-
-// SetName sets the Name field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (d *DeleteValueResponseCascadeDeletedItem) SetName(name *string) {
-	d.Name = name
-	d.require(deleteValueResponseCascadeDeletedItemFieldName)
-}
-
-func (d *DeleteValueResponseCascadeDeletedItem) UnmarshalJSON(data []byte) error {
-	type unmarshaler DeleteValueResponseCascadeDeletedItem
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*d = DeleteValueResponseCascadeDeletedItem(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *d)
-	if err != nil {
-		return err
-	}
-	d.extraProperties = extraProperties
-	d.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (d *DeleteValueResponseCascadeDeletedItem) MarshalJSON() ([]byte, error) {
-	type embed DeleteValueResponseCascadeDeletedItem
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*d),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (d *DeleteValueResponseCascadeDeletedItem) String() string {
 	if d == nil {
 		return "<nil>"
 	}
@@ -1988,7 +1871,7 @@ var (
 )
 
 type UpdateValuesRequest struct {
-	// A dictionary of keys and values to update or add. This developer-facing sync contract preserves source names and nesting: nested objects are flattened using dot notation while every key segment stays exactly as sent (e.g. 'user.contact_info.email' stays 'user.contact_info.email'). Individual payloads may be value-to-value references (see ValueReference): a scalar payload may be a single { "$ref": "<value name>" } marker, and list payloads may mix literal items with reference markers.
+	// Values to create or update. Nested objects use dot-separated names and payloads may reference other values.
 	Values map[string]any `json:"values" url:"-"`
 	// Optional array of user group names or IDs. If omitted and user belongs to user groups, values will be assigned to all user's user groups. Required if values should be restricted to specific user groups.
 	UserGroups []string `json:"user_groups,omitempty" url:"-"`

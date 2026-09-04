@@ -9,6 +9,11 @@ import (
 )
 
 var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
+	404: func(apiError *core.APIError) error {
+		return &sdk.NotFoundError{
+			APIError: apiError,
+		}
+	},
 	500: func(apiError *core.APIError) error {
 		return &sdk.InternalServerError{
 			APIError: apiError,
@@ -19,18 +24,13 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
-	409: func(apiError *core.APIError) error {
-		return &sdk.ConflictError{
-			APIError: apiError,
-		}
-	},
-	404: func(apiError *core.APIError) error {
-		return &sdk.NotFoundError{
-			APIError: apiError,
-		}
-	},
 	403: func(apiError *core.APIError) error {
 		return &sdk.ForbiddenError{
+			APIError: apiError,
+		}
+	},
+	409: func(apiError *core.APIError) error {
+		return &sdk.ConflictError{
 			APIError: apiError,
 		}
 	},

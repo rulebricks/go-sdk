@@ -4,6 +4,7 @@ package client
 
 import (
 	context "context"
+	io "io"
 	http "net/http"
 	sdk "sdk"
 	core "sdk/core"
@@ -73,9 +74,9 @@ func (r *RawClient) GetUsage(
 
 func (r *RawClient) ImportRbm(
 	ctx context.Context,
-	request *sdk.ImportManifestRequest,
+	request io.Reader,
 	opts ...option.RequestOption,
-) (*core.Response[*sdk.ImportManifestResponse], error) {
+) (*core.Response[*sdk.ImportRbmAssetsResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -87,8 +88,7 @@ func (r *RawClient) ImportRbm(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	headers.Add("Content-Type", "application/json")
-	var response *sdk.ImportManifestResponse
+	var response *sdk.ImportRbmAssetsResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -108,7 +108,7 @@ func (r *RawClient) ImportRbm(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[*sdk.ImportManifestResponse]{
+	return &core.Response[*sdk.ImportRbmAssetsResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

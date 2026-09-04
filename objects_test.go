@@ -615,6 +615,65 @@ func TestGettersUpsertObjectRequest(t *testing.T) {
 
 }
 
+func TestGettersUpsertObjectRequestContent(t *testing.T) {
+	t.Run("GetString", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UpsertObjectRequestContent{}
+		var expected string
+		obj.String = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetString(), "getter should return the property value")
+	})
+
+	t.Run("GetString_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *UpsertObjectRequestContent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetString() // Should return zero value
+	})
+
+	t.Run("GetStringUnknownMap", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UpsertObjectRequestContent{}
+		var expected map[string]any
+		obj.StringUnknownMap = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetStringUnknownMap(), "getter should return the property value")
+	})
+
+	t.Run("GetStringUnknownMap_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UpsertObjectRequestContent{}
+		obj.StringUnknownMap = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetStringUnknownMap(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetStringUnknownMap_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *UpsertObjectRequestContent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetStringUnknownMap() // Should return zero value
+	})
+
+}
+
 func TestSettersUpsertObjectRequestFieldRename(t *testing.T) {
 	t.Run("SetFromKey", func(t *testing.T) {
 		obj := &UpsertObjectRequestFieldRename{}

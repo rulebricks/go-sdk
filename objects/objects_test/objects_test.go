@@ -112,12 +112,20 @@ func TestObjectsUpsertWithWireMock(
 	)
 	request := &sdk.UpsertObjectRequest{
 		Unknown: map[string]any{
-			"content": `{
-                  "type": "object",
-                  "properties": {
-                    "countryCode": { "type": "string", "title": "Country Code", "enum": ["US", "CA", "GB"] }
-                  }
-                }`,
+			"content": map[string]any{
+				"properties": map[string]any{
+					"countryCode": map[string]any{
+						"enum": []any{
+							"US",
+							"CA",
+							"GB",
+						},
+						"title": "Country Code",
+						"type":  "string",
+					},
+				},
+				"type": "object",
+			},
 			"name": "Claim",
 			"user_groups": []any{
 				"underwriting",

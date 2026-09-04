@@ -4,7 +4,9 @@ package client
 
 import (
 	context "context"
+	io "io"
 	sdk "sdk"
+	client "sdk/assets/contexts/client"
 	flows "sdk/assets/flows"
 	folders "sdk/assets/folders"
 	rules "sdk/assets/rules"
@@ -18,6 +20,7 @@ type Client struct {
 	Rules           *rules.Client
 	Flows           *flows.Client
 	Folders         *folders.Client
+	Contexts        *client.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -29,6 +32,7 @@ func NewClient(options *core.RequestOptions) *Client {
 		Rules:           rules.NewClient(options),
 		Flows:           flows.NewClient(options),
 		Folders:         folders.NewClient(options),
+		Contexts:        client.NewClient(options),
 		WithRawResponse: NewRawClient(options),
 		options:         options,
 		baseURL:         options.BaseURL,
@@ -57,12 +61,12 @@ func (c *Client) GetUsage(
 	return response.Body, nil
 }
 
-// Import rules, flows, contexts, and values from an Rulebricks manifest file (*.rbm).
+// Import rules, flows, contexts, and values from a Rulebricks manifest file (*.rbm). Plain JSON remains supported, and clients may send the same JSON envelope gzip-compressed with `Content-Type: application/octet-stream` and `X-Rulebricks-Content-Encoding: gzip`.
 func (c *Client) ImportRbm(
 	ctx context.Context,
-	request *sdk.ImportManifestRequest,
+	request io.Reader,
 	opts ...option.RequestOption,
-) (*sdk.ImportManifestResponse, error) {
+) (*sdk.ImportRbmAssetsResponse, error) {
 	response, err := c.WithRawResponse.ImportRbm(
 		ctx,
 		request,
@@ -74,7 +78,7 @@ func (c *Client) ImportRbm(
 	return response.Body, nil
 }
 
-// Export selected rules, flows, contexts, and values to an Rulebricks manifest file (*.rbm). Dependencies are resolved automatically: exporting a flow includes its rules, contexts, vocabulary values, and any flows referenced by Run Flow nodes (recursively). Set `compress: true` to receive the manifest in compressed form (a compress-json array), which is much smaller and can be saved directly as a .rbm file; the import endpoint accepts both forms.
+// Export selected rules, flows, contexts, and values to a Rulebricks manifest file (*.rbm). Dependencies are resolved automatically: exporting a flow includes its rules, contexts, vocabulary values, and any flows referenced by Run Flow nodes (recursively). Set `compress: true` to receive the manifest in compressed form (a compress-json array). Set `download: true` to receive that manifest directly as a streamed attachment instead of inside the `{ success, manifest }` envelope.
 func (c *Client) ExportRbm(
 	ctx context.Context,
 	request *sdk.ExportManifestRequest,

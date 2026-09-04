@@ -6,7 +6,7 @@ import (
 	context "context"
 	http "net/http"
 	sdk "sdk"
-	contexts "sdk/contexts"
+	contexts "sdk/assets/contexts"
 	core "sdk/core"
 	internal "sdk/internal"
 	option "sdk/option"

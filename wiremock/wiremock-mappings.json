@@ -248,7 +248,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"data\": [\n    {\n      \"timestamp\": \"2024-12-17T10:30:00Z\",\n      \"name\": \"Lead Qualification\",\n      \"endpoint\": \"/api/v1/solve/lead-qual\",\n      \"status\": 200,\n      \"request\": {\n        \"key\": \"value\"\n      },\n      \"response\": {\n        \"key\": \"value\"\n      },\n      \"decision\": {\n        \"key\": \"value\"\n      },\n      \"trace_id\": \"trace_id\",\n      \"path_trace\": {\n        \"key\": \"value\"\n      },\n      \"matched_items\": [\n        1\n      ],\n      \"abbreviated\": false,\n      \"error\": {\n        \"key\": \"value\"\n      }\n    }\n  ],\n  \"cursor\": \"eyJ0IjoiMTc1MzY1MDAwMDEyMyIsInMiOjB9\",\n  \"count\": 1\n}",
+        "body": "{\n  \"data\": [\n    {\n      \"timestamp\": \"2024-12-17T10:30:00Z\",\n      \"name\": \"Lead Qualification\",\n      \"endpoint\": \"/api/v1/solve/lead-qual\",\n      \"status\": 200,\n      \"request\": {\n        \"key\": \"value\"\n      },\n      \"response\": {\n        \"key\": \"value\"\n      },\n      \"decision\": {\n        \"key\": \"value\"\n      },\n      \"trace_id\": \"trace_id\",\n      \"path_trace\": {\n        \"key\": \"value\"\n      },\n      \"matched_items\": [\n        1\n      ],\n      \"abbreviated\": false,\n      \"error\": \"error\"\n    }\n  ],\n  \"cursor\": \"eyJ0IjoiMTc1MzY1MDAwMDEyMyIsInMiOjB9\",\n  \"count\": 1\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -393,37 +393,6 @@
       "postServeActions": []
     },
     {
-      "id": "b0f1f465-2002-4992-9103-9d95e3d36497",
-      "name": "Import assets from manifest - Import manifest",
-      "request": {
-        "urlPathTemplate": "/admin/import",
-        "method": "POST",
-        "headers": {
-          "x-api-key": {
-            "matches": ".+"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "body": "{\n  \"success\": true,\n  \"created\": [],\n  \"updated\": [],\n  \"skipped\": [],\n  \"errors\": []\n}",
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      },
-      "uuid": "b0f1f465-2002-4992-9103-9d95e3d36497",
-      "persistent": true,
-      "priority": 3,
-      "metadata": {
-        "mocklab": {
-          "created": {
-            "at": "2020-01-01T00:00:00.000Z",
-            "via": "SYSTEM"
-          }
-        }
-      }
-    },
-    {
       "id": "385acb35-e508-4ab9-b3a8-2cd89f7aa535",
       "name": "Export assets to manifest - Export rules with dependencies",
       "request": {
@@ -437,7 +406,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"success\": true,\n  \"manifest\": {\n    \"version\": \"1.0\",\n    \"name\": \"Export\",\n    \"exported_at\": \"2024-01-15T10:30:00.000Z\",\n    \"rules\": [],\n    \"flows\": [],\n    \"contexts\": [],\n    \"values\": []\n  }\n}",
+        "body": "{\n  \"success\": true,\n  \"manifest\": {\n    \"name\": \"Export\",\n    \"exported_at\": \"2024-01-15T10:30:00.000Z\",\n    \"rules\": [],\n    \"flows\": [],\n    \"contexts\": [],\n    \"values\": []\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -541,7 +510,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"message\": \"Value \\\"Favorite Color\\\" deleted successfully\",\n  \"cascade_deleted\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\"\n    }\n  ],\n  \"updated_list_values\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\"\n    }\n  ]\n}",
+        "body": "{\n  \"message\": \"Value \\\"Favorite Color\\\" deleted successfully\",\n  \"updated_list_values\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -622,8 +591,8 @@
       "postServeActions": []
     },
     {
-      "id": "0603ffb3-2d18-4a57-86aa-6cd04cb4eaa6",
-      "name": "Create or update an object - Sling an updated JSON Schema at the workspace",
+      "id": "6620ccd1-8436-4c8e-879a-6d14ad0dbbf8",
+      "name": "Create or update an object - Update an object by name",
       "request": {
         "urlPathTemplate": "/objects",
         "method": "PUT",
@@ -640,7 +609,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "0603ffb3-2d18-4a57-86aa-6cd04cb4eaa6",
+      "uuid": "6620ccd1-8436-4c8e-879a-6d14ad0dbbf8",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1351,7 +1320,7 @@
       }
     },
     {
-      "id": "ef1a82db-0cff-4a73-a8b8-ebfc7d3b9ec9",
+      "id": "d003173d-f2ef-433a-bf40-15508ac7f7e5",
       "name": "List contexts - List all contexts",
       "request": {
         "urlPathTemplate": "/admin/contexts",
@@ -1369,7 +1338,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "ef1a82db-0cff-4a73-a8b8-ebfc7d3b9ec9",
+      "uuid": "d003173d-f2ef-433a-bf40-15508ac7f7e5",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1383,7 +1352,7 @@
       "postServeActions": []
     },
     {
-      "id": "7ab7cd2c-4cec-4726-93e9-f1d977ed1148",
+      "id": "3dc6f868-c18d-4a05-aff3-aaa089cbbe1e",
       "name": "Create a context - Create a context",
       "request": {
         "urlPathTemplate": "/admin/contexts",
@@ -1401,7 +1370,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "7ab7cd2c-4cec-4726-93e9-f1d977ed1148",
+      "uuid": "3dc6f868-c18d-4a05-aff3-aaa089cbbe1e",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1414,7 +1383,7 @@
       }
     },
     {
-      "id": "e2d20b9b-543a-4ce7-b359-394b657bb2ca",
+      "id": "163ebdf8-ce00-4184-aedb-203d78739e6e",
       "name": "Get a context - Get a context",
       "request": {
         "urlPathTemplate": "/admin/contexts/{id}",
@@ -1437,7 +1406,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "e2d20b9b-543a-4ce7-b359-394b657bb2ca",
+      "uuid": "163ebdf8-ce00-4184-aedb-203d78739e6e",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1450,7 +1419,7 @@
       }
     },
     {
-      "id": "3aa1f7ff-20ca-4839-976a-0acfb95ac12e",
+      "id": "8ee9d739-a4a3-4a13-9ee1-df5cf10f6a0d",
       "name": "Update a context - Update a context",
       "request": {
         "urlPathTemplate": "/admin/contexts/{id}",
@@ -1473,7 +1442,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "3aa1f7ff-20ca-4839-976a-0acfb95ac12e",
+      "uuid": "8ee9d739-a4a3-4a13-9ee1-df5cf10f6a0d",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1486,7 +1455,7 @@
       }
     },
     {
-      "id": "f092213d-cbaf-472f-bb75-93d6f9bb8974",
+      "id": "0b6f422a-af3c-4729-96e9-449bbe0019cd",
       "name": "Delete a context - Delete a context",
       "request": {
         "urlPathTemplate": "/admin/contexts/{id}",
@@ -1509,7 +1478,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "f092213d-cbaf-472f-bb75-93d6f9bb8974",
+      "uuid": "0b6f422a-af3c-4729-96e9-449bbe0019cd",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1522,7 +1491,7 @@
       }
     },
     {
-      "id": "0a49fc17-d81f-4be4-8173-4db32edf5030",
+      "id": "251a76bd-12bf-4829-960a-14b7ffa87fa9",
       "name": "List relationships - List relationships",
       "request": {
         "urlPathTemplate": "/admin/contexts/{id}/relationships",
@@ -1545,7 +1514,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "0a49fc17-d81f-4be4-8173-4db32edf5030",
+      "uuid": "251a76bd-12bf-4829-960a-14b7ffa87fa9",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1558,7 +1527,7 @@
       }
     },
     {
-      "id": "8ae5bb71-67d1-492d-a1b3-f9c7d60f5d39",
+      "id": "2eedb05e-84f9-4b71-8e15-42f0d43668d2",
       "name": "Create a relationship - Create a relationship",
       "request": {
         "urlPathTemplate": "/admin/contexts/{id}/relationships",
@@ -1581,7 +1550,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "8ae5bb71-67d1-492d-a1b3-f9c7d60f5d39",
+      "uuid": "2eedb05e-84f9-4b71-8e15-42f0d43668d2",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1594,7 +1563,7 @@
       }
     },
     {
-      "id": "33ec8b5e-2d15-42b7-8c1a-5b548b748125",
+      "id": "3b9b2f4e-8fdf-4ede-8c15-4f0d1e109835",
       "name": "Delete a relationship - Delete a relationship",
       "request": {
         "urlPathTemplate": "/admin/contexts/{id}/relationships/{relationship}",
@@ -1620,7 +1589,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "33ec8b5e-2d15-42b7-8c1a-5b548b748125",
+      "uuid": "3b9b2f4e-8fdf-4ede-8c15-4f0d1e109835",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1651,7 +1620,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"id\": \"Wk0CWqGcwrRnezjUJ5N7O\",\n    \"name\": \"Test 1\",\n    \"request\": {\n      \"beta\": \"a\",\n      \"alpha\": 0,\n      \"charlie\": true\n    },\n    \"response\": {\n      \"error\": false,\n      \"status\": \"success\"\n    },\n    \"critical\": true,\n    \"error\": false,\n    \"success\": true,\n    \"test_state\": {\n      \"duration\": 0.10000038146972656,\n      \"response\": {\n        \"error\": false,\n        \"status\": \"success\"\n      },\n      \"conditions\": [\n        {\n          \"alpha\": {\n            \"result\": true\n          }\n        }\n      ],\n      \"http_status\": 200,\n      \"success_idxs\": [\n        0\n      ],\n      \"evaluation_error\": false\n    },\n    \"last_executed\": \"2024-09-24T17:26:54Z\"\n  },\n  {\n    \"id\": \"Mog-TOCOxUFBVXfuk2xVp\",\n    \"name\": \"Test 2\",\n    \"request\": {\n      \"key\": \"value\"\n    },\n    \"response\": {\n      \"error\": false,\n      \"status\": \"success\"\n    },\n    \"critical\": true,\n    \"error\": true,\n    \"success\": false,\n    \"test_state\": {\n      \"duration\": 0.09999942779541016,\n      \"conditions\": [\n        {\n          \"alpha\": {\n            \"err\": \"missing\",\n            \"result\": false\n          }\n        }\n      ],\n      \"http_status\": 400,\n      \"success_idxs\": [\n        1\n      ],\n      \"evaluation_error\": \"No successful rows found. If this is not what you were expecting, check your input data and rule conditions.\"\n    },\n    \"last_executed\": \"2024-09-24T17:26:54Z\"\n  }\n]",
+        "body": "[\n  {\n    \"id\": \"Wk0CWqGcwrRnezjUJ5N7O\",\n    \"name\": \"Test 1\",\n    \"request\": {\n      \"beta\": \"a\",\n      \"alpha\": 0,\n      \"charlie\": true\n    },\n    \"response\": {\n      \"error\": false,\n      \"status\": \"success\"\n    },\n    \"policy\": \"contains\",\n    \"critical\": true,\n    \"error\": false,\n    \"success\": true,\n    \"test_state\": {\n      \"duration\": 0.10000038146972656,\n      \"response\": {\n        \"error\": false,\n        \"status\": \"success\"\n      },\n      \"conditions\": [\n        {\n          \"alpha\": {\n            \"result\": true\n          }\n        }\n      ],\n      \"http_status\": 200,\n      \"success_idxs\": [\n        0\n      ],\n      \"evaluation_error\": false\n    },\n    \"last_executed\": \"2024-09-24T17:26:54Z\"\n  },\n  {\n    \"id\": \"Mog-TOCOxUFBVXfuk2xVp\",\n    \"name\": \"Test 2\",\n    \"request\": {\n      \"key\": \"value\"\n    },\n    \"response\": {\n      \"error\": false,\n      \"status\": \"success\"\n    },\n    \"policy\": \"contains\",\n    \"critical\": true,\n    \"error\": true,\n    \"success\": false,\n    \"test_state\": {\n      \"duration\": 0.09999942779541016,\n      \"conditions\": [\n        {\n          \"alpha\": {\n            \"err\": \"missing\",\n            \"result\": false\n          }\n        }\n      ],\n      \"http_status\": 400,\n      \"success_idxs\": [\n        1\n      ],\n      \"evaluation_error\": \"No successful rows found. If this is not what you were expecting, check your input data and rule conditions.\"\n    },\n    \"last_executed\": \"2024-09-24T17:26:54Z\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1687,7 +1656,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"id\": \"c1a2b3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n  \"name\": \"Test 3\",\n  \"request\": {\n    \"param1\": \"value1\"\n  },\n  \"response\": {\n    \"status\": \"success\"\n  },\n  \"critical\": true,\n  \"error\": false,\n  \"success\": false\n}",
+        "body": "{\n  \"id\": \"c1a2b3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n  \"name\": \"Test 3\",\n  \"request\": {\n    \"param1\": \"value1\"\n  },\n  \"response\": {\n    \"status\": \"success\"\n  },\n  \"policy\": \"contains\",\n  \"critical\": true,\n  \"error\": false,\n  \"success\": false\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1726,7 +1695,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"id\": \"c1a2b3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n  \"name\": \"Test 3\",\n  \"request\": {\n    \"param1\": \"value1\"\n  },\n  \"response\": {\n    \"status\": \"success\"\n  },\n  \"critical\": true,\n  \"error\": false,\n  \"success\": false\n}",
+        "body": "{\n  \"id\": \"c1a2b3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n  \"name\": \"Test 3\",\n  \"request\": {\n    \"param1\": \"value1\"\n  },\n  \"response\": {\n    \"status\": \"success\"\n  },\n  \"policy\": \"contains\",\n  \"critical\": true,\n  \"error\": false,\n  \"success\": false\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1762,7 +1731,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"rule\": \"my-rule-slug\",\n  \"flow\": \"flow\",\n  \"total\": 3,\n  \"passed\": 2,\n  \"failed\": 1,\n  \"pass_percentage\": \"66.67\",\n  \"critical_failure\": true,\n  \"failed_tests\": [\n    \"Edge case\"\n  ],\n  \"critical_failed_tests\": [\n    \"Edge case\"\n  ],\n  \"results\": [\n    {\n      \"id\": \"Wk0CWqGcwrRnezjUJ5N7O\",\n      \"name\": \"Happy path\",\n      \"critical\": false,\n      \"success\": true,\n      \"error\": false\n    },\n    {\n      \"id\": \"Mog-TOCOxUFBVXfuk2xVp\",\n      \"name\": \"Edge case\",\n      \"critical\": true,\n      \"success\": false,\n      \"error\": true\n    }\n  ],\n  \"failures\": [\n    {\n      \"id\": \"Mog-TOCOxUFBVXfuk2xVp\",\n      \"name\": \"Edge case\",\n      \"critical\": true,\n      \"expected\": {\n        \"approved\": true\n      },\n      \"actual\": {\n        \"approved\": false\n      },\n      \"matched_rows\": [\n        4\n      ]\n    }\n  ]\n}",
+        "body": "{\n  \"rule\": \"my-rule-slug\",\n  \"flow\": \"flow\",\n  \"total\": 3,\n  \"passed\": 2,\n  \"failed\": 1,\n  \"pass_percentage\": \"66.67\",\n  \"critical_failure\": true,\n  \"failed_tests\": [\n    \"Edge case\"\n  ],\n  \"critical_failed_tests\": [\n    \"Edge case\"\n  ],\n  \"results\": [\n    {\n      \"id\": \"Wk0CWqGcwrRnezjUJ5N7O\",\n      \"name\": \"Happy path\",\n      \"policy\": \"contains\",\n      \"critical\": false,\n      \"success\": true,\n      \"error\": false\n    },\n    {\n      \"id\": \"Mog-TOCOxUFBVXfuk2xVp\",\n      \"name\": \"Edge case\",\n      \"policy\": \"contains\",\n      \"critical\": true,\n      \"success\": false,\n      \"error\": true\n    }\n  ],\n  \"failures\": [\n    {\n      \"id\": \"Mog-TOCOxUFBVXfuk2xVp\",\n      \"name\": \"Edge case\",\n      \"policy\": \"contains\",\n      \"critical\": true,\n      \"expected\": {\n        \"approved\": true\n      },\n      \"actual\": {\n        \"approved\": false\n      },\n      \"matched_rows\": [\n        4\n      ]\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1798,7 +1767,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"id\": \"Wk0CWqGcwrRnezjUJ5N7O\",\n    \"name\": \"Test 1\",\n    \"request\": {\n      \"beta\": \"a\",\n      \"alpha\": 0,\n      \"charlie\": true\n    },\n    \"response\": {\n      \"error\": false,\n      \"status\": \"success\"\n    },\n    \"critical\": true,\n    \"error\": false,\n    \"success\": true,\n    \"test_state\": {\n      \"duration\": 0.10000038146972656,\n      \"response\": {\n        \"error\": false,\n        \"status\": \"success\"\n      },\n      \"conditions\": [\n        {\n          \"key\": \"value\"\n        }\n      ],\n      \"http_status\": 200,\n      \"success_idxs\": [\n        1\n      ],\n      \"evaluation_error\": false\n    },\n    \"last_executed\": \"2024-09-24T17:26:54Z\"\n  },\n  {\n    \"id\": \"Mog-TOCOxUFBVXfuk2xVp\",\n    \"name\": \"Test 2\",\n    \"request\": {\n      \"key\": \"value\"\n    },\n    \"response\": {\n      \"error\": false,\n      \"status\": \"success\"\n    },\n    \"critical\": true,\n    \"error\": true,\n    \"success\": false,\n    \"test_state\": {\n      \"duration\": 0.09999942779541016,\n      \"conditions\": [\n        {\n          \"key\": \"value\"\n        }\n      ],\n      \"http_status\": 400,\n      \"success_idxs\": [\n        1\n      ],\n      \"evaluation_error\": \"No successful rows found. If this is not what you were expecting, check your input data and rule conditions.\"\n    },\n    \"last_executed\": \"2024-09-24T17:26:54Z\"\n  }\n]",
+        "body": "[\n  {\n    \"id\": \"Wk0CWqGcwrRnezjUJ5N7O\",\n    \"name\": \"Test 1\",\n    \"request\": {\n      \"beta\": \"a\",\n      \"alpha\": 0,\n      \"charlie\": true\n    },\n    \"response\": {\n      \"error\": false,\n      \"status\": \"success\"\n    },\n    \"policy\": \"contains\",\n    \"critical\": true,\n    \"error\": false,\n    \"success\": true,\n    \"test_state\": {\n      \"duration\": 0.10000038146972656,\n      \"response\": {\n        \"error\": false,\n        \"status\": \"success\"\n      },\n      \"conditions\": [\n        {\n          \"key\": \"value\"\n        }\n      ],\n      \"http_status\": 200,\n      \"success_idxs\": [\n        1\n      ],\n      \"evaluation_error\": false\n    },\n    \"last_executed\": \"2024-09-24T17:26:54Z\"\n  },\n  {\n    \"id\": \"Mog-TOCOxUFBVXfuk2xVp\",\n    \"name\": \"Test 2\",\n    \"request\": {\n      \"key\": \"value\"\n    },\n    \"response\": {\n      \"error\": false,\n      \"status\": \"success\"\n    },\n    \"policy\": \"contains\",\n    \"critical\": true,\n    \"error\": true,\n    \"success\": false,\n    \"test_state\": {\n      \"duration\": 0.09999942779541016,\n      \"conditions\": [\n        {\n          \"key\": \"value\"\n        }\n      ],\n      \"http_status\": 400,\n      \"success_idxs\": [\n        1\n      ],\n      \"evaluation_error\": \"No successful rows found. If this is not what you were expecting, check your input data and rule conditions.\"\n    },\n    \"last_executed\": \"2024-09-24T17:26:54Z\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1834,7 +1803,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"id\": \"c1a2b3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n  \"name\": \"Test 3\",\n  \"request\": {\n    \"param1\": \"value1\"\n  },\n  \"response\": {\n    \"status\": \"success\"\n  },\n  \"critical\": true,\n  \"error\": false,\n  \"success\": false\n}",
+        "body": "{\n  \"id\": \"c1a2b3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n  \"name\": \"Test 3\",\n  \"request\": {\n    \"param1\": \"value1\"\n  },\n  \"response\": {\n    \"status\": \"success\"\n  },\n  \"policy\": \"contains\",\n  \"critical\": true,\n  \"error\": false,\n  \"success\": false\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1873,7 +1842,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"id\": \"c1a2b3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n  \"name\": \"Test 3\",\n  \"request\": {\n    \"param1\": \"value1\"\n  },\n  \"response\": {\n    \"status\": \"success\"\n  },\n  \"critical\": true,\n  \"error\": false,\n  \"success\": false\n}",
+        "body": "{\n  \"id\": \"c1a2b3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n  \"name\": \"Test 3\",\n  \"request\": {\n    \"param1\": \"value1\"\n  },\n  \"response\": {\n    \"status\": \"success\"\n  },\n  \"policy\": \"contains\",\n  \"critical\": true,\n  \"error\": false,\n  \"success\": false\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1909,7 +1878,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"rule\": \"rule\",\n  \"flow\": \"my-flow-slug\",\n  \"total\": 2,\n  \"passed\": 2,\n  \"failed\": 0,\n  \"pass_percentage\": \"100.00\",\n  \"critical_failure\": false,\n  \"failed_tests\": [\n    \"failed_tests\"\n  ],\n  \"critical_failed_tests\": [\n    \"critical_failed_tests\"\n  ],\n  \"results\": [\n    {\n      \"id\": \"Wk0CWqGcwrRnezjUJ5N7O\",\n      \"name\": \"Approves valid applicant\",\n      \"critical\": true,\n      \"success\": true,\n      \"error\": false\n    }\n  ],\n  \"failures\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"critical\": true,\n      \"expected\": {\n        \"key\": \"value\"\n      },\n      \"actual\": {\n        \"key\": \"value\"\n      },\n      \"matched_rows\": [\n        1\n      ],\n      \"error_message\": \"error_message\"\n    }\n  ]\n}",
+        "body": "{\n  \"rule\": \"rule\",\n  \"flow\": \"my-flow-slug\",\n  \"total\": 2,\n  \"passed\": 2,\n  \"failed\": 0,\n  \"pass_percentage\": \"100.00\",\n  \"critical_failure\": false,\n  \"failed_tests\": [\n    \"failed_tests\"\n  ],\n  \"critical_failed_tests\": [\n    \"critical_failed_tests\"\n  ],\n  \"results\": [\n    {\n      \"id\": \"Wk0CWqGcwrRnezjUJ5N7O\",\n      \"name\": \"Approves valid applicant\",\n      \"policy\": \"contains\",\n      \"critical\": true,\n      \"success\": true,\n      \"error\": false\n    }\n  ],\n  \"failures\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"policy\": \"contains\",\n      \"critical\": true,\n      \"expected\": {\n        \"key\": \"value\"\n      },\n      \"actual\": {\n        \"key\": \"value\"\n      },\n      \"matched_rows\": [\n        1\n      ],\n      \"error_message\": \"error_message\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1991,6 +1960,6 @@
     }
   ],
   "meta": {
-    "total": 57
+    "total": 56
   }
 }

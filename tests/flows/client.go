@@ -51,7 +51,7 @@ func (c *Client) List(
 	return response.Body, nil
 }
 
-// Adds a new test to the test suite of a flow identified by the slug.
+// Adds a new test to the flow. `contains` (Contains Data, the default) finds the expected fragment anywhere in the output, `matches` (Matches Exactly) requires complete equality, and `excludes` (Excludes Data) requires the fragment to be absent.
 func (c *Client) Create(
 	ctx context.Context,
 	request *tests.CreateFlowsRequest,

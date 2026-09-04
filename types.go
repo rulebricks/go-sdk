@@ -3316,7 +3316,8 @@ var (
 	createTestRequestFieldName     = big.NewInt(1 << 0)
 	createTestRequestFieldRequest  = big.NewInt(1 << 1)
 	createTestRequestFieldResponse = big.NewInt(1 << 2)
-	createTestRequestFieldCritical = big.NewInt(1 << 3)
+	createTestRequestFieldPolicy   = big.NewInt(1 << 3)
+	createTestRequestFieldCritical = big.NewInt(1 << 4)
 )
 
 type CreateTestRequest struct {
@@ -3326,6 +3327,8 @@ type CreateTestRequest struct {
 	Request map[string]any `json:"request" url:"request"`
 	// The expected response object for the test.
 	Response map[string]any `json:"response" url:"response"`
+	// Optional comparison policy. Missing or null values default to contains for rules and flows.
+	Policy *CreateTestRequestPolicy `json:"policy,omitempty" url:"policy,omitempty"`
 	// Indicates whether the test is critical.
 	Critical bool `json:"critical" url:"critical"`
 
@@ -3355,6 +3358,13 @@ func (c *CreateTestRequest) GetResponse() map[string]any {
 		return nil
 	}
 	return c.Response
+}
+
+func (c *CreateTestRequest) GetPolicy() *CreateTestRequestPolicy {
+	if c == nil {
+		return nil
+	}
+	return c.Policy
 }
 
 func (c *CreateTestRequest) GetCritical() bool {
@@ -3397,6 +3407,13 @@ func (c *CreateTestRequest) SetRequest(request map[string]any) {
 func (c *CreateTestRequest) SetResponse(response map[string]any) {
 	c.Response = response
 	c.require(createTestRequestFieldResponse)
+}
+
+// SetPolicy sets the Policy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateTestRequest) SetPolicy(policy *CreateTestRequestPolicy) {
+	c.Policy = policy
+	c.require(createTestRequestFieldPolicy)
 }
 
 // SetCritical sets the Critical field and marks it as non-optional;
@@ -3446,6 +3463,32 @@ func (c *CreateTestRequest) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+// Optional comparison policy. Missing or null values default to contains for rules and flows.
+type CreateTestRequestPolicy string
+
+const (
+	CreateTestRequestPolicyContains CreateTestRequestPolicy = "contains"
+	CreateTestRequestPolicyMatches  CreateTestRequestPolicy = "matches"
+	CreateTestRequestPolicyExcludes CreateTestRequestPolicy = "excludes"
+)
+
+func NewCreateTestRequestPolicyFromString(s string) (CreateTestRequestPolicy, error) {
+	switch s {
+	case "contains":
+		return CreateTestRequestPolicyContains, nil
+	case "matches":
+		return CreateTestRequestPolicyMatches, nil
+	case "excludes":
+		return CreateTestRequestPolicyExcludes, nil
+	}
+	var t CreateTestRequestPolicy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CreateTestRequestPolicy) Ptr() *CreateTestRequestPolicy {
+	return &c
 }
 
 // Response after deleting a context.
@@ -5109,6 +5152,373 @@ func NewFolderTypeFromString(s string) (FolderType, error) {
 
 func (f FolderType) Ptr() *FolderType {
 	return &f
+}
+
+var (
+	importManifestRequestFieldManifest         = big.NewInt(1 << 0)
+	importManifestRequestFieldConflictStrategy = big.NewInt(1 << 1)
+	importManifestRequestFieldTargetFolderName = big.NewInt(1 << 2)
+	importManifestRequestFieldParentFolderID   = big.NewInt(1 << 3)
+	importManifestRequestFieldClearHistory     = big.NewInt(1 << 4)
+	importManifestRequestFieldPreviewOnly      = big.NewInt(1 << 5)
+)
+
+type ImportManifestRequest struct {
+	// The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads. A compressed manifest is also accepted: the JSON array produced by the compress-json library (for example, the contents of a compressed .rbm file exported with `compress: true`); it is detected and decompressed automatically.
+	Manifest *ImportManifestRequestManifest `json:"manifest" url:"manifest"`
+	// How to handle assets in the manifest that already exist in the workspace (matched by stable ID, or by name for contexts). 'override' replaces them in place, keeping their workspace ID, slug, folder and access groups but taking the manifest's content and version history (existing versions and their release pins are dropped; contexts are deleted with their stored records and recreated). 'preserve' keeps existing assets unchanged and reuses them for new dependents. 'block' rejects the whole import before any write if anything already exists. Object-managed values are never written.
+	ConflictStrategy *ImportManifestRequestConflictStrategy `json:"conflict_strategy,omitempty" url:"conflict_strategy,omitempty"`
+	// Optional folder name to place imported assets into. Created if it doesn't exist.
+	TargetFolderName *string `json:"target_folder_name,omitempty" url:"target_folder_name,omitempty"`
+	// Optional parent folder for imported asset folders.
+	ParentFolderID *string `json:"parent_folder_id,omitempty" url:"parent_folder_id,omitempty"`
+	// Clear imported edit history, typically for templates.
+	ClearHistory *bool `json:"clear_history,omitempty" url:"clear_history,omitempty"`
+	// Return the server-authoritative create/reuse/reject plan without writing.
+	PreviewOnly *bool `json:"preview_only,omitempty" url:"preview_only,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImportManifestRequest) GetManifest() *ImportManifestRequestManifest {
+	if i == nil {
+		return nil
+	}
+	return i.Manifest
+}
+
+func (i *ImportManifestRequest) GetConflictStrategy() *ImportManifestRequestConflictStrategy {
+	if i == nil {
+		return nil
+	}
+	return i.ConflictStrategy
+}
+
+func (i *ImportManifestRequest) GetTargetFolderName() *string {
+	if i == nil {
+		return nil
+	}
+	return i.TargetFolderName
+}
+
+func (i *ImportManifestRequest) GetParentFolderID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.ParentFolderID
+}
+
+func (i *ImportManifestRequest) GetClearHistory() *bool {
+	if i == nil {
+		return nil
+	}
+	return i.ClearHistory
+}
+
+func (i *ImportManifestRequest) GetPreviewOnly() *bool {
+	if i == nil {
+		return nil
+	}
+	return i.PreviewOnly
+}
+
+func (i *ImportManifestRequest) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *ImportManifestRequest) require(field *big.Int) {
+	if i.explicitFields == nil {
+		i.explicitFields = big.NewInt(0)
+	}
+	i.explicitFields.Or(i.explicitFields, field)
+}
+
+// SetManifest sets the Manifest field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequest) SetManifest(manifest *ImportManifestRequestManifest) {
+	i.Manifest = manifest
+	i.require(importManifestRequestFieldManifest)
+}
+
+// SetConflictStrategy sets the ConflictStrategy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequest) SetConflictStrategy(conflictStrategy *ImportManifestRequestConflictStrategy) {
+	i.ConflictStrategy = conflictStrategy
+	i.require(importManifestRequestFieldConflictStrategy)
+}
+
+// SetTargetFolderName sets the TargetFolderName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequest) SetTargetFolderName(targetFolderName *string) {
+	i.TargetFolderName = targetFolderName
+	i.require(importManifestRequestFieldTargetFolderName)
+}
+
+// SetParentFolderID sets the ParentFolderID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequest) SetParentFolderID(parentFolderID *string) {
+	i.ParentFolderID = parentFolderID
+	i.require(importManifestRequestFieldParentFolderID)
+}
+
+// SetClearHistory sets the ClearHistory field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequest) SetClearHistory(clearHistory *bool) {
+	i.ClearHistory = clearHistory
+	i.require(importManifestRequestFieldClearHistory)
+}
+
+// SetPreviewOnly sets the PreviewOnly field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequest) SetPreviewOnly(previewOnly *bool) {
+	i.PreviewOnly = previewOnly
+	i.require(importManifestRequestFieldPreviewOnly)
+}
+
+func (i *ImportManifestRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportManifestRequest
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImportManifestRequest(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImportManifestRequest) MarshalJSON() ([]byte, error) {
+	type embed ImportManifestRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImportManifestRequest) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+// How to handle assets in the manifest that already exist in the workspace (matched by stable ID, or by name for contexts). 'override' replaces them in place, keeping their workspace ID, slug, folder and access groups but taking the manifest's content and version history (existing versions and their release pins are dropped; contexts are deleted with their stored records and recreated). 'preserve' keeps existing assets unchanged and reuses them for new dependents. 'block' rejects the whole import before any write if anything already exists. Object-managed values are never written.
+type ImportManifestRequestConflictStrategy string
+
+const (
+	ImportManifestRequestConflictStrategyOverride ImportManifestRequestConflictStrategy = "override"
+	ImportManifestRequestConflictStrategyPreserve ImportManifestRequestConflictStrategy = "preserve"
+	ImportManifestRequestConflictStrategyBlock    ImportManifestRequestConflictStrategy = "block"
+)
+
+func NewImportManifestRequestConflictStrategyFromString(s string) (ImportManifestRequestConflictStrategy, error) {
+	switch s {
+	case "override":
+		return ImportManifestRequestConflictStrategyOverride, nil
+	case "preserve":
+		return ImportManifestRequestConflictStrategyPreserve, nil
+	case "block":
+		return ImportManifestRequestConflictStrategyBlock, nil
+	}
+	var t ImportManifestRequestConflictStrategy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i ImportManifestRequestConflictStrategy) Ptr() *ImportManifestRequestConflictStrategy {
+	return &i
+}
+
+// The RBM manifest object containing assets to import. Asset objects inside the manifest intentionally preserve `.rbm`/database casing so exported manifests can be imported without rewriting asset payloads. A compressed manifest is also accepted: the JSON array produced by the compress-json library (for example, the contents of a compressed .rbm file exported with `compress: true`); it is detected and decompressed automatically.
+var (
+	importManifestRequestManifestFieldSchemaVersion = big.NewInt(1 << 0)
+	importManifestRequestManifestFieldRules         = big.NewInt(1 << 1)
+	importManifestRequestManifestFieldFlows         = big.NewInt(1 << 2)
+	importManifestRequestManifestFieldEntities      = big.NewInt(1 << 3)
+	importManifestRequestManifestFieldContexts      = big.NewInt(1 << 4)
+	importManifestRequestManifestFieldValues        = big.NewInt(1 << 5)
+)
+
+type ImportManifestRequestManifest struct {
+	// RBM schema version. Unknown fields from newer schemas are preserved with a warning.
+	SchemaVersion *int `json:"schema_version,omitempty" url:"schema_version,omitempty"`
+	// Rules to import.
+	Rules []*ManifestLabeledAsset `json:"rules,omitempty" url:"rules,omitempty"`
+	// Flows to import.
+	Flows []*ManifestLabeledAsset `json:"flows,omitempty" url:"flows,omitempty"`
+	// Legacy alias for `contexts`; accepted and normalized by the RBM codec.
+	Entities []map[string]any `json:"entities,omitempty" url:"entities,omitempty"`
+	// Contexts to import.
+	Contexts []map[string]any `json:"contexts,omitempty" url:"contexts,omitempty"`
+	// Vocabulary values to import. Entries in object-managed namespaces are skipped and reported instead of being overwritten.
+	Values []map[string]any `json:"values,omitempty" url:"values,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImportManifestRequestManifest) GetSchemaVersion() *int {
+	if i == nil {
+		return nil
+	}
+	return i.SchemaVersion
+}
+
+func (i *ImportManifestRequestManifest) GetRules() []*ManifestLabeledAsset {
+	if i == nil {
+		return nil
+	}
+	return i.Rules
+}
+
+func (i *ImportManifestRequestManifest) GetFlows() []*ManifestLabeledAsset {
+	if i == nil {
+		return nil
+	}
+	return i.Flows
+}
+
+func (i *ImportManifestRequestManifest) GetEntities() []map[string]any {
+	if i == nil {
+		return nil
+	}
+	return i.Entities
+}
+
+func (i *ImportManifestRequestManifest) GetContexts() []map[string]any {
+	if i == nil {
+		return nil
+	}
+	return i.Contexts
+}
+
+func (i *ImportManifestRequestManifest) GetValues() []map[string]any {
+	if i == nil {
+		return nil
+	}
+	return i.Values
+}
+
+func (i *ImportManifestRequestManifest) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *ImportManifestRequestManifest) require(field *big.Int) {
+	if i.explicitFields == nil {
+		i.explicitFields = big.NewInt(0)
+	}
+	i.explicitFields.Or(i.explicitFields, field)
+}
+
+// SetSchemaVersion sets the SchemaVersion field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestManifest) SetSchemaVersion(schemaVersion *int) {
+	i.SchemaVersion = schemaVersion
+	i.require(importManifestRequestManifestFieldSchemaVersion)
+}
+
+// SetRules sets the Rules field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestManifest) SetRules(rules []*ManifestLabeledAsset) {
+	i.Rules = rules
+	i.require(importManifestRequestManifestFieldRules)
+}
+
+// SetFlows sets the Flows field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestManifest) SetFlows(flows []*ManifestLabeledAsset) {
+	i.Flows = flows
+	i.require(importManifestRequestManifestFieldFlows)
+}
+
+// SetEntities sets the Entities field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestManifest) SetEntities(entities []map[string]any) {
+	i.Entities = entities
+	i.require(importManifestRequestManifestFieldEntities)
+}
+
+// SetContexts sets the Contexts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestManifest) SetContexts(contexts []map[string]any) {
+	i.Contexts = contexts
+	i.require(importManifestRequestManifestFieldContexts)
+}
+
+// SetValues sets the Values field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportManifestRequestManifest) SetValues(values []map[string]any) {
+	i.Values = values
+	i.require(importManifestRequestManifestFieldValues)
+}
+
+func (i *ImportManifestRequestManifest) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportManifestRequestManifest
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImportManifestRequestManifest(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImportManifestRequestManifest) MarshalJSON() ([]byte, error) {
+	type embed ImportManifestRequestManifest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImportManifestRequestManifest) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
 }
 
 var (
@@ -7851,7 +8261,7 @@ func (r *RulebricksFlowConnection) String() string {
 //   - Config: `rule`, `version`, `name`
 //   - Example: `{"ref":"rule","type":"rule","rule":"risk-score","version":"2"}`
 //
-// - **Run Flow** - `type: flow` (aliases: `subflow`, `run_flow`). Input: per-key input (each connection sets `input`). gateable by Continue If.
+// - **Run Flow** - `type: flow` (aliases: `subflow`, `run_flow`, `runflow`). Input: per-key input (each connection sets `input`). gateable by Continue If.
 //   - Config: `flow`, `version`, `name`, `outputs`, `useCache`, `cacheExpiration`, `cacheKey`
 //   - Example: `{"ref":"flow","type":"flow","flow":"credit-check","version":"2","outputs":[{"key":"data.approved","type":"boolean"}]}`
 //
@@ -7899,7 +8309,7 @@ func (r *RulebricksFlowConnection) String() string {
 //   - Config: `provider`, `credentials`, `secrets`
 //   - Example: `{"ref":"vault","type":"vault","secrets":[{"name":"STRIPE_API_KEY"}]}`
 //
-// - **Context Operation** - `type: entity` (aliases: `context_operation`). Input: per-key input (each connection sets `input`). gateable by Continue If.
+// - **Context Operation** - `type: entity` (aliases: `context_operation`, `entityoperation`). Input: per-key input (each connection sets `input`). gateable by Continue If.
 //   - Config: `operation`, `entitySlug`, `identityFieldKey`, `selectedUpdateFields`, `updateValues`, `includeRelations`, `outputs`
 //   - Example: `{"ref":"entity","type":"entity","operation":"read","entitySlug":"customer"}`
 //
@@ -9579,6 +9989,7 @@ const (
 	RulebricksFlowNodeTypeFlow             RulebricksFlowNodeType = "flow"
 	RulebricksFlowNodeTypeSubflow          RulebricksFlowNodeType = "subflow"
 	RulebricksFlowNodeTypeRunFlow          RulebricksFlowNodeType = "run_flow"
+	RulebricksFlowNodeTypeRunflow          RulebricksFlowNodeType = "runflow"
 	RulebricksFlowNodeTypeIfelse           RulebricksFlowNodeType = "ifelse"
 	RulebricksFlowNodeTypeContinueIf       RulebricksFlowNodeType = "continue_if"
 	RulebricksFlowNodeTypeContinueif       RulebricksFlowNodeType = "continueif"
@@ -9605,6 +10016,7 @@ const (
 	RulebricksFlowNodeTypeVault            RulebricksFlowNodeType = "vault"
 	RulebricksFlowNodeTypeEntity           RulebricksFlowNodeType = "entity"
 	RulebricksFlowNodeTypeContextOperation RulebricksFlowNodeType = "context_operation"
+	RulebricksFlowNodeTypeEntityoperation  RulebricksFlowNodeType = "entityoperation"
 	RulebricksFlowNodeTypeNotification     RulebricksFlowNodeType = "notification"
 	RulebricksFlowNodeTypeSendNotification RulebricksFlowNodeType = "send_notification"
 )
@@ -9625,6 +10037,8 @@ func NewRulebricksFlowNodeTypeFromString(s string) (RulebricksFlowNodeType, erro
 		return RulebricksFlowNodeTypeSubflow, nil
 	case "run_flow":
 		return RulebricksFlowNodeTypeRunFlow, nil
+	case "runflow":
+		return RulebricksFlowNodeTypeRunflow, nil
 	case "ifelse":
 		return RulebricksFlowNodeTypeIfelse, nil
 	case "continue_if":
@@ -9677,6 +10091,8 @@ func NewRulebricksFlowNodeTypeFromString(s string) (RulebricksFlowNodeType, erro
 		return RulebricksFlowNodeTypeEntity, nil
 	case "context_operation":
 		return RulebricksFlowNodeTypeContextOperation, nil
+	case "entityoperation":
+		return RulebricksFlowNodeTypeEntityoperation, nil
 	case "notification":
 		return RulebricksFlowNodeTypeNotification, nil
 	case "send_notification":
@@ -10191,17 +10607,19 @@ func (r *RunTestsResponse) String() string {
 var (
 	runTestsResponseFailuresItemFieldID           = big.NewInt(1 << 0)
 	runTestsResponseFailuresItemFieldName         = big.NewInt(1 << 1)
-	runTestsResponseFailuresItemFieldCritical     = big.NewInt(1 << 2)
-	runTestsResponseFailuresItemFieldExpected     = big.NewInt(1 << 3)
-	runTestsResponseFailuresItemFieldActual       = big.NewInt(1 << 4)
-	runTestsResponseFailuresItemFieldMatchedRows  = big.NewInt(1 << 5)
-	runTestsResponseFailuresItemFieldErrorMessage = big.NewInt(1 << 6)
+	runTestsResponseFailuresItemFieldPolicy       = big.NewInt(1 << 2)
+	runTestsResponseFailuresItemFieldCritical     = big.NewInt(1 << 3)
+	runTestsResponseFailuresItemFieldExpected     = big.NewInt(1 << 4)
+	runTestsResponseFailuresItemFieldActual       = big.NewInt(1 << 5)
+	runTestsResponseFailuresItemFieldMatchedRows  = big.NewInt(1 << 6)
+	runTestsResponseFailuresItemFieldErrorMessage = big.NewInt(1 << 7)
 )
 
 type RunTestsResponseFailuresItem struct {
-	ID       string `json:"id" url:"id"`
-	Name     string `json:"name" url:"name"`
-	Critical bool   `json:"critical" url:"critical"`
+	ID       string                             `json:"id" url:"id"`
+	Name     string                             `json:"name" url:"name"`
+	Policy   RunTestsResponseFailuresItemPolicy `json:"policy" url:"policy"`
+	Critical bool                               `json:"critical" url:"critical"`
 	// The expected response for the test case.
 	Expected any `json:"expected,omitempty" url:"expected,omitempty"`
 	// The response the rule/flow actually produced (null when the case failed to execute).
@@ -10230,6 +10648,13 @@ func (r *RunTestsResponseFailuresItem) GetName() string {
 		return ""
 	}
 	return r.Name
+}
+
+func (r *RunTestsResponseFailuresItem) GetPolicy() RunTestsResponseFailuresItemPolicy {
+	if r == nil {
+		return ""
+	}
+	return r.Policy
 }
 
 func (r *RunTestsResponseFailuresItem) GetCritical() bool {
@@ -10293,6 +10718,13 @@ func (r *RunTestsResponseFailuresItem) SetID(id string) {
 func (r *RunTestsResponseFailuresItem) SetName(name string) {
 	r.Name = name
 	r.require(runTestsResponseFailuresItemFieldName)
+}
+
+// SetPolicy sets the Policy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseFailuresItem) SetPolicy(policy RunTestsResponseFailuresItemPolicy) {
+	r.Policy = policy
+	r.require(runTestsResponseFailuresItemFieldPolicy)
 }
 
 // SetCritical sets the Critical field and marks it as non-optional;
@@ -10372,20 +10804,47 @@ func (r *RunTestsResponseFailuresItem) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+type RunTestsResponseFailuresItemPolicy string
+
+const (
+	RunTestsResponseFailuresItemPolicyContains RunTestsResponseFailuresItemPolicy = "contains"
+	RunTestsResponseFailuresItemPolicyMatches  RunTestsResponseFailuresItemPolicy = "matches"
+	RunTestsResponseFailuresItemPolicyExcludes RunTestsResponseFailuresItemPolicy = "excludes"
+)
+
+func NewRunTestsResponseFailuresItemPolicyFromString(s string) (RunTestsResponseFailuresItemPolicy, error) {
+	switch s {
+	case "contains":
+		return RunTestsResponseFailuresItemPolicyContains, nil
+	case "matches":
+		return RunTestsResponseFailuresItemPolicyMatches, nil
+	case "excludes":
+		return RunTestsResponseFailuresItemPolicyExcludes, nil
+	}
+	var t RunTestsResponseFailuresItemPolicy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RunTestsResponseFailuresItemPolicy) Ptr() *RunTestsResponseFailuresItemPolicy {
+	return &r
+}
+
 var (
 	runTestsResponseResultsItemFieldID       = big.NewInt(1 << 0)
 	runTestsResponseResultsItemFieldName     = big.NewInt(1 << 1)
-	runTestsResponseResultsItemFieldCritical = big.NewInt(1 << 2)
-	runTestsResponseResultsItemFieldSuccess  = big.NewInt(1 << 3)
-	runTestsResponseResultsItemFieldError    = big.NewInt(1 << 4)
+	runTestsResponseResultsItemFieldPolicy   = big.NewInt(1 << 2)
+	runTestsResponseResultsItemFieldCritical = big.NewInt(1 << 3)
+	runTestsResponseResultsItemFieldSuccess  = big.NewInt(1 << 4)
+	runTestsResponseResultsItemFieldError    = big.NewInt(1 << 5)
 )
 
 type RunTestsResponseResultsItem struct {
-	ID       string `json:"id" url:"id"`
-	Name     string `json:"name" url:"name"`
-	Critical bool   `json:"critical" url:"critical"`
-	Success  bool   `json:"success" url:"success"`
-	Error    bool   `json:"error" url:"error"`
+	ID       string                            `json:"id" url:"id"`
+	Name     string                            `json:"name" url:"name"`
+	Policy   RunTestsResponseResultsItemPolicy `json:"policy" url:"policy"`
+	Critical bool                              `json:"critical" url:"critical"`
+	Success  bool                              `json:"success" url:"success"`
+	Error    bool                              `json:"error" url:"error"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -10406,6 +10865,13 @@ func (r *RunTestsResponseResultsItem) GetName() string {
 		return ""
 	}
 	return r.Name
+}
+
+func (r *RunTestsResponseResultsItem) GetPolicy() RunTestsResponseResultsItemPolicy {
+	if r == nil {
+		return ""
+	}
+	return r.Policy
 }
 
 func (r *RunTestsResponseResultsItem) GetCritical() bool {
@@ -10455,6 +10921,13 @@ func (r *RunTestsResponseResultsItem) SetID(id string) {
 func (r *RunTestsResponseResultsItem) SetName(name string) {
 	r.Name = name
 	r.require(runTestsResponseResultsItemFieldName)
+}
+
+// SetPolicy sets the Policy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *RunTestsResponseResultsItem) SetPolicy(policy RunTestsResponseResultsItemPolicy) {
+	r.Policy = policy
+	r.require(runTestsResponseResultsItemFieldPolicy)
 }
 
 // SetCritical sets the Critical field and marks it as non-optional;
@@ -10518,6 +10991,31 @@ func (r *RunTestsResponseResultsItem) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", r)
+}
+
+type RunTestsResponseResultsItemPolicy string
+
+const (
+	RunTestsResponseResultsItemPolicyContains RunTestsResponseResultsItemPolicy = "contains"
+	RunTestsResponseResultsItemPolicyMatches  RunTestsResponseResultsItemPolicy = "matches"
+	RunTestsResponseResultsItemPolicyExcludes RunTestsResponseResultsItemPolicy = "excludes"
+)
+
+func NewRunTestsResponseResultsItemPolicyFromString(s string) (RunTestsResponseResultsItemPolicy, error) {
+	switch s {
+	case "contains":
+		return RunTestsResponseResultsItemPolicyContains, nil
+	case "matches":
+		return RunTestsResponseResultsItemPolicyMatches, nil
+	case "excludes":
+		return RunTestsResponseResultsItemPolicyExcludes, nil
+	}
+	var t RunTestsResponseResultsItemPolicy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RunTestsResponseResultsItemPolicy) Ptr() *RunTestsResponseResultsItemPolicy {
+	return &r
 }
 
 var (
@@ -11349,11 +11847,12 @@ var (
 	testFieldName         = big.NewInt(1 << 1)
 	testFieldRequest      = big.NewInt(1 << 2)
 	testFieldResponse     = big.NewInt(1 << 3)
-	testFieldCritical     = big.NewInt(1 << 4)
-	testFieldError        = big.NewInt(1 << 5)
-	testFieldSuccess      = big.NewInt(1 << 6)
-	testFieldTestState    = big.NewInt(1 << 7)
-	testFieldLastExecuted = big.NewInt(1 << 8)
+	testFieldPolicy       = big.NewInt(1 << 4)
+	testFieldCritical     = big.NewInt(1 << 5)
+	testFieldError        = big.NewInt(1 << 6)
+	testFieldSuccess      = big.NewInt(1 << 7)
+	testFieldTestState    = big.NewInt(1 << 8)
+	testFieldLastExecuted = big.NewInt(1 << 9)
 )
 
 type Test struct {
@@ -11365,6 +11864,8 @@ type Test struct {
 	Request map[string]any `json:"request" url:"request"`
 	// The expected response object for the test.
 	Response map[string]any `json:"response" url:"response"`
+	// How the expected response is compared with the actual response. Contains Data searches at any nesting depth, Matches Exactly compares the complete response, and Excludes Data requires the expected fragment to be absent.
+	Policy TestPolicy `json:"policy" url:"policy"`
 	// Indicates whether the test is critical.
 	Critical bool `json:"critical" url:"critical"`
 	// Indicates if the test resulted in an error. Null if test has not been executed.
@@ -11409,6 +11910,13 @@ func (t *Test) GetResponse() map[string]any {
 		return nil
 	}
 	return t.Response
+}
+
+func (t *Test) GetPolicy() TestPolicy {
+	if t == nil {
+		return ""
+	}
+	return t.Policy
 }
 
 func (t *Test) GetCritical() bool {
@@ -11486,6 +11994,13 @@ func (t *Test) SetRequest(request map[string]any) {
 func (t *Test) SetResponse(response map[string]any) {
 	t.Response = response
 	t.require(testFieldResponse)
+}
+
+// SetPolicy sets the Policy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *Test) SetPolicy(policy TestPolicy) {
+	t.Policy = policy
+	t.require(testFieldPolicy)
 }
 
 // SetCritical sets the Critical field and marks it as non-optional;
@@ -11574,6 +12089,32 @@ func (t *Test) String() string {
 }
 
 type TestListResponse = []*Test
+
+// How the expected response is compared with the actual response. Contains Data searches at any nesting depth, Matches Exactly compares the complete response, and Excludes Data requires the expected fragment to be absent.
+type TestPolicy string
+
+const (
+	TestPolicyContains TestPolicy = "contains"
+	TestPolicyMatches  TestPolicy = "matches"
+	TestPolicyExcludes TestPolicy = "excludes"
+)
+
+func NewTestPolicyFromString(s string) (TestPolicy, error) {
+	switch s {
+	case "contains":
+		return TestPolicyContains, nil
+	case "matches":
+		return TestPolicyMatches, nil
+	case "excludes":
+		return TestPolicyExcludes, nil
+	}
+	var t TestPolicy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t TestPolicy) Ptr() *TestPolicy {
+	return &t
+}
 
 // The state of the test after execution.
 var (
@@ -12103,6 +12644,7 @@ var (
 	valueLimitsFieldMaxKeys        = big.NewInt(1 << 0)
 	valueLimitsFieldMaxValueLength = big.NewInt(1 << 1)
 	valueLimitsFieldMaxKeyLength   = big.NewInt(1 << 2)
+	valueLimitsFieldMaxKeyBytes    = big.NewInt(1 << 3)
 )
 
 type ValueLimits struct {
@@ -12112,6 +12654,8 @@ type ValueLimits struct {
 	MaxValueLength *int `json:"MAX_VALUE_LENGTH,omitempty" url:"MAX_VALUE_LENGTH,omitempty"`
 	// Maximum length of a value name in characters, including collection prefixes
 	MaxKeyLength *int `json:"MAX_KEY_LENGTH,omitempty" url:"MAX_KEY_LENGTH,omitempty"`
+	// Maximum UTF-8 encoded byte length of a value name, including collection prefixes
+	MaxKeyBytes *int `json:"MAX_KEY_BYTES,omitempty" url:"MAX_KEY_BYTES,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -12139,6 +12683,13 @@ func (v *ValueLimits) GetMaxKeyLength() *int {
 		return nil
 	}
 	return v.MaxKeyLength
+}
+
+func (v *ValueLimits) GetMaxKeyBytes() *int {
+	if v == nil {
+		return nil
+	}
+	return v.MaxKeyBytes
 }
 
 func (v *ValueLimits) GetExtraProperties() map[string]interface{} {
@@ -12174,6 +12725,13 @@ func (v *ValueLimits) SetMaxValueLength(maxValueLength *int) {
 func (v *ValueLimits) SetMaxKeyLength(maxKeyLength *int) {
 	v.MaxKeyLength = maxKeyLength
 	v.require(valueLimitsFieldMaxKeyLength)
+}
+
+// SetMaxKeyBytes sets the MaxKeyBytes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *ValueLimits) SetMaxKeyBytes(maxKeyBytes *int) {
+	v.MaxKeyBytes = maxKeyBytes
+	v.require(valueLimitsFieldMaxKeyBytes)
 }
 
 func (v *ValueLimits) UnmarshalJSON(data []byte) error {
@@ -12218,7 +12776,7 @@ func (v *ValueLimits) String() string {
 	return fmt.Sprintf("%#v", v)
 }
 
-// A value-to-value reference marker. On writes, reference a value by name with { "$ref": "<value name>" } or by ID with { "$rb": "globalValue", "id": "<value id>" }. Name references are resolved and stored as ID references, so renames never break them. A scalar payload may be a single reference; list payloads may mix literal items and references. Reads with resolve=false return the stored id-based markers.
+// References another value by name (`$ref`) or ID (`$rb`).
 var (
 	valueReferenceFieldRef  = big.NewInt(1 << 0)
 	valueReferenceFieldRb   = big.NewInt(1 << 1)
