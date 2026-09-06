@@ -1,6 +1,6 @@
 # Reference
 ## Rules
-<details><summary><code>client.Rules.Solve(Slug, Version, request) -> sdk.DynamicResponsePayload</code></summary>
+<details><summary><code>client.Rules.Solve(Slug, Version, request) -> *sdk.RuleExecutionResult</code></summary>
 <dl>
 <dd>
 
@@ -341,7 +341,7 @@ client.Infra.Scale(
 <dl>
 <dd>
 
-Execute a flow by slug and optional version. Policy failures return `{ error }` with status 200, including per-item errors for bulk requests. Errors: 400 invalid input, 500 unhandled execution failure, 503 unavailable, 504 timeout.
+Execute a flow by slug and optional version. The flow setting `failedResponseMode` controls execution-failure responses: a missing or invalid value is treated as `return` (the default), which returns an `{ "error": "..." }` payload with HTTP 200; `fail` returns HTTP 400 for input/schema failures and HTTP 500 for escalated policy/runtime failures. Request- and entity-level errors, capacity errors, and infrastructure failures remain non-2xx responses as documented.
 </dd>
 </dl>
 </dd>
@@ -1749,7 +1749,15 @@ client.Contexts.Get(
 <dl>
 <dd>
 
-**includeRelations:** `*string` — Comma-separated relationship names to include in the response under a 'relations' key (has_many relations return a list of related instance states; has_one/belongs_to return a single state or null). Use '*' for all relationships. Omitted by default - related instances are never fetched into the payload unrequested.
+**include:** `*string` — Select comma-separated fields; `context` is always returned. Default: state and execution summaries. Opt-ins: `executions` (GET last-run metadata), `execution_results` (POST `cascaded[].result`). Unavailable fields are omitted; relations require `include_relations`. History: `/history`. Fields: positions, is_new, status, have, need, state, derived, expires_at, created_at, updated_at, executions, executed, triggered, reason, cascaded, relations, execution_results.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**includeRelations:** `*string` — Include named relationships under `relations` (comma-separated; `*` for all). `has_many` returns a list; `has_one`/`belongs_to` return one state or null. Omitted by default.
 
 </dd>
 </dl>
@@ -1773,7 +1781,7 @@ client.Contexts.Get(
 <dl>
 <dd>
 
-Submit data to a context instance, creating it if it doesn't exist. May trigger bound rule/flow evaluations.
+Submit data to a context instance, creating it if it doesn't exist. May trigger bound rule/flow evaluations. Each instance supports up to 64 MiB of combined stored state and execution metadata, measured as serialized database JSON. Deployment transport limits and execution deadlines also apply.
 </dd>
 </dl>
 </dd>
@@ -1824,6 +1832,14 @@ client.Contexts.Submit(
 <dd>
 
 **instance:** `string` — The unique identifier for the context instance.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**include:** `*string` — Select comma-separated fields; `context` is always returned. Default: state and execution summaries. Opt-ins: `executions` (GET last-run metadata), `execution_results` (POST `cascaded[].result`). Unavailable fields are omitted; relations require `include_relations`. History: `/history`. Fields: positions, is_new, status, have, need, state, derived, expires_at, created_at, updated_at, executions, executed, triggered, reason, cascaded, relations, execution_results.
 
 </dd>
 </dl>
@@ -2148,6 +2164,187 @@ client.Contexts.Cascade(
 </dl>
 </details>
 
+<details><summary><code>client.Contexts.SolveRule(Slug, Instance, RuleSlug, request) -> *sdk.SolveContextRuleResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Execute one rule bound to this context. An optional object body is validated and persisted before evaluation. Returns HTTP 202 and registers pending work when that rule's own inputs are not yet available.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.SolveRuleContextsRequest{
+        Slug: "slug",
+        Instance: "instance",
+        RuleSlug: "ruleSlug",
+        Body: map[string]any{
+            "email": "john@example.com",
+            "score": 85,
+        },
+    }
+client.Contexts.SolveRule(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ruleSlug:** `string` — Slug of a rule bound to this context.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `sdk.SolveContextRuleRequest`
+
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Contexts.SolveFlow(Slug, Instance, FlowSlug, request) -> *sdk.SolveContextFlowResponse</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Execute one flow bound to this context. An optional object body is validated and persisted before evaluation. Returns HTTP 202 and registers pending work when that flow's own inputs are not yet available.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &sdk.SolveFlowContextsRequest{
+        Slug: "slug",
+        Instance: "instance",
+        FlowSlug: "flowSlug",
+        Body: map[string]any{
+            "key": "value",
+        },
+    }
+client.Contexts.SolveFlow(
+        context.TODO(),
+        request,
+    )
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**slug:** `string` — The unique slug for the context.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**instance:** `string` — The unique identifier for the context instance.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**flowSlug:** `string` — Slug of a flow bound to this context.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `sdk.SolveContextFlowRequest`
+
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Contexts.BulkIngest(Slug, request) -> *sdk.ContextBatchResponse</code></summary>
 <dl>
 <dd>
@@ -2160,7 +2357,7 @@ client.Contexts.Cascade(
 <dl>
 <dd>
 
-Submit an array of records to any context in one synchronous call. Records merge into their context instances (matched by the context's identity fact), bound rules and flows whose inputs became satisfied execute, and the response returns the resolved state of every touched instance. Retries are always safe: merges are idempotent and executions are deduplicated by input hash. Fact history is recorded for tracked facts exactly as on individual writes. Clients chunk large datasets across requests.
+Synchronously merge records by identity, record tracked history, and execute ready bound rules/flows. Returns each touched instance's resolved state and execution summary. Successful runs are deduplicated by input hash; lost responses can cause repeated external effects. Each instance supports up to 64 MiB of combined stored state and execution metadata, measured as serialized database JSON. Contexts impose no separate request-wide size or record-count budget. Deployment transport limits, available resources, and execution deadlines still apply. Error responses identify committed and failed instances when known; a failed request does not imply rollback of earlier writes.
 </dd>
 </dl>
 </dd>
@@ -2215,7 +2412,7 @@ client.Contexts.BulkIngest(
 <dl>
 <dd>
 
-**include:** `*string` — Comma-separated list of per-instance fields to include in results (instance_id is always present). Omit to include everything. Valid fields: positions, is_new, status, have, need, state, expires_at, executions, executed, triggered, reason. Useful for keeping response size proportional to outcomes rather than data volume, e.g. include=status,executed.
+**include:** `*string` — Select comma-separated fields; `instance_id` is always returned. Default: state and execution summaries. Opt-ins: `executions` (stored metadata), `execution_results` (`executed[].result`). Compact outcomes with flow IDs: `status,triggered,executed`. Unavailable fields are omitted. History: `/history`. Fields: positions, is_new, status, have, need, state, derived, expires_at, created_at, updated_at, executions, executed, triggered, reason, cascaded, relations, execution_results.
 
 </dd>
 </dl>
@@ -2564,7 +2761,7 @@ client.Assets.Rules.Push(
 <dl>
 <dd>
 
-List all rules in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, labels, user group name or ID when the API key has access to that group, or by name.
+List rules in the organization, scoped to the API key holder's user groups. Combine folder, labels, user_group, id, slug, name, and search filters. When version is supplied, the filters must match exactly one accessible rule: multiple matches return 400 and no matches return 404. Version accepts a published version number, release environment slug, or latest, using the same publication and access checks as execution. A missing version or release returns 404. The response remains an array; schemas and condition count come from the selected version, while descriptive workspace metadata stays current. Without version, published rules use their published schemas and unpublished rules use their drafts.
 </dd>
 </dl>
 </dd>
@@ -2599,6 +2796,38 @@ client.Assets.Rules.List(
 
 <dl>
 <dd>
+
+<dl>
+<dd>
+
+**id:** `*string` — Filter by the exact rule or flow ID.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**slug:** `*string` — Filter by the exact rule or flow slug (case-sensitive).
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**search:** `*string` — Match an exact ID or slug, or a case-insensitive substring of the name. Combined with all other filters.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**version:** `*string` — Select a published version number (e.g. 3), release environment slug (e.g. production), or latest. Requires exactly one asset after all filters and permission checks. Multiple matches or an invalid version return 400; no match, an unpublished asset, or a missing version/release returns 404. The response is still a one-item array.
+
+</dd>
+</dl>
 
 <dl>
 <dd>
@@ -2652,7 +2881,7 @@ client.Assets.Rules.List(
 <dl>
 <dd>
 
-List all flows in the organization. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, labels, user group name or ID when the API key has access to that group, or by name.
+List flows in the organization, scoped to the API key holder's user groups. Combine folder, labels, user_group, id, slug, name, and search filters. When version is supplied, the filters must match exactly one accessible flow: multiple matches return 400 and no matches return 404. Version accepts a published version number, release environment slug, or latest, using the same publication and access checks as execution. A missing version or release returns 404. The response remains an array; request_schema and origin_rule come from the selected graph, while descriptive workspace metadata stays current. Without version, published flows use their published graph and unpublished flows use their draft graph. Flows do not declare a response schema.
 </dd>
 </dl>
 </dd>
@@ -2683,6 +2912,38 @@ client.Assets.Flows.List(
 
 <dl>
 <dd>
+
+<dl>
+<dd>
+
+**id:** `*string` — Filter by the exact rule or flow ID.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**slug:** `*string` — Filter by the exact rule or flow slug (case-sensitive).
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**search:** `*string` — Match an exact ID or slug, or a case-insensitive substring of the name. Combined with all other filters.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**version:** `*string` — Select a published version number (e.g. 3), release environment slug (e.g. production), or latest. Requires exactly one asset after all filters and permission checks. Multiple matches or an invalid version return 400; no match, an unpublished asset, or a missing version/release returns 404. The response is still a one-item array.
+
+</dd>
+</dl>
 
 <dl>
 <dd>
@@ -3212,7 +3473,7 @@ client.Assets.Folders.Delete(
 </details>
 
 ## Assets Contexts
-<details><summary><code>client.Assets.Contexts.List() -> sdk.ContextListResponse</code></summary>
+<details><summary><code>client.Assets.Contexts.List() -> *assets.ListContextsResponse</code></summary>
 <dl>
 <dd>
 
@@ -3224,7 +3485,7 @@ client.Assets.Folders.Delete(
 <dl>
 <dd>
 
-Retrieve all contexts for the authenticated user. Results are scoped to the API key holder's user groups. Optionally filter by folder name or ID, by user group name or ID when the API key has access to that group, or by name.
+List contexts accessible to the API key. Filter by context name, folder name/ID, or an accessible user group's name/ID. Returns an array when pagination is omitted; optional limit/cursor pagination returns {data,cursor} in descending creation time and ID order.
 </dd>
 </dl>
 </dd>
@@ -3255,6 +3516,22 @@ client.Assets.Contexts.List(
 
 <dl>
 <dd>
+
+<dl>
+<dd>
+
+**limit:** `*int` — Page size; enables the {data,cursor} response.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `*string` — Opaque cursor returned by the previous page; requires limit.
+
+</dd>
+</dl>
 
 <dl>
 <dd>
@@ -3322,28 +3599,20 @@ request := &assets.CreateContextRequest{
         Schema: &sdk.ContextSchema{
             Base: []*sdk.ContextSchemaField{
                 &sdk.ContextSchemaField{
-                    Key: sdk.String(
-                        "email",
-                    ),
-                    Name: sdk.String(
-                        "Email",
-                    ),
-                    Type: sdk.ContextSchemaFieldTypeString.Ptr(),
+                    Key: "email",
+                    Name: "Email",
+                    Type: sdk.ContextSchemaFieldTypeString,
                     Required: sdk.Bool(
                         true,
                     ),
                 },
                 &sdk.ContextSchemaField{
-                    Key: sdk.String(
-                        "age",
-                    ),
-                    Name: sdk.String(
-                        "Age",
-                    ),
-                    Type: sdk.ContextSchemaFieldTypeNumber.Ptr(),
+                    Key: "age",
+                    Name: "Age",
+                    Type: sdk.ContextSchemaFieldTypeNumber,
                 },
             },
-            Derived: []*sdk.ContextSchemaField{},
+            Derived: []*sdk.ContextDerivedField{},
         },
         IdentityFact: "email",
     }
@@ -3423,6 +3692,30 @@ client.Assets.Contexts.Create(
 <dd>
 
 **onSchemaMismatch:** `*assets.CreateContextRequestOnSchemaMismatch` — How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sourceObjects:** `[]string` — Workspace object IDs associated with this context schema.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userGroups:** `[]string` — User groups allowed to access the context.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**folder:** `*string` — Context folder ID.
 
 </dd>
 </dl>
@@ -3615,6 +3908,30 @@ client.Assets.Contexts.Update(
 <dd>
 
 **onSchemaMismatch:** `*assets.UpdateContextRequestOnSchemaMismatch` — How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sourceObjects:** `[]string` — Workspace object IDs associated with this context schema.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**userGroups:** `[]string` — User groups allowed to access the context.
+
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**folder:** `*string` — Context folder ID.
 
 </dd>
 </dl>

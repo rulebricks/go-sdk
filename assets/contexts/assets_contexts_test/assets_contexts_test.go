@@ -121,28 +121,20 @@ func TestAssetsContextsCreateWithWireMock(
 		Schema: &sdk.ContextSchema{
 			Base: []*sdk.ContextSchemaField{
 				&sdk.ContextSchemaField{
-					Key: sdk.String(
-						"email",
-					),
-					Name: sdk.String(
-						"Email",
-					),
-					Type: sdk.ContextSchemaFieldTypeString.Ptr(),
+					Key:  "email",
+					Name: "Email",
+					Type: sdk.ContextSchemaFieldTypeString,
 					Required: sdk.Bool(
 						true,
 					),
 				},
 				&sdk.ContextSchemaField{
-					Key: sdk.String(
-						"age",
-					),
-					Name: sdk.String(
-						"Age",
-					),
-					Type: sdk.ContextSchemaFieldTypeNumber.Ptr(),
+					Key:  "age",
+					Name: "Age",
+					Type: sdk.ContextSchemaFieldTypeNumber,
 				},
 			},
-			Derived: []*sdk.ContextSchemaField{},
+			Derived: []*sdk.ContextDerivedField{},
 		},
 		IdentityFact: "email",
 	}

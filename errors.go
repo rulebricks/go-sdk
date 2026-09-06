@@ -10,11 +10,11 @@ import (
 // Bad request
 type BadRequestError struct {
 	*core.APIError
-	Body *Error
+	Body any
 }
 
 func (b *BadRequestError) UnmarshalJSON(data []byte) error {
-	var body *Error
+	var body any
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -55,14 +55,14 @@ func (c *ConflictError) Unwrap() error {
 	return c.APIError
 }
 
-// Request too large: over the byte limit (4.5MB on cloud; the cloud platform returns this as a plain-text response), or on self-hosted deployments over the per-request record cap (default 10,000; operator-configurable via CONTEXT_BATCH_MAX_ITEMS). Send additional chunks in separate requests.
+// An instance would exceed 64 MiB of combined stored state and execution metadata, or a deployment transport rejected the request or response. Earlier writes may have committed. Cloud ingress errors may be plain text.
 type ContentTooLargeError struct {
 	*core.APIError
-	Body *Error
+	Body *ContextOperationError
 }
 
 func (c *ContentTooLargeError) UnmarshalJSON(data []byte) error {
-	var body *Error
+	var body *ContextOperationError
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -130,11 +130,11 @@ func (g *GatewayTimeoutError) Unwrap() error {
 // Internal server error
 type InternalServerError struct {
 	*core.APIError
-	Body *Error
+	Body any
 }
 
 func (i *InternalServerError) UnmarshalJSON(data []byte) error {
-	var body *Error
+	var body any
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -175,30 +175,6 @@ func (n *NotFoundError) Unwrap() error {
 	return n.APIError
 }
 
-// Cloud platform only: the batch contains more records than the plan's remaining monthly rule executions. Send a smaller batch or upgrade the plan.
-type PaymentRequiredError struct {
-	*core.APIError
-	Body *Error
-}
-
-func (p *PaymentRequiredError) UnmarshalJSON(data []byte) error {
-	var body *Error
-	if err := json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	p.StatusCode = 402
-	p.Body = body
-	return nil
-}
-
-func (p *PaymentRequiredError) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p.Body)
-}
-
-func (p *PaymentRequiredError) Unwrap() error {
-	return p.APIError
-}
-
 // Execution infrastructure is temporarily unavailable.
 type ServiceUnavailableError struct {
 	*core.APIError
@@ -221,6 +197,30 @@ func (s *ServiceUnavailableError) MarshalJSON() ([]byte, error) {
 
 func (s *ServiceUnavailableError) Unwrap() error {
 	return s.APIError
+}
+
+// Admission capacity exceeded; honor Retry-After when present.
+type TooManyRequestsError struct {
+	*core.APIError
+	Body *ContextOperationError
+}
+
+func (t *TooManyRequestsError) UnmarshalJSON(data []byte) error {
+	var body *ContextOperationError
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	t.StatusCode = 429
+	t.Body = body
+	return nil
+}
+
+func (t *TooManyRequestsError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.Body)
+}
+
+func (t *TooManyRequestsError) Unwrap() error {
+	return t.APIError
 }
 
 // Unprocessable Entity - The rule could not be published because critical tests are failing.

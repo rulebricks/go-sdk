@@ -201,28 +201,28 @@ func TestGettersBulkRuleResponseItem(t *testing.T) {
 		_ = obj.GetDynamicResponsePayload() // Should return zero value
 	})
 
-	t.Run("GetBulkRuleResponseItemError", func(t *testing.T) {
+	t.Run("GetExecutionErrorResult", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &BulkRuleResponseItem{}
-		var expected *BulkRuleResponseItemError
-		obj.BulkRuleResponseItemError = expected
+		var expected *ExecutionErrorResult
+		obj.ExecutionErrorResult = expected
 
 		// Act & Assert
-		assert.Equal(t, expected, obj.GetBulkRuleResponseItemError(), "getter should return the property value")
+		assert.Equal(t, expected, obj.GetExecutionErrorResult(), "getter should return the property value")
 	})
 
-	t.Run("GetBulkRuleResponseItemError_NilValue", func(t *testing.T) {
+	t.Run("GetExecutionErrorResult_NilValue", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &BulkRuleResponseItem{}
-		obj.BulkRuleResponseItemError = nil
+		obj.ExecutionErrorResult = nil
 
 		// Act & Assert
-		assert.Nil(t, obj.GetBulkRuleResponseItemError(), "getter should return nil when property is nil")
+		assert.Nil(t, obj.GetExecutionErrorResult(), "getter should return nil when property is nil")
 	})
 
-	t.Run("GetBulkRuleResponseItemError_NilReceiver", func(t *testing.T) {
+	t.Run("GetExecutionErrorResult_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *BulkRuleResponseItem
 		// Should not panic - getters should handle nil receiver gracefully
@@ -231,88 +231,7 @@ func TestGettersBulkRuleResponseItem(t *testing.T) {
 				t.Errorf("Getter panicked on nil receiver: %v", r)
 			}
 		}()
-		_ = obj.GetBulkRuleResponseItemError() // Should return zero value
-	})
-
-}
-
-func TestSettersBulkRuleResponseItemError(t *testing.T) {
-	t.Run("SetError", func(t *testing.T) {
-		obj := &BulkRuleResponseItemError{}
-		var fernTestValueError *string
-		obj.SetError(fernTestValueError)
-		assert.Equal(t, fernTestValueError, obj.Error)
-		assert.NotNil(t, obj.explicitFields)
-	})
-
-}
-
-func TestGettersBulkRuleResponseItemError(t *testing.T) {
-	t.Run("GetError", func(t *testing.T) {
-		t.Parallel()
-		// Arrange
-		obj := &BulkRuleResponseItemError{}
-		var expected *string
-		obj.Error = expected
-
-		// Act & Assert
-		assert.Equal(t, expected, obj.GetError(), "getter should return the property value")
-	})
-
-	t.Run("GetError_NilValue", func(t *testing.T) {
-		t.Parallel()
-		// Arrange
-		obj := &BulkRuleResponseItemError{}
-		obj.Error = nil
-
-		// Act & Assert
-		assert.Nil(t, obj.GetError(), "getter should return nil when property is nil")
-	})
-
-	t.Run("GetError_NilReceiver", func(t *testing.T) {
-		t.Parallel()
-		var obj *BulkRuleResponseItemError
-		// Should not panic - getters should handle nil receiver gracefully
-		defer func() {
-			if r := recover(); r != nil {
-				t.Errorf("Getter panicked on nil receiver: %v", r)
-			}
-		}()
-		_ = obj.GetError() // Should return zero value
-	})
-
-}
-
-func TestSettersMarkExplicitBulkRuleResponseItemError(t *testing.T) {
-	t.Run("SetError_MarksExplicit", func(t *testing.T) {
-		t.Parallel()
-		// Arrange
-		obj := &BulkRuleResponseItemError{}
-		var fernTestValueError *string
-
-		// Act
-		obj.SetError(fernTestValueError)
-
-		// Assert - object with explicitly set field can be marshaled/unmarshaled
-		bytes, err := json.Marshal(obj)
-		require.NoError(t, err, "marshaling should succeed for test setup")
-
-		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
-		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
-		if len(bytes) > 0 && bytes[0] == '{' {
-			// JSON object - unmarshal into map
-			var unmarshaled map[string]interface{}
-			err = json.Unmarshal(bytes, &unmarshaled)
-			require.NoError(t, err, "unmarshaling should succeed for test verification")
-		} else {
-			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
-			var unmarshaled interface{}
-			err = json.Unmarshal(bytes, &unmarshaled)
-			require.NoError(t, err, "unmarshaling should succeed for test verification")
-		}
-
-		// Note: This does not explicitly assert the presence of a specific JSON field
-		// It verifies that setting a field via setter allows successful JSON round-trip
+		_ = obj.GetExecutionErrorResult() // Should return zero value
 	})
 
 }
@@ -470,37 +389,63 @@ func TestSettersMarkExplicitParallelSolveRequestValue(t *testing.T) {
 
 }
 
-func TestJSONMarshalingBulkRuleResponseItemError(t *testing.T) {
-	t.Run("MarshalUnmarshal", func(t *testing.T) {
+func TestGettersRuleExecutionResult(t *testing.T) {
+	t.Run("GetDynamicResponsePayload", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &BulkRuleResponseItemError{}
+		obj := &RuleExecutionResult{}
+		var expected DynamicResponsePayload
+		obj.DynamicResponsePayload = expected
 
-		// Act - Marshal to JSON
-		data, err := json.Marshal(obj)
-		require.NoError(t, err, "marshaling should succeed")
-		assert.NotNil(t, data, "marshaled data should not be nil")
-		assert.NotEmpty(t, data, "marshaled data should not be empty")
-
-		// Unmarshal back and verify round-trip
-		var unmarshaled BulkRuleResponseItemError
-		err = json.Unmarshal(data, &unmarshaled)
-		assert.NoError(t, err, "round-trip unmarshal should succeed")
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetDynamicResponsePayload(), "getter should return the property value")
 	})
 
-	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+	t.Run("GetDynamicResponsePayload_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj BulkRuleResponseItemError
-		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
-		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+		var obj *RuleExecutionResult
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetDynamicResponsePayload() // Should return zero value
 	})
 
-	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+	t.Run("GetExecutionErrorResult", func(t *testing.T) {
 		t.Parallel()
-		var obj BulkRuleResponseItemError
-		err := json.Unmarshal([]byte(`{}`), &obj)
-		assert.NoError(t, err, "unmarshaling empty object should succeed")
+		// Arrange
+		obj := &RuleExecutionResult{}
+		var expected *ExecutionErrorResult
+		obj.ExecutionErrorResult = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetExecutionErrorResult(), "getter should return the property value")
 	})
+
+	t.Run("GetExecutionErrorResult_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &RuleExecutionResult{}
+		obj.ExecutionErrorResult = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetExecutionErrorResult(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetExecutionErrorResult_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *RuleExecutionResult
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetExecutionErrorResult() // Should return zero value
+	})
+
 }
 
 func TestJSONMarshalingParallelSolveRequestValue(t *testing.T) {
@@ -536,22 +481,6 @@ func TestJSONMarshalingParallelSolveRequestValue(t *testing.T) {
 	})
 }
 
-func TestStringBulkRuleResponseItemError(t *testing.T) {
-	t.Run("StringMethod", func(t *testing.T) {
-		t.Parallel()
-		obj := &BulkRuleResponseItemError{}
-		result := obj.String()
-		assert.NotEmpty(t, result, "String() should return a non-empty representation")
-	})
-
-	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
-		t.Parallel()
-		var obj *BulkRuleResponseItemError
-		result := obj.String()
-		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
-	})
-}
-
 func TestStringParallelSolveRequestValue(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -565,29 +494,6 @@ func TestStringParallelSolveRequestValue(t *testing.T) {
 		var obj *ParallelSolveRequestValue
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
-	})
-}
-
-func TestExtraPropertiesBulkRuleResponseItemError(t *testing.T) {
-	t.Run("GetExtraProperties", func(t *testing.T) {
-		t.Parallel()
-		obj := &BulkRuleResponseItemError{}
-		// Should not panic when calling GetExtraProperties()
-		defer func() {
-			if r := recover(); r != nil {
-				t.Errorf("GetExtraProperties() panicked: %v", r)
-			}
-		}()
-		extraProps := obj.GetExtraProperties()
-		// Result can be nil or an empty/non-empty map
-		_ = extraProps
-	})
-
-	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
-		t.Parallel()
-		var obj *BulkRuleResponseItemError
-		extraProps := obj.GetExtraProperties()
-		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})
 }
 

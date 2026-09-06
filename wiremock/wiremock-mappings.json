@@ -173,8 +173,8 @@
       }
     },
     {
-      "id": "a4c03238-a023-4b3a-901c-32dd6b5c5c72",
-      "name": "Execute a flow - Example of a flow execution response.",
+      "id": "9416ed6a-85f0-4595-8691-52bbe3575a41",
+      "name": "Execute a flow - Example of a flow execution request.",
       "request": {
         "urlPathTemplate": "/flows/{slug}/{version}",
         "method": "POST",
@@ -199,7 +199,7 @@
           "Content-Type": "application/json"
         }
       },
-      "uuid": "a4c03238-a023-4b3a-901c-32dd6b5c5c72",
+      "uuid": "9416ed6a-85f0-4595-8691-52bbe3575a41",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -248,7 +248,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"data\": [\n    {\n      \"timestamp\": \"2024-12-17T10:30:00Z\",\n      \"name\": \"Lead Qualification\",\n      \"endpoint\": \"/api/v1/solve/lead-qual\",\n      \"status\": 200,\n      \"request\": {\n        \"key\": \"value\"\n      },\n      \"response\": {\n        \"key\": \"value\"\n      },\n      \"decision\": {\n        \"key\": \"value\"\n      },\n      \"trace_id\": \"trace_id\",\n      \"path_trace\": {\n        \"key\": \"value\"\n      },\n      \"matched_items\": [\n        1\n      ],\n      \"abbreviated\": false,\n      \"error\": {\n        \"key\": \"value\"\n      }\n    }\n  ],\n  \"cursor\": \"eyJ0IjoiMTc1MzY1MDAwMDEyMyIsInMiOjB9\",\n  \"count\": 1\n}",
+        "body": "{\n  \"data\": [\n    {\n      \"timestamp\": \"2024-12-17T10:30:00Z\",\n      \"name\": \"Lead Qualification\",\n      \"endpoint\": \"/api/v1/solve/lead-qual\",\n      \"status\": 200,\n      \"request\": {\n        \"key\": \"value\"\n      },\n      \"response\": {\n        \"key\": \"value\"\n      },\n      \"decision\": {\n        \"key\": \"value\"\n      },\n      \"trace_id\": \"trace_id\",\n      \"path_trace\": {\n        \"key\": \"value\"\n      },\n      \"matched_items\": [\n        1\n      ],\n      \"abbreviated\": false,\n      \"error\": \"error\"\n    }\n  ],\n  \"cursor\": \"eyJ0IjoiMTc1MzY1MDAwMDEyMyIsInMiOjB9\",\n  \"count\": 1\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -928,6 +928,90 @@
       }
     },
     {
+      "id": "2e263c0e-12dc-45e4-85cf-d113cb1cf62f",
+      "name": "Execute a bound rule for a context instance - default",
+      "request": {
+        "urlPathTemplate": "/contexts/{slug}/{instance}/solve/{ruleSlug}",
+        "method": "POST",
+        "headers": {
+          "x-api-key": {
+            "matches": ".+"
+          }
+        },
+        "pathParameters": {
+          "slug": {
+            "equalTo": "slug"
+          },
+          "instance": {
+            "equalTo": "instance"
+          },
+          "ruleSlug": {
+            "equalTo": "ruleSlug"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"status\": \"solved\",\n  \"context\": \"customer:cust-12345\",\n  \"rule\": \"rule\",\n  \"result\": {\n    \"key\": \"value\"\n  },\n  \"written_to_context\": [\n    \"written_to_context\"\n  ],\n  \"cascaded\": [\n    {\n      \"context\": \"context\",\n      \"rule\": \"rule\",\n      \"flow\": \"flow\",\n      \"execution_id\": \"execution_id\",\n      \"status\": \"solved\",\n      \"result\": {\n        \"key\": \"value\"\n      },\n      \"auto_executed\": true,\n      \"written_to_context\": [\n        \"written_to_context\"\n      ],\n      \"error\": \"error\",\n      \"rate_limited\": true,\n      \"usage_limited\": true,\n      \"need\": [\n        \"need\"\n      ]\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "2e263c0e-12dc-45e4-85cf-d113cb1cf62f",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "99c4e712-81d5-42c7-80fb-2232c12b043a",
+      "name": "Execute a bound flow for a context instance - default",
+      "request": {
+        "urlPathTemplate": "/contexts/{slug}/{instance}/flows/{flowSlug}",
+        "method": "POST",
+        "headers": {
+          "x-api-key": {
+            "matches": ".+"
+          }
+        },
+        "pathParameters": {
+          "slug": {
+            "equalTo": "slug"
+          },
+          "instance": {
+            "equalTo": "instance"
+          },
+          "flowSlug": {
+            "equalTo": "flowSlug"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"status\": \"solved\",\n  \"context\": \"customer:cust-12345\",\n  \"flow\": \"flow\",\n  \"execution_id\": \"execution_id\",\n  \"result\": {\n    \"key\": \"value\"\n  },\n  \"usage\": {\n    \"key\": \"value\"\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "99c4e712-81d5-42c7-80fb-2232c12b043a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "3a3b861b-ba30-4b3b-9fd3-6d530922a942",
       "name": "Bulk ingest records into a context - Ingest a chunk of records",
       "request": {
@@ -1113,7 +1197,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"id\": \"3855f8da-2654-4df9-8903-8f797cbfe8ec\",\n    \"name\": \"Customer Onboarding Flow\",\n    \"description\": \"Automate the onboarding process for new customers.\",\n    \"slug\": \"x6Q4zhD_Lm\",\n    \"published\": true,\n    \"updated_at\": \"2024-05-15T10:30:22Z\",\n    \"labels\": [\n      \"labels\"\n    ],\n    \"origin_rule\": {\n      \"id\": \"rule-1234-5678-90ab\",\n      \"name\": \"Customer Eligibility\",\n      \"slug\": \"customer-eligibility\"\n    },\n    \"context\": {\n      \"id\": \"ctx-abcd-efgh-ijkl\",\n      \"name\": \"Customer\",\n      \"slug\": \"customer\"\n    },\n    \"user_groups\": [\n      \"user_groups\"\n    ],\n    \"folder\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"description\": \"description\",\n      \"type\": \"rule\",\n      \"created_at\": \"2024-01-15T09:30:00Z\",\n      \"updated_at\": \"2024-01-15T09:30:00Z\",\n      \"user_groups\": [\n        \"user_groups\"\n      ]\n    }\n  },\n  {\n    \"id\": \"2a163563-8ef4-4f32-ba62-6242071b58b7\",\n    \"name\": \"Order Processing Flow\",\n    \"description\": \"Streamline order processing and fulfillment.\",\n    \"slug\": \"uKPCd8hdsZ\",\n    \"published\": false,\n    \"updated_at\": \"2024-04-18T14:45:33Z\",\n    \"labels\": [\n      \"labels\"\n    ],\n    \"user_groups\": [\n      \"user_groups\"\n    ],\n    \"folder\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"description\": \"description\",\n      \"type\": \"rule\",\n      \"created_at\": \"2024-01-15T09:30:00Z\",\n      \"updated_at\": \"2024-01-15T09:30:00Z\",\n      \"user_groups\": [\n        \"user_groups\"\n      ]\n    }\n  }\n]",
+        "body": "[\n  {\n    \"id\": \"3855f8da-2654-4df9-8903-8f797cbfe8ec\",\n    \"name\": \"Customer Onboarding Flow\",\n    \"description\": \"Automate the onboarding process for new customers.\",\n    \"slug\": \"x6Q4zhD_Lm\",\n    \"request_schema\": [\n      {\n        \"key\": \"email\",\n        \"name\": \"Email\",\n        \"type\": \"string\"\n      }\n    ],\n    \"published\": true,\n    \"updated_at\": \"2024-05-15T10:30:22Z\",\n    \"labels\": [\n      \"labels\"\n    ],\n    \"origin_rule\": {\n      \"id\": \"rule-1234-5678-90ab\",\n      \"name\": \"Customer Eligibility\",\n      \"slug\": \"customer-eligibility\"\n    },\n    \"context\": {\n      \"id\": \"ctx-abcd-efgh-ijkl\",\n      \"name\": \"Customer\",\n      \"slug\": \"customer\"\n    },\n    \"user_groups\": [\n      \"user_groups\"\n    ],\n    \"folder\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"description\": \"description\",\n      \"type\": \"rule\",\n      \"created_at\": \"2024-01-15T09:30:00Z\",\n      \"updated_at\": \"2024-01-15T09:30:00Z\",\n      \"user_groups\": [\n        \"user_groups\"\n      ]\n    }\n  },\n  {\n    \"id\": \"2a163563-8ef4-4f32-ba62-6242071b58b7\",\n    \"name\": \"Order Processing Flow\",\n    \"description\": \"Streamline order processing and fulfillment.\",\n    \"slug\": \"uKPCd8hdsZ\",\n    \"request_schema\": [\n      {}\n    ],\n    \"published\": false,\n    \"updated_at\": \"2024-04-18T14:45:33Z\",\n    \"labels\": [\n      \"labels\"\n    ],\n    \"user_groups\": [\n      \"user_groups\"\n    ],\n    \"folder\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"description\": \"description\",\n      \"type\": \"rule\",\n      \"created_at\": \"2024-01-15T09:30:00Z\",\n      \"updated_at\": \"2024-01-15T09:30:00Z\",\n      \"user_groups\": [\n        \"user_groups\"\n      ]\n    }\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1960,6 +2044,6 @@
     }
   ],
   "meta": {
-    "total": 56
+    "total": 58
   }
 }

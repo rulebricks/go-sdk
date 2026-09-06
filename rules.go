@@ -109,10 +109,10 @@ func (s *SolveRulesRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.Body)
 }
 
-// Individual response item from a bulk rule execution
+// One input-order-aligned bulk rule result. A failed execution is represented by ExecutionErrorResult, never null.
 type BulkRuleResponseItem struct {
-	DynamicResponsePayload    DynamicResponsePayload
-	BulkRuleResponseItemError *BulkRuleResponseItemError
+	DynamicResponsePayload DynamicResponsePayload
+	ExecutionErrorResult   *ExecutionErrorResult
 
 	typ string
 }
@@ -124,11 +124,11 @@ func (b *BulkRuleResponseItem) GetDynamicResponsePayload() DynamicResponsePayloa
 	return b.DynamicResponsePayload
 }
 
-func (b *BulkRuleResponseItem) GetBulkRuleResponseItemError() *BulkRuleResponseItemError {
+func (b *BulkRuleResponseItem) GetExecutionErrorResult() *ExecutionErrorResult {
 	if b == nil {
 		return nil
 	}
-	return b.BulkRuleResponseItemError
+	return b.ExecutionErrorResult
 }
 
 func (b *BulkRuleResponseItem) UnmarshalJSON(data []byte) error {
@@ -138,10 +138,10 @@ func (b *BulkRuleResponseItem) UnmarshalJSON(data []byte) error {
 		b.DynamicResponsePayload = valueDynamicResponsePayload
 		return nil
 	}
-	valueBulkRuleResponseItemError := new(BulkRuleResponseItemError)
-	if err := json.Unmarshal(data, &valueBulkRuleResponseItemError); err == nil {
-		b.typ = "BulkRuleResponseItemError"
-		b.BulkRuleResponseItemError = valueBulkRuleResponseItemError
+	valueExecutionErrorResult := new(ExecutionErrorResult)
+	if err := json.Unmarshal(data, &valueExecutionErrorResult); err == nil {
+		b.typ = "ExecutionErrorResult"
+		b.ExecutionErrorResult = valueExecutionErrorResult
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, b)
@@ -151,110 +151,25 @@ func (b BulkRuleResponseItem) MarshalJSON() ([]byte, error) {
 	if b.typ == "DynamicResponsePayload" || b.DynamicResponsePayload != nil {
 		return json.Marshal(b.DynamicResponsePayload)
 	}
-	if b.typ == "BulkRuleResponseItemError" || b.BulkRuleResponseItemError != nil {
-		return json.Marshal(b.BulkRuleResponseItemError)
+	if b.typ == "ExecutionErrorResult" || b.ExecutionErrorResult != nil {
+		return json.Marshal(b.ExecutionErrorResult)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", b)
 }
 
 type BulkRuleResponseItemVisitor interface {
 	VisitDynamicResponsePayload(DynamicResponsePayload) error
-	VisitBulkRuleResponseItemError(*BulkRuleResponseItemError) error
+	VisitExecutionErrorResult(*ExecutionErrorResult) error
 }
 
 func (b *BulkRuleResponseItem) Accept(visitor BulkRuleResponseItemVisitor) error {
 	if b.typ == "DynamicResponsePayload" || b.DynamicResponsePayload != nil {
 		return visitor.VisitDynamicResponsePayload(b.DynamicResponsePayload)
 	}
-	if b.typ == "BulkRuleResponseItemError" || b.BulkRuleResponseItemError != nil {
-		return visitor.VisitBulkRuleResponseItemError(b.BulkRuleResponseItemError)
+	if b.typ == "ExecutionErrorResult" || b.ExecutionErrorResult != nil {
+		return visitor.VisitExecutionErrorResult(b.ExecutionErrorResult)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", b)
-}
-
-var (
-	bulkRuleResponseItemErrorFieldError = big.NewInt(1 << 0)
-)
-
-type BulkRuleResponseItemError struct {
-	// Error message if this specific item failed to process
-	Error *string `json:"error,omitempty" url:"error,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (b *BulkRuleResponseItemError) GetError() *string {
-	if b == nil {
-		return nil
-	}
-	return b.Error
-}
-
-func (b *BulkRuleResponseItemError) GetExtraProperties() map[string]interface{} {
-	if b == nil {
-		return nil
-	}
-	return b.extraProperties
-}
-
-func (b *BulkRuleResponseItemError) require(field *big.Int) {
-	if b.explicitFields == nil {
-		b.explicitFields = big.NewInt(0)
-	}
-	b.explicitFields.Or(b.explicitFields, field)
-}
-
-// SetError sets the Error field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (b *BulkRuleResponseItemError) SetError(error_ *string) {
-	b.Error = error_
-	b.require(bulkRuleResponseItemErrorFieldError)
-}
-
-func (b *BulkRuleResponseItemError) UnmarshalJSON(data []byte) error {
-	type unmarshaler BulkRuleResponseItemError
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*b = BulkRuleResponseItemError(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *b)
-	if err != nil {
-		return err
-	}
-	b.extraProperties = extraProperties
-	b.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (b *BulkRuleResponseItemError) MarshalJSON() ([]byte, error) {
-	type embed BulkRuleResponseItemError
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*b),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (b *BulkRuleResponseItemError) String() string {
-	if b == nil {
-		return "<nil>"
-	}
-	if len(b.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(b); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", b)
 }
 
 // A request containing multiple rule/flow executions to be run in parallel.
@@ -369,3 +284,66 @@ func (p *ParallelSolveRequestValue) String() string {
 
 // Response from parallel rule/flow execution with results from each execution. Each value is either the rule/flow's result payload or, if that entry could not be executed, an object containing a reserved `$error` field (see ParallelSolveEntityError) describing the failure. Entries are independent: a failure in one entry never prevents the others from returning results.
 type ParallelSolveResponse = map[string]DynamicResponsePayload
+
+// The rule-defined output or an inline execution-failure payload.
+type RuleExecutionResult struct {
+	DynamicResponsePayload DynamicResponsePayload
+	ExecutionErrorResult   *ExecutionErrorResult
+
+	typ string
+}
+
+func (r *RuleExecutionResult) GetDynamicResponsePayload() DynamicResponsePayload {
+	if r == nil {
+		return nil
+	}
+	return r.DynamicResponsePayload
+}
+
+func (r *RuleExecutionResult) GetExecutionErrorResult() *ExecutionErrorResult {
+	if r == nil {
+		return nil
+	}
+	return r.ExecutionErrorResult
+}
+
+func (r *RuleExecutionResult) UnmarshalJSON(data []byte) error {
+	var valueDynamicResponsePayload DynamicResponsePayload
+	if err := json.Unmarshal(data, &valueDynamicResponsePayload); err == nil {
+		r.typ = "DynamicResponsePayload"
+		r.DynamicResponsePayload = valueDynamicResponsePayload
+		return nil
+	}
+	valueExecutionErrorResult := new(ExecutionErrorResult)
+	if err := json.Unmarshal(data, &valueExecutionErrorResult); err == nil {
+		r.typ = "ExecutionErrorResult"
+		r.ExecutionErrorResult = valueExecutionErrorResult
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, r)
+}
+
+func (r RuleExecutionResult) MarshalJSON() ([]byte, error) {
+	if r.typ == "DynamicResponsePayload" || r.DynamicResponsePayload != nil {
+		return json.Marshal(r.DynamicResponsePayload)
+	}
+	if r.typ == "ExecutionErrorResult" || r.ExecutionErrorResult != nil {
+		return json.Marshal(r.ExecutionErrorResult)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", r)
+}
+
+type RuleExecutionResultVisitor interface {
+	VisitDynamicResponsePayload(DynamicResponsePayload) error
+	VisitExecutionErrorResult(*ExecutionErrorResult) error
+}
+
+func (r *RuleExecutionResult) Accept(visitor RuleExecutionResultVisitor) error {
+	if r.typ == "DynamicResponsePayload" || r.DynamicResponsePayload != nil {
+		return visitor.VisitDynamicResponsePayload(r.DynamicResponsePayload)
+	}
+	if r.typ == "ExecutionErrorResult" || r.ExecutionErrorResult != nil {
+		return visitor.VisitExecutionErrorResult(r.ExecutionErrorResult)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", r)
+}

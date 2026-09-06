@@ -35,7 +35,7 @@ func (r *RawClient) Solve(
 	ctx context.Context,
 	request *sdk.SolveRulesRequest,
 	opts ...option.RequestOption,
-) (*core.Response[sdk.DynamicResponsePayload], error) {
+) (*core.Response[*sdk.RuleExecutionResult], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -56,7 +56,7 @@ func (r *RawClient) Solve(
 		options.ToHeader(),
 	)
 	headers.Add("Content-Type", "application/json")
-	var response sdk.DynamicResponsePayload
+	var response *sdk.RuleExecutionResult
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -76,7 +76,7 @@ func (r *RawClient) Solve(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[sdk.DynamicResponsePayload]{
+	return &core.Response[*sdk.RuleExecutionResult]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

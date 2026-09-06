@@ -43,13 +43,13 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
-	402: func(apiError *core.APIError) error {
-		return &PaymentRequiredError{
+	413: func(apiError *core.APIError) error {
+		return &ContentTooLargeError{
 			APIError: apiError,
 		}
 	},
-	413: func(apiError *core.APIError) error {
-		return &ContentTooLargeError{
+	429: func(apiError *core.APIError) error {
+		return &TooManyRequestsError{
 			APIError: apiError,
 		}
 	},

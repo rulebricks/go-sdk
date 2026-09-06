@@ -100,6 +100,13 @@ func (r *RawClient) Submit(
 		request.Slug,
 		request.Instance,
 	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),
@@ -319,6 +326,104 @@ func (r *RawClient) Cascade(
 		return nil, err
 	}
 	return &core.Response[*sdk.CascadeContextResponse]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) SolveRule(
+	ctx context.Context,
+	request *sdk.SolveRuleContextsRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*sdk.SolveContextRuleResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https%3A%2F%2Frulebricks.com/api/v1",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/contexts/%v/%v/solve/%v",
+		request.Slug,
+		request.Instance,
+		request.RuleSlug,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	headers.Add("Content-Type", "application/json")
+	var response *sdk.SolveContextRuleResponse
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*sdk.SolveContextRuleResponse]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) SolveFlow(
+	ctx context.Context,
+	request *sdk.SolveFlowContextsRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*sdk.SolveContextFlowResponse], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https%3A%2F%2Frulebricks.com/api/v1",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/contexts/%v/%v/flows/%v",
+		request.Slug,
+		request.Instance,
+		request.FlowSlug,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	headers.Add("Content-Type", "application/json")
+	var response *sdk.SolveContextFlowResponse
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(sdk.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*sdk.SolveContextFlowResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

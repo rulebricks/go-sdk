@@ -38,7 +38,7 @@ func (c *Client) Solve(
 	ctx context.Context,
 	request *sdk.SolveRulesRequest,
 	opts ...option.RequestOption,
-) (sdk.DynamicResponsePayload, error) {
+) (*sdk.RuleExecutionResult, error) {
 	response, err := c.WithRawResponse.Solve(
 		ctx,
 		request,

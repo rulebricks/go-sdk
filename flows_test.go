@@ -153,10 +153,79 @@ func TestGettersFlowExecutionRequestPayload(t *testing.T) {
 }
 
 func TestGettersFlowExecutionResponsePayload(t *testing.T) {
-	t.Run("GetDynamicResponsePayload", func(t *testing.T) {
+	t.Run("GetFlowExecutionResult", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &FlowExecutionResponsePayload{}
+		var expected *FlowExecutionResult
+		obj.FlowExecutionResult = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFlowExecutionResult(), "getter should return the property value")
+	})
+
+	t.Run("GetFlowExecutionResult_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FlowExecutionResponsePayload{}
+		obj.FlowExecutionResult = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetFlowExecutionResult(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetFlowExecutionResult_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FlowExecutionResponsePayload
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFlowExecutionResult() // Should return zero value
+	})
+
+	t.Run("GetFlowExecutionResultList", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FlowExecutionResponsePayload{}
+		var expected []*FlowExecutionResult
+		obj.FlowExecutionResultList = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFlowExecutionResultList(), "getter should return the property value")
+	})
+
+	t.Run("GetFlowExecutionResultList_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FlowExecutionResponsePayload{}
+		obj.FlowExecutionResultList = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetFlowExecutionResultList(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetFlowExecutionResultList_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FlowExecutionResponsePayload
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFlowExecutionResultList() // Should return zero value
+	})
+
+}
+
+func TestGettersFlowExecutionResult(t *testing.T) {
+	t.Run("GetDynamicResponsePayload", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FlowExecutionResult{}
 		var expected DynamicResponsePayload
 		obj.DynamicResponsePayload = expected
 
@@ -166,7 +235,7 @@ func TestGettersFlowExecutionResponsePayload(t *testing.T) {
 
 	t.Run("GetDynamicResponsePayload_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj *FlowExecutionResponsePayload
+		var obj *FlowExecutionResult
 		// Should not panic - getters should handle nil receiver gracefully
 		defer func() {
 			if r := recover(); r != nil {
@@ -176,37 +245,37 @@ func TestGettersFlowExecutionResponsePayload(t *testing.T) {
 		_ = obj.GetDynamicResponsePayload() // Should return zero value
 	})
 
-	t.Run("GetDynamicResponsePayloadList", func(t *testing.T) {
+	t.Run("GetExecutionErrorResult", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &FlowExecutionResponsePayload{}
-		var expected []DynamicResponsePayload
-		obj.DynamicResponsePayloadList = expected
+		obj := &FlowExecutionResult{}
+		var expected *ExecutionErrorResult
+		obj.ExecutionErrorResult = expected
 
 		// Act & Assert
-		assert.Equal(t, expected, obj.GetDynamicResponsePayloadList(), "getter should return the property value")
+		assert.Equal(t, expected, obj.GetExecutionErrorResult(), "getter should return the property value")
 	})
 
-	t.Run("GetDynamicResponsePayloadList_NilValue", func(t *testing.T) {
+	t.Run("GetExecutionErrorResult_NilValue", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &FlowExecutionResponsePayload{}
-		obj.DynamicResponsePayloadList = nil
+		obj := &FlowExecutionResult{}
+		obj.ExecutionErrorResult = nil
 
 		// Act & Assert
-		assert.Nil(t, obj.GetDynamicResponsePayloadList(), "getter should return nil when property is nil")
+		assert.Nil(t, obj.GetExecutionErrorResult(), "getter should return nil when property is nil")
 	})
 
-	t.Run("GetDynamicResponsePayloadList_NilReceiver", func(t *testing.T) {
+	t.Run("GetExecutionErrorResult_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj *FlowExecutionResponsePayload
+		var obj *FlowExecutionResult
 		// Should not panic - getters should handle nil receiver gracefully
 		defer func() {
 			if r := recover(); r != nil {
 				t.Errorf("Getter panicked on nil receiver: %v", r)
 			}
 		}()
-		_ = obj.GetDynamicResponsePayloadList() // Should return zero value
+		_ = obj.GetExecutionErrorResult() // Should return zero value
 	})
 
 }

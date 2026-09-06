@@ -19,6 +19,9 @@ var (
 	createContextRequestFieldTTLSeconds           = big.NewInt(1 << 5)
 	createContextRequestFieldHistoryLimit         = big.NewInt(1 << 6)
 	createContextRequestFieldOnSchemaMismatch     = big.NewInt(1 << 7)
+	createContextRequestFieldSourceObjects        = big.NewInt(1 << 8)
+	createContextRequestFieldUserGroups           = big.NewInt(1 << 9)
+	createContextRequestFieldFolder               = big.NewInt(1 << 10)
 )
 
 type CreateContextRequest struct {
@@ -38,6 +41,12 @@ type CreateContextRequest struct {
 	HistoryLimit *int `json:"history_limit,omitempty" url:"-"`
 	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
 	OnSchemaMismatch *CreateContextRequestOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"-"`
+	// Workspace object IDs associated with this context schema.
+	SourceObjects []string `json:"source_objects,omitempty" url:"-"`
+	// User groups allowed to access the context.
+	UserGroups []string `json:"user_groups,omitempty" url:"-"`
+	// Context folder ID.
+	Folder *string `json:"folder,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -104,6 +113,27 @@ func (c *CreateContextRequest) SetHistoryLimit(historyLimit *int) {
 func (c *CreateContextRequest) SetOnSchemaMismatch(onSchemaMismatch *CreateContextRequestOnSchemaMismatch) {
 	c.OnSchemaMismatch = onSchemaMismatch
 	c.require(createContextRequestFieldOnSchemaMismatch)
+}
+
+// SetSourceObjects sets the SourceObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextRequest) SetSourceObjects(sourceObjects []string) {
+	c.SourceObjects = sourceObjects
+	c.require(createContextRequestFieldSourceObjects)
+}
+
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextRequest) SetUserGroups(userGroups []string) {
+	c.UserGroups = userGroups
+	c.require(createContextRequestFieldUserGroups)
+}
+
+// SetFolder sets the Folder field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextRequest) SetFolder(folder *string) {
+	c.Folder = folder
+	c.require(createContextRequestFieldFolder)
 }
 
 func (c *CreateContextRequest) UnmarshalJSON(data []byte) error {
@@ -180,12 +210,18 @@ func (g *GetContextsRequest) SetID(id string) {
 }
 
 var (
-	listContextsRequestFieldFolder    = big.NewInt(1 << 0)
-	listContextsRequestFieldUserGroup = big.NewInt(1 << 1)
-	listContextsRequestFieldName      = big.NewInt(1 << 2)
+	listContextsRequestFieldLimit     = big.NewInt(1 << 0)
+	listContextsRequestFieldCursor    = big.NewInt(1 << 1)
+	listContextsRequestFieldFolder    = big.NewInt(1 << 2)
+	listContextsRequestFieldUserGroup = big.NewInt(1 << 3)
+	listContextsRequestFieldName      = big.NewInt(1 << 4)
 )
 
 type ListContextsRequest struct {
+	// Page size; enables the {data,cursor} response.
+	Limit *int `json:"-" url:"limit,omitempty"`
+	// Opaque cursor returned by the previous page; requires limit.
+	Cursor *string `json:"-" url:"cursor,omitempty"`
 	// Filter results by folder name or folder ID.
 	Folder *string `json:"-" url:"folder,omitempty"`
 	// Filter results by user group name or ID. The value is validated against workspace groups. Admin/unrestricted API keys can request any group-specific view; restricted API keys may only filter to one of their assigned groups and receive a 403 when filtering outside those groups.
@@ -202,6 +238,20 @@ func (l *ListContextsRequest) require(field *big.Int) {
 		l.explicitFields = big.NewInt(0)
 	}
 	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListContextsRequest) SetLimit(limit *int) {
+	l.Limit = limit
+	l.require(listContextsRequestFieldLimit)
+}
+
+// SetCursor sets the Cursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListContextsRequest) SetCursor(cursor *string) {
+	l.Cursor = cursor
+	l.require(listContextsRequestFieldCursor)
 }
 
 // SetFolder sets the Folder field and marks it as non-optional;
@@ -251,6 +301,68 @@ func (c CreateContextRequestOnSchemaMismatch) Ptr() *CreateContextRequestOnSchem
 	return &c
 }
 
+type ListContextsResponse struct {
+	ContextListResponse sdk.ContextListResponse
+	ContextListPage     *sdk.ContextListPage
+
+	typ string
+}
+
+func (l *ListContextsResponse) GetContextListResponse() sdk.ContextListResponse {
+	if l == nil {
+		return nil
+	}
+	return l.ContextListResponse
+}
+
+func (l *ListContextsResponse) GetContextListPage() *sdk.ContextListPage {
+	if l == nil {
+		return nil
+	}
+	return l.ContextListPage
+}
+
+func (l *ListContextsResponse) UnmarshalJSON(data []byte) error {
+	var valueContextListResponse sdk.ContextListResponse
+	if err := json.Unmarshal(data, &valueContextListResponse); err == nil {
+		l.typ = "ContextListResponse"
+		l.ContextListResponse = valueContextListResponse
+		return nil
+	}
+	valueContextListPage := new(sdk.ContextListPage)
+	if err := json.Unmarshal(data, &valueContextListPage); err == nil {
+		l.typ = "ContextListPage"
+		l.ContextListPage = valueContextListPage
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, l)
+}
+
+func (l ListContextsResponse) MarshalJSON() ([]byte, error) {
+	if l.typ == "ContextListResponse" || l.ContextListResponse != nil {
+		return json.Marshal(l.ContextListResponse)
+	}
+	if l.typ == "ContextListPage" || l.ContextListPage != nil {
+		return json.Marshal(l.ContextListPage)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", l)
+}
+
+type ListContextsResponseVisitor interface {
+	VisitContextListResponse(sdk.ContextListResponse) error
+	VisitContextListPage(*sdk.ContextListPage) error
+}
+
+func (l *ListContextsResponse) Accept(visitor ListContextsResponseVisitor) error {
+	if l.typ == "ContextListResponse" || l.ContextListResponse != nil {
+		return visitor.VisitContextListResponse(l.ContextListResponse)
+	}
+	if l.typ == "ContextListPage" || l.ContextListPage != nil {
+		return visitor.VisitContextListPage(l.ContextListPage)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", l)
+}
+
 // How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
 type UpdateContextRequestOnSchemaMismatch string
 
@@ -287,6 +399,9 @@ var (
 	updateContextRequestFieldTTLSeconds           = big.NewInt(1 << 6)
 	updateContextRequestFieldHistoryLimit         = big.NewInt(1 << 7)
 	updateContextRequestFieldOnSchemaMismatch     = big.NewInt(1 << 8)
+	updateContextRequestFieldSourceObjects        = big.NewInt(1 << 9)
+	updateContextRequestFieldUserGroups           = big.NewInt(1 << 10)
+	updateContextRequestFieldFolder               = big.NewInt(1 << 11)
 )
 
 type UpdateContextRequest struct {
@@ -308,6 +423,12 @@ type UpdateContextRequest struct {
 	HistoryLimit *int `json:"history_limit,omitempty" url:"-"`
 	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or the batch item), `store` persists them alongside declared facts.
 	OnSchemaMismatch *UpdateContextRequestOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"-"`
+	// Workspace object IDs associated with this context schema.
+	SourceObjects []string `json:"source_objects,omitempty" url:"-"`
+	// User groups allowed to access the context.
+	UserGroups []string `json:"user_groups,omitempty" url:"-"`
+	// Context folder ID.
+	Folder *string `json:"folder,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -381,6 +502,27 @@ func (u *UpdateContextRequest) SetHistoryLimit(historyLimit *int) {
 func (u *UpdateContextRequest) SetOnSchemaMismatch(onSchemaMismatch *UpdateContextRequestOnSchemaMismatch) {
 	u.OnSchemaMismatch = onSchemaMismatch
 	u.require(updateContextRequestFieldOnSchemaMismatch)
+}
+
+// SetSourceObjects sets the SourceObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextRequest) SetSourceObjects(sourceObjects []string) {
+	u.SourceObjects = sourceObjects
+	u.require(updateContextRequestFieldSourceObjects)
+}
+
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextRequest) SetUserGroups(userGroups []string) {
+	u.UserGroups = userGroups
+	u.require(updateContextRequestFieldUserGroups)
+}
+
+// SetFolder sets the Folder field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextRequest) SetFolder(folder *string) {
+	u.Folder = folder
+	u.require(updateContextRequestFieldFolder)
 }
 
 func (u *UpdateContextRequest) UnmarshalJSON(data []byte) error {

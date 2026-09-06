@@ -36,7 +36,7 @@ func (r *RawClient) List(
 	ctx context.Context,
 	request *assets.ListContextsRequest,
 	opts ...option.RequestOption,
-) (*core.Response[sdk.ContextListResponse], error) {
+) (*core.Response[*assets.ListContextsResponse], error) {
 	options := core.NewRequestOptions(opts...)
 	baseURL := internal.ResolveBaseURL(
 		options.BaseURL,
@@ -55,7 +55,7 @@ func (r *RawClient) List(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
-	var response sdk.ContextListResponse
+	var response *assets.ListContextsResponse
 	raw, err := r.caller.Call(
 		ctx,
 		&internal.CallParams{
@@ -74,7 +74,7 @@ func (r *RawClient) List(
 	if err != nil {
 		return nil, err
 	}
-	return &core.Response[sdk.ContextListResponse]{
+	return &core.Response[*assets.ListContextsResponse]{
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       response,

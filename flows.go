@@ -121,65 +121,128 @@ func (f *FlowExecutionRequestPayload) Accept(visitor FlowExecutionRequestPayload
 	return fmt.Errorf("type %T does not include a non-empty union type", f)
 }
 
-// A single flow output object or an array of output objects for bulk execution.
+// For object input, one flow result. For list input, a same-length list with one result per input in input order. Failed executions use ExecutionErrorResult and are never null.
 type FlowExecutionResponsePayload struct {
-	DynamicResponsePayload     DynamicResponsePayload
-	DynamicResponsePayloadList []DynamicResponsePayload
+	FlowExecutionResult     *FlowExecutionResult
+	FlowExecutionResultList []*FlowExecutionResult
 
 	typ string
 }
 
-func (f *FlowExecutionResponsePayload) GetDynamicResponsePayload() DynamicResponsePayload {
+func (f *FlowExecutionResponsePayload) GetFlowExecutionResult() *FlowExecutionResult {
 	if f == nil {
 		return nil
 	}
-	return f.DynamicResponsePayload
+	return f.FlowExecutionResult
 }
 
-func (f *FlowExecutionResponsePayload) GetDynamicResponsePayloadList() []DynamicResponsePayload {
+func (f *FlowExecutionResponsePayload) GetFlowExecutionResultList() []*FlowExecutionResult {
 	if f == nil {
 		return nil
 	}
-	return f.DynamicResponsePayloadList
+	return f.FlowExecutionResultList
 }
 
 func (f *FlowExecutionResponsePayload) UnmarshalJSON(data []byte) error {
-	var valueDynamicResponsePayload DynamicResponsePayload
-	if err := json.Unmarshal(data, &valueDynamicResponsePayload); err == nil {
-		f.typ = "DynamicResponsePayload"
-		f.DynamicResponsePayload = valueDynamicResponsePayload
+	valueFlowExecutionResult := new(FlowExecutionResult)
+	if err := json.Unmarshal(data, &valueFlowExecutionResult); err == nil {
+		f.typ = "FlowExecutionResult"
+		f.FlowExecutionResult = valueFlowExecutionResult
 		return nil
 	}
-	var valueDynamicResponsePayloadList []DynamicResponsePayload
-	if err := json.Unmarshal(data, &valueDynamicResponsePayloadList); err == nil {
-		f.typ = "DynamicResponsePayloadList"
-		f.DynamicResponsePayloadList = valueDynamicResponsePayloadList
+	var valueFlowExecutionResultList []*FlowExecutionResult
+	if err := json.Unmarshal(data, &valueFlowExecutionResultList); err == nil {
+		f.typ = "FlowExecutionResultList"
+		f.FlowExecutionResultList = valueFlowExecutionResultList
 		return nil
 	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, f)
 }
 
 func (f FlowExecutionResponsePayload) MarshalJSON() ([]byte, error) {
-	if f.typ == "DynamicResponsePayload" || f.DynamicResponsePayload != nil {
-		return json.Marshal(f.DynamicResponsePayload)
+	if f.typ == "FlowExecutionResult" || f.FlowExecutionResult != nil {
+		return json.Marshal(f.FlowExecutionResult)
 	}
-	if f.typ == "DynamicResponsePayloadList" || f.DynamicResponsePayloadList != nil {
-		return json.Marshal(f.DynamicResponsePayloadList)
+	if f.typ == "FlowExecutionResultList" || f.FlowExecutionResultList != nil {
+		return json.Marshal(f.FlowExecutionResultList)
 	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", f)
 }
 
 type FlowExecutionResponsePayloadVisitor interface {
-	VisitDynamicResponsePayload(DynamicResponsePayload) error
-	VisitDynamicResponsePayloadList([]DynamicResponsePayload) error
+	VisitFlowExecutionResult(*FlowExecutionResult) error
+	VisitFlowExecutionResultList([]*FlowExecutionResult) error
 }
 
 func (f *FlowExecutionResponsePayload) Accept(visitor FlowExecutionResponsePayloadVisitor) error {
+	if f.typ == "FlowExecutionResult" || f.FlowExecutionResult != nil {
+		return visitor.VisitFlowExecutionResult(f.FlowExecutionResult)
+	}
+	if f.typ == "FlowExecutionResultList" || f.FlowExecutionResultList != nil {
+		return visitor.VisitFlowExecutionResultList(f.FlowExecutionResultList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+// The flow-defined output or an inline execution-failure payload.
+type FlowExecutionResult struct {
+	DynamicResponsePayload DynamicResponsePayload
+	ExecutionErrorResult   *ExecutionErrorResult
+
+	typ string
+}
+
+func (f *FlowExecutionResult) GetDynamicResponsePayload() DynamicResponsePayload {
+	if f == nil {
+		return nil
+	}
+	return f.DynamicResponsePayload
+}
+
+func (f *FlowExecutionResult) GetExecutionErrorResult() *ExecutionErrorResult {
+	if f == nil {
+		return nil
+	}
+	return f.ExecutionErrorResult
+}
+
+func (f *FlowExecutionResult) UnmarshalJSON(data []byte) error {
+	var valueDynamicResponsePayload DynamicResponsePayload
+	if err := json.Unmarshal(data, &valueDynamicResponsePayload); err == nil {
+		f.typ = "DynamicResponsePayload"
+		f.DynamicResponsePayload = valueDynamicResponsePayload
+		return nil
+	}
+	valueExecutionErrorResult := new(ExecutionErrorResult)
+	if err := json.Unmarshal(data, &valueExecutionErrorResult); err == nil {
+		f.typ = "ExecutionErrorResult"
+		f.ExecutionErrorResult = valueExecutionErrorResult
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, f)
+}
+
+func (f FlowExecutionResult) MarshalJSON() ([]byte, error) {
+	if f.typ == "DynamicResponsePayload" || f.DynamicResponsePayload != nil {
+		return json.Marshal(f.DynamicResponsePayload)
+	}
+	if f.typ == "ExecutionErrorResult" || f.ExecutionErrorResult != nil {
+		return json.Marshal(f.ExecutionErrorResult)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+type FlowExecutionResultVisitor interface {
+	VisitDynamicResponsePayload(DynamicResponsePayload) error
+	VisitExecutionErrorResult(*ExecutionErrorResult) error
+}
+
+func (f *FlowExecutionResult) Accept(visitor FlowExecutionResultVisitor) error {
 	if f.typ == "DynamicResponsePayload" || f.DynamicResponsePayload != nil {
 		return visitor.VisitDynamicResponsePayload(f.DynamicResponsePayload)
 	}
-	if f.typ == "DynamicResponsePayloadList" || f.DynamicResponsePayloadList != nil {
-		return visitor.VisitDynamicResponsePayloadList(f.DynamicResponsePayloadList)
+	if f.typ == "ExecutionErrorResult" || f.ExecutionErrorResult != nil {
+		return visitor.VisitExecutionErrorResult(f.ExecutionErrorResult)
 	}
 	return fmt.Errorf("type %T does not include a non-empty union type", f)
 }

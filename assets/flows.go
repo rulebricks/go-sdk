@@ -57,13 +57,25 @@ func (d *DeleteFlowRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	listFlowsRequestFieldFolder    = big.NewInt(1 << 0)
-	listFlowsRequestFieldLabels    = big.NewInt(1 << 1)
-	listFlowsRequestFieldUserGroup = big.NewInt(1 << 2)
-	listFlowsRequestFieldName      = big.NewInt(1 << 3)
+	listFlowsRequestFieldID        = big.NewInt(1 << 0)
+	listFlowsRequestFieldSlug      = big.NewInt(1 << 1)
+	listFlowsRequestFieldSearch    = big.NewInt(1 << 2)
+	listFlowsRequestFieldVersion   = big.NewInt(1 << 3)
+	listFlowsRequestFieldFolder    = big.NewInt(1 << 4)
+	listFlowsRequestFieldLabels    = big.NewInt(1 << 5)
+	listFlowsRequestFieldUserGroup = big.NewInt(1 << 6)
+	listFlowsRequestFieldName      = big.NewInt(1 << 7)
 )
 
 type ListFlowsRequest struct {
+	// Filter by the exact rule or flow ID.
+	ID *string `json:"-" url:"id,omitempty"`
+	// Filter by the exact rule or flow slug (case-sensitive).
+	Slug *string `json:"-" url:"slug,omitempty"`
+	// Match an exact ID or slug, or a case-insensitive substring of the name. Combined with all other filters.
+	Search *string `json:"-" url:"search,omitempty"`
+	// Select a published version number (e.g. 3), release environment slug (e.g. production), or latest. Requires exactly one asset after all filters and permission checks. Multiple matches or an invalid version return 400; no match, an unpublished asset, or a missing version/release returns 404. The response is still a one-item array.
+	Version *string `json:"-" url:"version,omitempty"`
 	// Filter results by folder name or folder ID.
 	Folder *string `json:"-" url:"folder,omitempty"`
 	// Filter results to assets containing all comma-separated labels.
@@ -82,6 +94,34 @@ func (l *ListFlowsRequest) require(field *big.Int) {
 		l.explicitFields = big.NewInt(0)
 	}
 	l.explicitFields.Or(l.explicitFields, field)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFlowsRequest) SetID(id *string) {
+	l.ID = id
+	l.require(listFlowsRequestFieldID)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFlowsRequest) SetSlug(slug *string) {
+	l.Slug = slug
+	l.require(listFlowsRequestFieldSlug)
+}
+
+// SetSearch sets the Search field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFlowsRequest) SetSearch(search *string) {
+	l.Search = search
+	l.require(listFlowsRequestFieldSearch)
+}
+
+// SetVersion sets the Version field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *ListFlowsRequest) SetVersion(version *string) {
+	l.Version = version
+	l.require(listFlowsRequestFieldVersion)
 }
 
 // SetFolder sets the Folder field and marks it as non-optional;

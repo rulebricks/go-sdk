@@ -23,6 +23,7 @@ var (
 	contextBaseFieldTTLSeconds           = big.NewInt(1 << 5)
 	contextBaseFieldHistoryLimit         = big.NewInt(1 << 6)
 	contextBaseFieldOnSchemaMismatch     = big.NewInt(1 << 7)
+	contextBaseFieldSourceObjects        = big.NewInt(1 << 8)
 )
 
 type ContextBase struct {
@@ -42,6 +43,8 @@ type ContextBase struct {
 	HistoryLimit *int `json:"history_limit,omitempty" url:"history_limit,omitempty"`
 	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or batch item), and `store` persists them alongside declared facts.
 	OnSchemaMismatch *ContextBaseOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"on_schema_mismatch,omitempty"`
+	// Workspace object IDs associated with this context schema.
+	SourceObjects []string `json:"source_objects,omitempty" url:"source_objects,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -104,6 +107,13 @@ func (c *ContextBase) GetOnSchemaMismatch() *ContextBaseOnSchemaMismatch {
 		return nil
 	}
 	return c.OnSchemaMismatch
+}
+
+func (c *ContextBase) GetSourceObjects() []string {
+	if c == nil {
+		return nil
+	}
+	return c.SourceObjects
 }
 
 func (c *ContextBase) GetExtraProperties() map[string]interface{} {
@@ -176,6 +186,13 @@ func (c *ContextBase) SetOnSchemaMismatch(onSchemaMismatch *ContextBaseOnSchemaM
 	c.require(contextBaseFieldOnSchemaMismatch)
 }
 
+// SetSourceObjects sets the SourceObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextBase) SetSourceObjects(sourceObjects []string) {
+	c.SourceObjects = sourceObjects
+	c.require(contextBaseFieldSourceObjects)
+}
+
 func (c *ContextBase) UnmarshalJSON(data []byte) error {
 	type unmarshaler ContextBase
 	var value unmarshaler
@@ -245,6 +262,202 @@ func (c ContextBaseOnSchemaMismatch) Ptr() *ContextBaseOnSchemaMismatch {
 }
 
 var (
+	contextDerivedFieldFieldKey          = big.NewInt(1 << 0)
+	contextDerivedFieldFieldName         = big.NewInt(1 << 1)
+	contextDerivedFieldFieldExpression   = big.NewInt(1 << 2)
+	contextDerivedFieldFieldDescription  = big.NewInt(1 << 3)
+	contextDerivedFieldFieldType         = big.NewInt(1 << 4)
+	contextDerivedFieldFieldDefaultValue = big.NewInt(1 << 5)
+)
+
+type ContextDerivedField struct {
+	Key         string                   `json:"key" url:"key"`
+	Name        string                   `json:"name" url:"name"`
+	Expression  string                   `json:"expression" url:"expression"`
+	Description *string                  `json:"description,omitempty" url:"description,omitempty"`
+	Type        *ContextDerivedFieldType `json:"type,omitempty" url:"type,omitempty"`
+	// Fallback value matching type (string when type is omitted).
+	DefaultValue any `json:"default_value,omitempty" url:"default_value,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextDerivedField) GetKey() string {
+	if c == nil {
+		return ""
+	}
+	return c.Key
+}
+
+func (c *ContextDerivedField) GetName() string {
+	if c == nil {
+		return ""
+	}
+	return c.Name
+}
+
+func (c *ContextDerivedField) GetExpression() string {
+	if c == nil {
+		return ""
+	}
+	return c.Expression
+}
+
+func (c *ContextDerivedField) GetDescription() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Description
+}
+
+func (c *ContextDerivedField) GetType() *ContextDerivedFieldType {
+	if c == nil {
+		return nil
+	}
+	return c.Type
+}
+
+func (c *ContextDerivedField) GetDefaultValue() any {
+	if c == nil {
+		return nil
+	}
+	return c.DefaultValue
+}
+
+func (c *ContextDerivedField) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextDerivedField) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDerivedField) SetKey(key string) {
+	c.Key = key
+	c.require(contextDerivedFieldFieldKey)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDerivedField) SetName(name string) {
+	c.Name = name
+	c.require(contextDerivedFieldFieldName)
+}
+
+// SetExpression sets the Expression field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDerivedField) SetExpression(expression string) {
+	c.Expression = expression
+	c.require(contextDerivedFieldFieldExpression)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDerivedField) SetDescription(description *string) {
+	c.Description = description
+	c.require(contextDerivedFieldFieldDescription)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDerivedField) SetType(type_ *ContextDerivedFieldType) {
+	c.Type = type_
+	c.require(contextDerivedFieldFieldType)
+}
+
+// SetDefaultValue sets the DefaultValue field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDerivedField) SetDefaultValue(defaultValue any) {
+	c.DefaultValue = defaultValue
+	c.require(contextDerivedFieldFieldDefaultValue)
+}
+
+func (c *ContextDerivedField) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextDerivedField
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextDerivedField(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextDerivedField) MarshalJSON() ([]byte, error) {
+	type embed ContextDerivedField
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextDerivedField) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type ContextDerivedFieldType string
+
+const (
+	ContextDerivedFieldTypeString  ContextDerivedFieldType = "string"
+	ContextDerivedFieldTypeNumber  ContextDerivedFieldType = "number"
+	ContextDerivedFieldTypeBoolean ContextDerivedFieldType = "boolean"
+	ContextDerivedFieldTypeList    ContextDerivedFieldType = "list"
+	ContextDerivedFieldTypeDate    ContextDerivedFieldType = "date"
+)
+
+func NewContextDerivedFieldTypeFromString(s string) (ContextDerivedFieldType, error) {
+	switch s {
+	case "string":
+		return ContextDerivedFieldTypeString, nil
+	case "number":
+		return ContextDerivedFieldTypeNumber, nil
+	case "boolean":
+		return ContextDerivedFieldTypeBoolean, nil
+	case "list":
+		return ContextDerivedFieldTypeList, nil
+	case "date":
+		return ContextDerivedFieldTypeDate, nil
+	}
+	var t ContextDerivedFieldType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c ContextDerivedFieldType) Ptr() *ContextDerivedFieldType {
+	return &c
+}
+
+var (
 	contextDetailFieldID                   = big.NewInt(1 << 0)
 	contextDetailFieldName                 = big.NewInt(1 << 1)
 	contextDetailFieldSlug                 = big.NewInt(1 << 2)
@@ -253,15 +466,16 @@ var (
 	contextDetailFieldTTLSeconds           = big.NewInt(1 << 5)
 	contextDetailFieldHistoryLimit         = big.NewInt(1 << 6)
 	contextDetailFieldOnSchemaMismatch     = big.NewInt(1 << 7)
-	contextDetailFieldSchema               = big.NewInt(1 << 8)
-	contextDetailFieldIdentityFact         = big.NewInt(1 << 9)
-	contextDetailFieldUserGroups           = big.NewInt(1 << 10)
-	contextDetailFieldFolder               = big.NewInt(1 << 11)
-	contextDetailFieldBoundRules           = big.NewInt(1 << 12)
-	contextDetailFieldBoundFlows           = big.NewInt(1 << 13)
-	contextDetailFieldRelationships        = big.NewInt(1 << 14)
-	contextDetailFieldCreatedAt            = big.NewInt(1 << 15)
-	contextDetailFieldUpdatedAt            = big.NewInt(1 << 16)
+	contextDetailFieldSourceObjects        = big.NewInt(1 << 8)
+	contextDetailFieldSchema               = big.NewInt(1 << 9)
+	contextDetailFieldIdentityFact         = big.NewInt(1 << 10)
+	contextDetailFieldUserGroups           = big.NewInt(1 << 11)
+	contextDetailFieldFolder               = big.NewInt(1 << 12)
+	contextDetailFieldBoundRules           = big.NewInt(1 << 13)
+	contextDetailFieldBoundFlows           = big.NewInt(1 << 14)
+	contextDetailFieldRelationships        = big.NewInt(1 << 15)
+	contextDetailFieldCreatedAt            = big.NewInt(1 << 16)
+	contextDetailFieldUpdatedAt            = big.NewInt(1 << 17)
 )
 
 type ContextDetail struct {
@@ -281,7 +495,9 @@ type ContextDetail struct {
 	HistoryLimit *int `json:"history_limit,omitempty" url:"history_limit,omitempty"`
 	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or batch item), and `store` persists them alongside declared facts.
 	OnSchemaMismatch *ContextBaseOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"on_schema_mismatch,omitempty"`
-	Schema           *ContextSchema               `json:"schema,omitempty" url:"schema,omitempty"`
+	// Workspace object IDs associated with this context schema.
+	SourceObjects []string       `json:"source_objects,omitempty" url:"source_objects,omitempty"`
+	Schema        *ContextSchema `json:"schema,omitempty" url:"schema,omitempty"`
 	// The field key used as the unique identifier for instances.
 	IdentityFact *string `json:"identity_fact,omitempty" url:"identity_fact,omitempty"`
 	// User groups that can interact with this context.
@@ -359,6 +575,13 @@ func (c *ContextDetail) GetOnSchemaMismatch() *ContextBaseOnSchemaMismatch {
 		return nil
 	}
 	return c.OnSchemaMismatch
+}
+
+func (c *ContextDetail) GetSourceObjects() []string {
+	if c == nil {
+		return nil
+	}
+	return c.SourceObjects
 }
 
 func (c *ContextDetail) GetSchema() *ContextSchema {
@@ -492,6 +715,13 @@ func (c *ContextDetail) SetHistoryLimit(historyLimit *int) {
 func (c *ContextDetail) SetOnSchemaMismatch(onSchemaMismatch *ContextBaseOnSchemaMismatch) {
 	c.OnSchemaMismatch = onSchemaMismatch
 	c.require(contextDetailFieldOnSchemaMismatch)
+}
+
+// SetSourceObjects sets the SourceObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextDetail) SetSourceObjects(sourceObjects []string) {
+	c.SourceObjects = sourceObjects
+	c.require(contextDetailFieldSourceObjects)
 }
 
 // SetSchema sets the Schema field and marks it as non-optional;
@@ -1242,6 +1472,69 @@ func (c *ContextDetailRelationships) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// HTTP 200 execution result or HTTP 202 pending registration.
+type ContextFlowOutcome struct {
+	SolveContextFlowResponse         *SolveContextFlowResponse
+	PendingContextEvaluationResponse *PendingContextEvaluationResponse
+
+	typ string
+}
+
+func (c *ContextFlowOutcome) GetSolveContextFlowResponse() *SolveContextFlowResponse {
+	if c == nil {
+		return nil
+	}
+	return c.SolveContextFlowResponse
+}
+
+func (c *ContextFlowOutcome) GetPendingContextEvaluationResponse() *PendingContextEvaluationResponse {
+	if c == nil {
+		return nil
+	}
+	return c.PendingContextEvaluationResponse
+}
+
+func (c *ContextFlowOutcome) UnmarshalJSON(data []byte) error {
+	valueSolveContextFlowResponse := new(SolveContextFlowResponse)
+	if err := json.Unmarshal(data, &valueSolveContextFlowResponse); err == nil {
+		c.typ = "SolveContextFlowResponse"
+		c.SolveContextFlowResponse = valueSolveContextFlowResponse
+		return nil
+	}
+	valuePendingContextEvaluationResponse := new(PendingContextEvaluationResponse)
+	if err := json.Unmarshal(data, &valuePendingContextEvaluationResponse); err == nil {
+		c.typ = "PendingContextEvaluationResponse"
+		c.PendingContextEvaluationResponse = valuePendingContextEvaluationResponse
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ContextFlowOutcome) MarshalJSON() ([]byte, error) {
+	if c.typ == "SolveContextFlowResponse" || c.SolveContextFlowResponse != nil {
+		return json.Marshal(c.SolveContextFlowResponse)
+	}
+	if c.typ == "PendingContextEvaluationResponse" || c.PendingContextEvaluationResponse != nil {
+		return json.Marshal(c.PendingContextEvaluationResponse)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ContextFlowOutcomeVisitor interface {
+	VisitSolveContextFlowResponse(*SolveContextFlowResponse) error
+	VisitPendingContextEvaluationResponse(*PendingContextEvaluationResponse) error
+}
+
+func (c *ContextFlowOutcome) Accept(visitor ContextFlowOutcomeVisitor) error {
+	if c.typ == "SolveContextFlowResponse" || c.SolveContextFlowResponse != nil {
+		return visitor.VisitSolveContextFlowResponse(c.SolveContextFlowResponse)
+	}
+	if c.typ == "PendingContextEvaluationResponse" || c.PendingContextEvaluationResponse != nil {
+		return visitor.VisitPendingContextEvaluationResponse(c.PendingContextEvaluationResponse)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 // Summary of a context for listing. Uses counts instead of full arrays.
 var (
 	contextListItemFieldID                   = big.NewInt(1 << 0)
@@ -1252,15 +1545,16 @@ var (
 	contextListItemFieldTTLSeconds           = big.NewInt(1 << 5)
 	contextListItemFieldHistoryLimit         = big.NewInt(1 << 6)
 	contextListItemFieldOnSchemaMismatch     = big.NewInt(1 << 7)
-	contextListItemFieldIdentityFact         = big.NewInt(1 << 8)
-	contextListItemFieldSchema               = big.NewInt(1 << 9)
-	contextListItemFieldUserGroups           = big.NewInt(1 << 10)
-	contextListItemFieldFolder               = big.NewInt(1 << 11)
-	contextListItemFieldBoundRulesCount      = big.NewInt(1 << 12)
-	contextListItemFieldBoundFlowsCount      = big.NewInt(1 << 13)
-	contextListItemFieldRelationshipsCount   = big.NewInt(1 << 14)
-	contextListItemFieldCreatedAt            = big.NewInt(1 << 15)
-	contextListItemFieldUpdatedAt            = big.NewInt(1 << 16)
+	contextListItemFieldSourceObjects        = big.NewInt(1 << 8)
+	contextListItemFieldIdentityFact         = big.NewInt(1 << 9)
+	contextListItemFieldSchema               = big.NewInt(1 << 10)
+	contextListItemFieldUserGroups           = big.NewInt(1 << 11)
+	contextListItemFieldFolder               = big.NewInt(1 << 12)
+	contextListItemFieldBoundRulesCount      = big.NewInt(1 << 13)
+	contextListItemFieldBoundFlowsCount      = big.NewInt(1 << 14)
+	contextListItemFieldRelationshipsCount   = big.NewInt(1 << 15)
+	contextListItemFieldCreatedAt            = big.NewInt(1 << 16)
+	contextListItemFieldUpdatedAt            = big.NewInt(1 << 17)
 )
 
 type ContextListItem struct {
@@ -1280,6 +1574,8 @@ type ContextListItem struct {
 	HistoryLimit *int `json:"history_limit,omitempty" url:"history_limit,omitempty"`
 	// How to handle submitted fields that don't match the schema: `ignore` drops them, `reject` fails the request (or batch item), and `store` persists them alongside declared facts.
 	OnSchemaMismatch *ContextBaseOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"on_schema_mismatch,omitempty"`
+	// Workspace object IDs associated with this context schema.
+	SourceObjects []string `json:"source_objects,omitempty" url:"source_objects,omitempty"`
 	// The field key used as the unique identifier for instances.
 	IdentityFact *string        `json:"identity_fact,omitempty" url:"identity_fact,omitempty"`
 	Schema       *ContextSchema `json:"schema,omitempty" url:"schema,omitempty"`
@@ -1356,6 +1652,13 @@ func (c *ContextListItem) GetOnSchemaMismatch() *ContextBaseOnSchemaMismatch {
 		return nil
 	}
 	return c.OnSchemaMismatch
+}
+
+func (c *ContextListItem) GetSourceObjects() []string {
+	if c == nil {
+		return nil
+	}
+	return c.SourceObjects
 }
 
 func (c *ContextListItem) GetIdentityFact() *string {
@@ -1489,6 +1792,13 @@ func (c *ContextListItem) SetHistoryLimit(historyLimit *int) {
 func (c *ContextListItem) SetOnSchemaMismatch(onSchemaMismatch *ContextBaseOnSchemaMismatch) {
 	c.OnSchemaMismatch = onSchemaMismatch
 	c.require(contextListItemFieldOnSchemaMismatch)
+}
+
+// SetSourceObjects sets the SourceObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextListItem) SetSourceObjects(sourceObjects []string) {
+	c.SourceObjects = sourceObjects
+	c.require(contextListItemFieldSourceObjects)
 }
 
 // SetIdentityFact sets the IdentityFact field and marks it as non-optional;
@@ -1708,7 +2018,244 @@ func (c *ContextListItemFolder) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+var (
+	contextListPageFieldData   = big.NewInt(1 << 0)
+	contextListPageFieldCursor = big.NewInt(1 << 1)
+)
+
+type ContextListPage struct {
+	Data ContextListResponse `json:"data" url:"data"`
+	// Opaque next-page cursor; null when complete.
+	Cursor *string `json:"cursor,omitempty" url:"cursor,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextListPage) GetData() ContextListResponse {
+	if c == nil {
+		return nil
+	}
+	return c.Data
+}
+
+func (c *ContextListPage) GetCursor() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Cursor
+}
+
+func (c *ContextListPage) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextListPage) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextListPage) SetData(data ContextListResponse) {
+	c.Data = data
+	c.require(contextListPageFieldData)
+}
+
+// SetCursor sets the Cursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextListPage) SetCursor(cursor *string) {
+	c.Cursor = cursor
+	c.require(contextListPageFieldCursor)
+}
+
+func (c *ContextListPage) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextListPage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextListPage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextListPage) MarshalJSON() ([]byte, error) {
+	type embed ContextListPage
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextListPage) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
 type ContextListResponse = []*ContextListItem
+
+// A Context operation failed. Earlier chunks can already be committed. Omitted committed IDs do not prove that no write occurred when the outcome is uncertain.
+var (
+	contextOperationErrorFieldError                = big.NewInt(1 << 0)
+	contextOperationErrorFieldCommittedCount       = big.NewInt(1 << 1)
+	contextOperationErrorFieldCommittedInstanceIDs = big.NewInt(1 << 2)
+	contextOperationErrorFieldFailedInstanceIDs    = big.NewInt(1 << 3)
+)
+
+type ContextOperationError struct {
+	Error string `json:"error" url:"error"`
+	// Number of distinct instances confirmed committed before failure, when known.
+	CommittedCount *int `json:"committed_count,omitempty" url:"committed_count,omitempty"`
+	// Identities confirmed committed before failure, when known.
+	CommittedInstanceIDs []string `json:"committed_instance_ids,omitempty" url:"committed_instance_ids,omitempty"`
+	// Identities with a known failed write, when available.
+	FailedInstanceIDs []string `json:"failed_instance_ids,omitempty" url:"failed_instance_ids,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContextOperationError) GetError() string {
+	if c == nil {
+		return ""
+	}
+	return c.Error
+}
+
+func (c *ContextOperationError) GetCommittedCount() *int {
+	if c == nil {
+		return nil
+	}
+	return c.CommittedCount
+}
+
+func (c *ContextOperationError) GetCommittedInstanceIDs() []string {
+	if c == nil {
+		return nil
+	}
+	return c.CommittedInstanceIDs
+}
+
+func (c *ContextOperationError) GetFailedInstanceIDs() []string {
+	if c == nil {
+		return nil
+	}
+	return c.FailedInstanceIDs
+}
+
+func (c *ContextOperationError) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContextOperationError) require(field *big.Int) {
+	if c.explicitFields == nil {
+		c.explicitFields = big.NewInt(0)
+	}
+	c.explicitFields.Or(c.explicitFields, field)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextOperationError) SetError(error_ string) {
+	c.Error = error_
+	c.require(contextOperationErrorFieldError)
+}
+
+// SetCommittedCount sets the CommittedCount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextOperationError) SetCommittedCount(committedCount *int) {
+	c.CommittedCount = committedCount
+	c.require(contextOperationErrorFieldCommittedCount)
+}
+
+// SetCommittedInstanceIDs sets the CommittedInstanceIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextOperationError) SetCommittedInstanceIDs(committedInstanceIDs []string) {
+	c.CommittedInstanceIDs = committedInstanceIDs
+	c.require(contextOperationErrorFieldCommittedInstanceIDs)
+}
+
+// SetFailedInstanceIDs sets the FailedInstanceIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContextOperationError) SetFailedInstanceIDs(failedInstanceIDs []string) {
+	c.FailedInstanceIDs = failedInstanceIDs
+	c.require(contextOperationErrorFieldFailedInstanceIDs)
+}
+
+func (c *ContextOperationError) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContextOperationError
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContextOperationError(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContextOperationError) MarshalJSON() ([]byte, error) {
+	type embed ContextOperationError
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContextOperationError) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
 
 var (
 	contextRelationshipBaseFieldID             = big.NewInt(1 << 0)
@@ -2768,6 +3315,69 @@ func (c *ContextRelationshipsResponseContext) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// HTTP 200 execution result or HTTP 202 pending registration.
+type ContextRuleOutcome struct {
+	SolveContextRuleResponse         *SolveContextRuleResponse
+	PendingContextEvaluationResponse *PendingContextEvaluationResponse
+
+	typ string
+}
+
+func (c *ContextRuleOutcome) GetSolveContextRuleResponse() *SolveContextRuleResponse {
+	if c == nil {
+		return nil
+	}
+	return c.SolveContextRuleResponse
+}
+
+func (c *ContextRuleOutcome) GetPendingContextEvaluationResponse() *PendingContextEvaluationResponse {
+	if c == nil {
+		return nil
+	}
+	return c.PendingContextEvaluationResponse
+}
+
+func (c *ContextRuleOutcome) UnmarshalJSON(data []byte) error {
+	valueSolveContextRuleResponse := new(SolveContextRuleResponse)
+	if err := json.Unmarshal(data, &valueSolveContextRuleResponse); err == nil {
+		c.typ = "SolveContextRuleResponse"
+		c.SolveContextRuleResponse = valueSolveContextRuleResponse
+		return nil
+	}
+	valuePendingContextEvaluationResponse := new(PendingContextEvaluationResponse)
+	if err := json.Unmarshal(data, &valuePendingContextEvaluationResponse); err == nil {
+		c.typ = "PendingContextEvaluationResponse"
+		c.PendingContextEvaluationResponse = valuePendingContextEvaluationResponse
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c ContextRuleOutcome) MarshalJSON() ([]byte, error) {
+	if c.typ == "SolveContextRuleResponse" || c.SolveContextRuleResponse != nil {
+		return json.Marshal(c.SolveContextRuleResponse)
+	}
+	if c.typ == "PendingContextEvaluationResponse" || c.PendingContextEvaluationResponse != nil {
+		return json.Marshal(c.PendingContextEvaluationResponse)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type ContextRuleOutcomeVisitor interface {
+	VisitSolveContextRuleResponse(*SolveContextRuleResponse) error
+	VisitPendingContextEvaluationResponse(*PendingContextEvaluationResponse) error
+}
+
+func (c *ContextRuleOutcome) Accept(visitor ContextRuleOutcomeVisitor) error {
+	if c.typ == "SolveContextRuleResponse" || c.SolveContextRuleResponse != nil {
+		return visitor.VisitSolveContextRuleResponse(c.SolveContextRuleResponse)
+	}
+	if c.typ == "PendingContextEvaluationResponse" || c.PendingContextEvaluationResponse != nil {
+		return visitor.VisitPendingContextEvaluationResponse(c.PendingContextEvaluationResponse)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
 // The schema definition for a context.
 var (
 	contextSchemaFieldBase    = big.NewInt(1 << 0)
@@ -2776,9 +3386,9 @@ var (
 
 type ContextSchema struct {
 	// User-defined base fields for the context.
-	Base []*ContextSchemaField `json:"base,omitempty" url:"base,omitempty"`
+	Base []*ContextSchemaField `json:"base" url:"base"`
 	// Expression-computed fields. Each entry supplies an `expression` evaluated from base facts, tracked history, and configured relationships.
-	Derived []*ContextSchemaField `json:"derived,omitempty" url:"derived,omitempty"`
+	Derived []*ContextDerivedField `json:"derived,omitempty" url:"derived,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2794,7 +3404,7 @@ func (c *ContextSchema) GetBase() []*ContextSchemaField {
 	return c.Base
 }
 
-func (c *ContextSchema) GetDerived() []*ContextSchemaField {
+func (c *ContextSchema) GetDerived() []*ContextDerivedField {
 	if c == nil {
 		return nil
 	}
@@ -2824,7 +3434,7 @@ func (c *ContextSchema) SetBase(base []*ContextSchemaField) {
 
 // SetDerived sets the Derived field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchema) SetDerived(derived []*ContextSchemaField) {
+func (c *ContextSchema) SetDerived(derived []*ContextDerivedField) {
 	c.Derived = derived
 	c.require(contextSchemaFieldDerived)
 }
@@ -2888,13 +3498,13 @@ var (
 
 type ContextSchemaField struct {
 	// The unique key for this field.
-	Key *string `json:"key,omitempty" url:"key,omitempty"`
+	Key string `json:"key" url:"key"`
 	// Display name for this field.
-	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	Name string `json:"name" url:"name"`
 	// Description of this field.
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// Data type of this field. `object` fields are parent nodes for dotted child facts; `function` fields are output-only.
-	Type *ContextSchemaFieldType `json:"type,omitempty" url:"type,omitempty"`
+	Type ContextSchemaFieldType `json:"type" url:"type"`
 	// Default value for this field.
 	DefaultValue any `json:"default_value,omitempty" url:"default_value,omitempty"`
 	// Whether this base fact is required for overall context completeness.
@@ -2917,16 +3527,16 @@ type ContextSchemaField struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *ContextSchemaField) GetKey() *string {
+func (c *ContextSchemaField) GetKey() string {
 	if c == nil {
-		return nil
+		return ""
 	}
 	return c.Key
 }
 
-func (c *ContextSchemaField) GetName() *string {
+func (c *ContextSchemaField) GetName() string {
 	if c == nil {
-		return nil
+		return ""
 	}
 	return c.Name
 }
@@ -2938,9 +3548,9 @@ func (c *ContextSchemaField) GetDescription() *string {
 	return c.Description
 }
 
-func (c *ContextSchemaField) GetType() *ContextSchemaFieldType {
+func (c *ContextSchemaField) GetType() ContextSchemaFieldType {
 	if c == nil {
-		return nil
+		return ""
 	}
 	return c.Type
 }
@@ -3010,14 +3620,14 @@ func (c *ContextSchemaField) require(field *big.Int) {
 
 // SetKey sets the Key field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchemaField) SetKey(key *string) {
+func (c *ContextSchemaField) SetKey(key string) {
 	c.Key = key
 	c.require(contextSchemaFieldFieldKey)
 }
 
 // SetName sets the Name field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchemaField) SetName(name *string) {
+func (c *ContextSchemaField) SetName(name string) {
 	c.Name = name
 	c.require(contextSchemaFieldFieldName)
 }
@@ -3031,7 +3641,7 @@ func (c *ContextSchemaField) SetDescription(description *string) {
 
 // SetType sets the Type field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ContextSchemaField) SetType(type_ *ContextSchemaFieldType) {
+func (c *ContextSchemaField) SetType(type_ ContextSchemaFieldType) {
 	c.Type = type_
 	c.require(contextSchemaFieldFieldType)
 }
@@ -3167,10 +3777,20 @@ func (c ContextSchemaFieldType) Ptr() *ContextSchemaFieldType {
 
 // Summary of the newly created context.
 var (
-	createContextResponseFieldID        = big.NewInt(1 << 0)
-	createContextResponseFieldSlug      = big.NewInt(1 << 1)
-	createContextResponseFieldName      = big.NewInt(1 << 2)
-	createContextResponseFieldCreatedAt = big.NewInt(1 << 3)
+	createContextResponseFieldID                   = big.NewInt(1 << 0)
+	createContextResponseFieldSlug                 = big.NewInt(1 << 1)
+	createContextResponseFieldName                 = big.NewInt(1 << 2)
+	createContextResponseFieldDescription          = big.NewInt(1 << 3)
+	createContextResponseFieldSchema               = big.NewInt(1 << 4)
+	createContextResponseFieldIdentityFact         = big.NewInt(1 << 5)
+	createContextResponseFieldTTLSeconds           = big.NewInt(1 << 6)
+	createContextResponseFieldHistoryLimit         = big.NewInt(1 << 7)
+	createContextResponseFieldOnSchemaMismatch     = big.NewInt(1 << 8)
+	createContextResponseFieldAutoExecuteDecisions = big.NewInt(1 << 9)
+	createContextResponseFieldSourceObjects        = big.NewInt(1 << 10)
+	createContextResponseFieldUserGroups           = big.NewInt(1 << 11)
+	createContextResponseFieldFolder               = big.NewInt(1 << 12)
+	createContextResponseFieldCreatedAt            = big.NewInt(1 << 13)
 )
 
 type CreateContextResponse struct {
@@ -3180,6 +3800,18 @@ type CreateContextResponse struct {
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
 	// The name of the context.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// The description of the context.
+	Description *string        `json:"description,omitempty" url:"description,omitempty"`
+	Schema      *ContextSchema `json:"schema,omitempty" url:"schema,omitempty"`
+	// The identity fact path.
+	IdentityFact         *string                                `json:"identity_fact,omitempty" url:"identity_fact,omitempty"`
+	TTLSeconds           *int                                   `json:"ttl_seconds,omitempty" url:"ttl_seconds,omitempty"`
+	HistoryLimit         *int                                   `json:"history_limit,omitempty" url:"history_limit,omitempty"`
+	OnSchemaMismatch     *CreateContextResponseOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"on_schema_mismatch,omitempty"`
+	AutoExecuteDecisions *bool                                  `json:"auto_execute_decisions,omitempty" url:"auto_execute_decisions,omitempty"`
+	SourceObjects        []string                               `json:"source_objects,omitempty" url:"source_objects,omitempty"`
+	UserGroups           []string                               `json:"user_groups,omitempty" url:"user_groups,omitempty"`
+	Folder               *string                                `json:"folder,omitempty" url:"folder,omitempty"`
 	// Creation timestamp.
 	CreatedAt *time.Time `json:"created_at,omitempty" url:"created_at,omitempty"`
 
@@ -3209,6 +3841,76 @@ func (c *CreateContextResponse) GetName() *string {
 		return nil
 	}
 	return c.Name
+}
+
+func (c *CreateContextResponse) GetDescription() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Description
+}
+
+func (c *CreateContextResponse) GetSchema() *ContextSchema {
+	if c == nil {
+		return nil
+	}
+	return c.Schema
+}
+
+func (c *CreateContextResponse) GetIdentityFact() *string {
+	if c == nil {
+		return nil
+	}
+	return c.IdentityFact
+}
+
+func (c *CreateContextResponse) GetTTLSeconds() *int {
+	if c == nil {
+		return nil
+	}
+	return c.TTLSeconds
+}
+
+func (c *CreateContextResponse) GetHistoryLimit() *int {
+	if c == nil {
+		return nil
+	}
+	return c.HistoryLimit
+}
+
+func (c *CreateContextResponse) GetOnSchemaMismatch() *CreateContextResponseOnSchemaMismatch {
+	if c == nil {
+		return nil
+	}
+	return c.OnSchemaMismatch
+}
+
+func (c *CreateContextResponse) GetAutoExecuteDecisions() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.AutoExecuteDecisions
+}
+
+func (c *CreateContextResponse) GetSourceObjects() []string {
+	if c == nil {
+		return nil
+	}
+	return c.SourceObjects
+}
+
+func (c *CreateContextResponse) GetUserGroups() []string {
+	if c == nil {
+		return nil
+	}
+	return c.UserGroups
+}
+
+func (c *CreateContextResponse) GetFolder() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Folder
 }
 
 func (c *CreateContextResponse) GetCreatedAt() *time.Time {
@@ -3251,6 +3953,76 @@ func (c *CreateContextResponse) SetSlug(slug *string) {
 func (c *CreateContextResponse) SetName(name *string) {
 	c.Name = name
 	c.require(createContextResponseFieldName)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetDescription(description *string) {
+	c.Description = description
+	c.require(createContextResponseFieldDescription)
+}
+
+// SetSchema sets the Schema field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetSchema(schema *ContextSchema) {
+	c.Schema = schema
+	c.require(createContextResponseFieldSchema)
+}
+
+// SetIdentityFact sets the IdentityFact field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetIdentityFact(identityFact *string) {
+	c.IdentityFact = identityFact
+	c.require(createContextResponseFieldIdentityFact)
+}
+
+// SetTTLSeconds sets the TTLSeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetTTLSeconds(ttlSeconds *int) {
+	c.TTLSeconds = ttlSeconds
+	c.require(createContextResponseFieldTTLSeconds)
+}
+
+// SetHistoryLimit sets the HistoryLimit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetHistoryLimit(historyLimit *int) {
+	c.HistoryLimit = historyLimit
+	c.require(createContextResponseFieldHistoryLimit)
+}
+
+// SetOnSchemaMismatch sets the OnSchemaMismatch field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetOnSchemaMismatch(onSchemaMismatch *CreateContextResponseOnSchemaMismatch) {
+	c.OnSchemaMismatch = onSchemaMismatch
+	c.require(createContextResponseFieldOnSchemaMismatch)
+}
+
+// SetAutoExecuteDecisions sets the AutoExecuteDecisions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetAutoExecuteDecisions(autoExecuteDecisions *bool) {
+	c.AutoExecuteDecisions = autoExecuteDecisions
+	c.require(createContextResponseFieldAutoExecuteDecisions)
+}
+
+// SetSourceObjects sets the SourceObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetSourceObjects(sourceObjects []string) {
+	c.SourceObjects = sourceObjects
+	c.require(createContextResponseFieldSourceObjects)
+}
+
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetUserGroups(userGroups []string) {
+	c.UserGroups = userGroups
+	c.require(createContextResponseFieldUserGroups)
+}
+
+// SetFolder sets the Folder field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateContextResponse) SetFolder(folder *string) {
+	c.Folder = folder
+	c.require(createContextResponseFieldFolder)
 }
 
 // SetCreatedAt sets the CreatedAt field and marks it as non-optional;
@@ -3308,6 +4080,31 @@ func (c *CreateContextResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+type CreateContextResponseOnSchemaMismatch string
+
+const (
+	CreateContextResponseOnSchemaMismatchIgnore CreateContextResponseOnSchemaMismatch = "ignore"
+	CreateContextResponseOnSchemaMismatchReject CreateContextResponseOnSchemaMismatch = "reject"
+	CreateContextResponseOnSchemaMismatchStore  CreateContextResponseOnSchemaMismatch = "store"
+)
+
+func NewCreateContextResponseOnSchemaMismatchFromString(s string) (CreateContextResponseOnSchemaMismatch, error) {
+	switch s {
+	case "ignore":
+		return CreateContextResponseOnSchemaMismatchIgnore, nil
+	case "reject":
+		return CreateContextResponseOnSchemaMismatchReject, nil
+	case "store":
+		return CreateContextResponseOnSchemaMismatchStore, nil
+	}
+	var t CreateContextResponseOnSchemaMismatch
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CreateContextResponseOnSchemaMismatch) Ptr() *CreateContextResponseOnSchemaMismatch {
+	return &c
 }
 
 type CreateRelationshipResponse = *ContextRelationshipOutgoing
@@ -3733,7 +4530,7 @@ func (d *DeleteRelationshipResponse) String() string {
 // Dynamic request payload for rule execution. Structure depends on rule configuration.
 type DynamicRequestPayload = map[string]any
 
-// Dynamic response payload from rule execution. Structure depends on rule configuration.
+// Dynamic response payload from rule or flow execution. Structure depends on the configured output.
 type DynamicResponsePayload = map[string]any
 
 var (
@@ -3807,6 +4604,92 @@ func (e *Error) MarshalJSON() ([]byte, error) {
 }
 
 func (e *Error) String() string {
+	if e == nil {
+		return "<nil>"
+	}
+	if len(e.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(e); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", e)
+}
+
+// An individual execution failure returned inline as an HTTP 200 result.
+var (
+	executionErrorResultFieldError = big.NewInt(1 << 0)
+)
+
+type ExecutionErrorResult struct {
+	// Human-readable execution failure message.
+	Error string `json:"error" url:"error"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (e *ExecutionErrorResult) GetError() string {
+	if e == nil {
+		return ""
+	}
+	return e.Error
+}
+
+func (e *ExecutionErrorResult) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.extraProperties
+}
+
+func (e *ExecutionErrorResult) require(field *big.Int) {
+	if e.explicitFields == nil {
+		e.explicitFields = big.NewInt(0)
+	}
+	e.explicitFields.Or(e.explicitFields, field)
+}
+
+// SetError sets the Error field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExecutionErrorResult) SetError(error_ string) {
+	e.Error = error_
+	e.require(executionErrorResultFieldError)
+}
+
+func (e *ExecutionErrorResult) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExecutionErrorResult
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*e = ExecutionErrorResult(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *e)
+	if err != nil {
+		return err
+	}
+	e.extraProperties = extraProperties
+	e.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (e *ExecutionErrorResult) MarshalJSON() ([]byte, error) {
+	type embed ExecutionErrorResult
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*e),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, e.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (e *ExecutionErrorResult) String() string {
 	if e == nil {
 		return "<nil>"
 	}
@@ -3958,17 +4841,18 @@ func (f *FlowBase) String() string {
 }
 
 var (
-	flowDetailFieldID          = big.NewInt(1 << 0)
-	flowDetailFieldName        = big.NewInt(1 << 1)
-	flowDetailFieldDescription = big.NewInt(1 << 2)
-	flowDetailFieldSlug        = big.NewInt(1 << 3)
-	flowDetailFieldPublished   = big.NewInt(1 << 4)
-	flowDetailFieldUpdatedAt   = big.NewInt(1 << 5)
-	flowDetailFieldLabels      = big.NewInt(1 << 6)
-	flowDetailFieldOriginRule  = big.NewInt(1 << 7)
-	flowDetailFieldContext     = big.NewInt(1 << 8)
-	flowDetailFieldUserGroups  = big.NewInt(1 << 9)
-	flowDetailFieldFolder      = big.NewInt(1 << 10)
+	flowDetailFieldID            = big.NewInt(1 << 0)
+	flowDetailFieldName          = big.NewInt(1 << 1)
+	flowDetailFieldDescription   = big.NewInt(1 << 2)
+	flowDetailFieldSlug          = big.NewInt(1 << 3)
+	flowDetailFieldRequestSchema = big.NewInt(1 << 4)
+	flowDetailFieldPublished     = big.NewInt(1 << 5)
+	flowDetailFieldUpdatedAt     = big.NewInt(1 << 6)
+	flowDetailFieldLabels        = big.NewInt(1 << 7)
+	flowDetailFieldOriginRule    = big.NewInt(1 << 8)
+	flowDetailFieldContext       = big.NewInt(1 << 9)
+	flowDetailFieldUserGroups    = big.NewInt(1 << 10)
+	flowDetailFieldFolder        = big.NewInt(1 << 11)
 )
 
 type FlowDetail struct {
@@ -3980,6 +4864,8 @@ type FlowDetail struct {
 	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// The unique slug for the flow used in API requests.
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
+	// The request schema embedded in the selected graph's origin rule. Without version, uses the published graph when published, otherwise the draft graph. Empty when the graph has no origin schema.
+	RequestSchema []*SchemaField `json:"request_schema,omitempty" url:"request_schema,omitempty"`
 	// Whether the flow is published.
 	Published *bool `json:"published,omitempty" url:"published,omitempty"`
 	// The date this flow was last updated.
@@ -4027,6 +4913,13 @@ func (f *FlowDetail) GetSlug() *string {
 		return nil
 	}
 	return f.Slug
+}
+
+func (f *FlowDetail) GetRequestSchema() []*SchemaField {
+	if f == nil {
+		return nil
+	}
+	return f.RequestSchema
 }
 
 func (f *FlowDetail) GetPublished() *bool {
@@ -4118,6 +5011,13 @@ func (f *FlowDetail) SetDescription(description *string) {
 func (f *FlowDetail) SetSlug(slug *string) {
 	f.Slug = slug
 	f.require(flowDetailFieldSlug)
+}
+
+// SetRequestSchema sets the RequestSchema field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FlowDetail) SetRequestSchema(requestSchema []*SchemaField) {
+	f.RequestSchema = requestSchema
+	f.require(flowDetailFieldRequestSchema)
 }
 
 // SetPublished sets the Published field and marks it as non-optional;
@@ -5914,7 +6814,7 @@ func (p *ParallelSolveEntityErrorError) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-// Returned with HTTP 202 when a rule or flow cannot run yet because required facts are missing. The evaluation is registered and fires automatically when the instance receives the missing facts (visible under the instance's /pending endpoint until then).
+// HTTP 202: required facts are missing. The registered rule/flow runs when those facts arrive and remains visible under `/pending` until then.
 var (
 	pendingContextEvaluationResponseFieldStatus    = big.NewInt(1 << 0)
 	pendingContextEvaluationResponseFieldContext   = big.NewInt(1 << 1)
@@ -5928,9 +6828,9 @@ var (
 
 type PendingContextEvaluationResponse struct {
 	// Always 'pending'.
-	Status *PendingContextEvaluationResponseStatus `json:"status,omitempty" url:"status,omitempty"`
+	Status PendingContextEvaluationResponseStatus `json:"status" url:"status"`
 	// Combined identifier in format 'contextSlug:instanceId'.
-	Context *string `json:"context,omitempty" url:"context,omitempty"`
+	Context string `json:"context" url:"context"`
 	// The slug of the rule awaiting execution (rule solves only).
 	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
 	// The slug of the flow awaiting execution (flow executions only).
@@ -5951,16 +6851,16 @@ type PendingContextEvaluationResponse struct {
 	rawJSON         json.RawMessage
 }
 
-func (p *PendingContextEvaluationResponse) GetStatus() *PendingContextEvaluationResponseStatus {
+func (p *PendingContextEvaluationResponse) GetStatus() PendingContextEvaluationResponseStatus {
 	if p == nil {
-		return nil
+		return ""
 	}
 	return p.Status
 }
 
-func (p *PendingContextEvaluationResponse) GetContext() *string {
+func (p *PendingContextEvaluationResponse) GetContext() string {
 	if p == nil {
-		return nil
+		return ""
 	}
 	return p.Context
 }
@@ -6023,14 +6923,14 @@ func (p *PendingContextEvaluationResponse) require(field *big.Int) {
 
 // SetStatus sets the Status field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PendingContextEvaluationResponse) SetStatus(status *PendingContextEvaluationResponseStatus) {
+func (p *PendingContextEvaluationResponse) SetStatus(status PendingContextEvaluationResponseStatus) {
 	p.Status = status
 	p.require(pendingContextEvaluationResponseFieldStatus)
 }
 
 // SetContext sets the Context field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PendingContextEvaluationResponse) SetContext(context *string) {
+func (p *PendingContextEvaluationResponse) SetContext(context string) {
 	p.Context = context
 	p.require(pendingContextEvaluationResponseFieldContext)
 }
@@ -6317,7 +7217,7 @@ type RuleDetail struct {
 	Labels    *AssetLabels `json:"labels,omitempty" url:"labels,omitempty"`
 	// Whether the rule is currently published.
 	Published *bool `json:"published,omitempty" url:"published,omitempty"`
-	// The number of condition rows configured for the rule. Uses the published condition count when the rule is published, otherwise the draft condition count.
+	// The number of condition rows in the selected version. Without version, uses the published condition count when published, otherwise the draft condition count.
 	NoConditions *int `json:"no_conditions,omitempty" url:"no_conditions,omitempty"`
 	// Optional user-defined metadata for API-first integrations.
 	Metadata map[string]any `json:"metadata,omitempty" url:"metadata,omitempty"`
@@ -6326,9 +7226,9 @@ type RuleDetail struct {
 	Folder     *Folder  `json:"folder,omitempty" url:"folder,omitempty"`
 	// The context this rule is bound to (if any). Rules bound to a context have their inputs/outputs mapped to context fields.
 	Context *RuleDetailContext `json:"context,omitempty" url:"context,omitempty"`
-	// The request schema for the rule. Uses published schema when published, otherwise draft schema.
+	// The request schema for the selected version. Without version, uses published schema when published, otherwise draft schema.
 	RequestSchema []*SchemaField `json:"request_schema,omitempty" url:"request_schema,omitempty"`
-	// The response schema for the rule. Uses published schema when published, otherwise draft schema.
+	// The response schema for the selected version. Without version, uses published schema when published, otherwise draft schema.
 	ResponseSchema []*SchemaField `json:"response_schema,omitempty" url:"response_schema,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -9601,10 +10501,9 @@ func (r RulebricksFlowNodeMode) Ptr() *RulebricksFlowNodeMode {
 type RulebricksFlowNodeOperation string
 
 const (
-	RulebricksFlowNodeOperationRead        RulebricksFlowNodeOperation = "read"
-	RulebricksFlowNodeOperationUpdate      RulebricksFlowNodeOperation = "update"
-	RulebricksFlowNodeOperationDelete      RulebricksFlowNodeOperation = "delete"
-	RulebricksFlowNodeOperationBatchUpdate RulebricksFlowNodeOperation = "batch_update"
+	RulebricksFlowNodeOperationRead   RulebricksFlowNodeOperation = "read"
+	RulebricksFlowNodeOperationUpdate RulebricksFlowNodeOperation = "update"
+	RulebricksFlowNodeOperationDelete RulebricksFlowNodeOperation = "delete"
 )
 
 func NewRulebricksFlowNodeOperationFromString(s string) (RulebricksFlowNodeOperation, error) {
@@ -9615,8 +10514,6 @@ func NewRulebricksFlowNodeOperationFromString(s string) (RulebricksFlowNodeOpera
 		return RulebricksFlowNodeOperationUpdate, nil
 	case "delete":
 		return RulebricksFlowNodeOperationDelete, nil
-	case "batch_update":
-		return RulebricksFlowNodeOperationBatchUpdate, nil
 	}
 	var t RulebricksFlowNodeOperation
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -11380,400 +12277,6 @@ func (s SchemaFieldType) Ptr() *SchemaFieldType {
 	return &s
 }
 
-// Optional request body for executing a flow against context. The entire body is merged into (and persisted to) the instance state before flow execution.
-type SolveContextFlowRequest = map[string]any
-
-// Response after executing a flow against a context instance.
-var (
-	solveContextFlowResponseFieldStatus      = big.NewInt(1 << 0)
-	solveContextFlowResponseFieldContext     = big.NewInt(1 << 1)
-	solveContextFlowResponseFieldFlow        = big.NewInt(1 << 2)
-	solveContextFlowResponseFieldExecutionID = big.NewInt(1 << 3)
-	solveContextFlowResponseFieldResult      = big.NewInt(1 << 4)
-	solveContextFlowResponseFieldUsage       = big.NewInt(1 << 5)
-)
-
-type SolveContextFlowResponse struct {
-	// Whether the flow executed successfully.
-	Status *SolveContextFlowResponseStatus `json:"status,omitempty" url:"status,omitempty"`
-	// Combined identifier in format 'contextSlug:instanceId'.
-	Context *string `json:"context,omitempty" url:"context,omitempty"`
-	// The slug of the flow that was executed.
-	Flow *string `json:"flow,omitempty" url:"flow,omitempty"`
-	// The flow run's execution ID, accepted by `/decisions/query` `trace`.
-	ExecutionID *string `json:"execution_id,omitempty" url:"execution_id,omitempty"`
-	// The flow execution output.
-	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
-	// Resource usage information for the flow execution.
-	Usage map[string]any `json:"usage,omitempty" url:"usage,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (s *SolveContextFlowResponse) GetStatus() *SolveContextFlowResponseStatus {
-	if s == nil {
-		return nil
-	}
-	return s.Status
-}
-
-func (s *SolveContextFlowResponse) GetContext() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Context
-}
-
-func (s *SolveContextFlowResponse) GetFlow() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Flow
-}
-
-func (s *SolveContextFlowResponse) GetExecutionID() *string {
-	if s == nil {
-		return nil
-	}
-	return s.ExecutionID
-}
-
-func (s *SolveContextFlowResponse) GetResult() map[string]any {
-	if s == nil {
-		return nil
-	}
-	return s.Result
-}
-
-func (s *SolveContextFlowResponse) GetUsage() map[string]any {
-	if s == nil {
-		return nil
-	}
-	return s.Usage
-}
-
-func (s *SolveContextFlowResponse) GetExtraProperties() map[string]interface{} {
-	if s == nil {
-		return nil
-	}
-	return s.extraProperties
-}
-
-func (s *SolveContextFlowResponse) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
-	}
-	s.explicitFields.Or(s.explicitFields, field)
-}
-
-// SetStatus sets the Status field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetStatus(status *SolveContextFlowResponseStatus) {
-	s.Status = status
-	s.require(solveContextFlowResponseFieldStatus)
-}
-
-// SetContext sets the Context field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetContext(context *string) {
-	s.Context = context
-	s.require(solveContextFlowResponseFieldContext)
-}
-
-// SetFlow sets the Flow field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetFlow(flow *string) {
-	s.Flow = flow
-	s.require(solveContextFlowResponseFieldFlow)
-}
-
-// SetExecutionID sets the ExecutionID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetExecutionID(executionID *string) {
-	s.ExecutionID = executionID
-	s.require(solveContextFlowResponseFieldExecutionID)
-}
-
-// SetResult sets the Result field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetResult(result map[string]any) {
-	s.Result = result
-	s.require(solveContextFlowResponseFieldResult)
-}
-
-// SetUsage sets the Usage field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextFlowResponse) SetUsage(usage map[string]any) {
-	s.Usage = usage
-	s.require(solveContextFlowResponseFieldUsage)
-}
-
-func (s *SolveContextFlowResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler SolveContextFlowResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*s = SolveContextFlowResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *s)
-	if err != nil {
-		return err
-	}
-	s.extraProperties = extraProperties
-	s.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (s *SolveContextFlowResponse) MarshalJSON() ([]byte, error) {
-	type embed SolveContextFlowResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*s),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (s *SolveContextFlowResponse) String() string {
-	if s == nil {
-		return "<nil>"
-	}
-	if len(s.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(s); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", s)
-}
-
-// Whether the flow executed successfully.
-type SolveContextFlowResponseStatus string
-
-const (
-	SolveContextFlowResponseStatusSolved SolveContextFlowResponseStatus = "solved"
-	SolveContextFlowResponseStatusError  SolveContextFlowResponseStatus = "error"
-)
-
-func NewSolveContextFlowResponseStatusFromString(s string) (SolveContextFlowResponseStatus, error) {
-	switch s {
-	case "solved":
-		return SolveContextFlowResponseStatusSolved, nil
-	case "error":
-		return SolveContextFlowResponseStatusError, nil
-	}
-	var t SolveContextFlowResponseStatus
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (s SolveContextFlowResponseStatus) Ptr() *SolveContextFlowResponseStatus {
-	return &s
-}
-
-// Optional request body for solving a rule against context. The entire body is merged into (and persisted to) the instance state before rule evaluation.
-type SolveContextRuleRequest = map[string]any
-
-// Response after solving a rule against a context instance.
-var (
-	solveContextRuleResponseFieldStatus           = big.NewInt(1 << 0)
-	solveContextRuleResponseFieldContext          = big.NewInt(1 << 1)
-	solveContextRuleResponseFieldRule             = big.NewInt(1 << 2)
-	solveContextRuleResponseFieldResult           = big.NewInt(1 << 3)
-	solveContextRuleResponseFieldWrittenToContext = big.NewInt(1 << 4)
-	solveContextRuleResponseFieldCascaded         = big.NewInt(1 << 5)
-)
-
-type SolveContextRuleResponse struct {
-	// Whether the rule executed successfully.
-	Status *SolveContextRuleResponseStatus `json:"status,omitempty" url:"status,omitempty"`
-	// Combined identifier in format 'contextSlug:instanceId'.
-	Context *string `json:"context,omitempty" url:"context,omitempty"`
-	// The slug of the rule that was executed.
-	Rule *string `json:"rule,omitempty" url:"rule,omitempty"`
-	// The rule evaluation result (output values).
-	Result map[string]any `json:"result,omitempty" url:"result,omitempty"`
-	// List of field keys that were written back to the context instance.
-	WrittenToContext []string `json:"written_to_context,omitempty" url:"written_to_context,omitempty"`
-	// Results from any cascaded evaluations triggered by the rule outputs.
-	Cascaded []*CascadeResult `json:"cascaded,omitempty" url:"cascaded,omitempty"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (s *SolveContextRuleResponse) GetStatus() *SolveContextRuleResponseStatus {
-	if s == nil {
-		return nil
-	}
-	return s.Status
-}
-
-func (s *SolveContextRuleResponse) GetContext() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Context
-}
-
-func (s *SolveContextRuleResponse) GetRule() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Rule
-}
-
-func (s *SolveContextRuleResponse) GetResult() map[string]any {
-	if s == nil {
-		return nil
-	}
-	return s.Result
-}
-
-func (s *SolveContextRuleResponse) GetWrittenToContext() []string {
-	if s == nil {
-		return nil
-	}
-	return s.WrittenToContext
-}
-
-func (s *SolveContextRuleResponse) GetCascaded() []*CascadeResult {
-	if s == nil {
-		return nil
-	}
-	return s.Cascaded
-}
-
-func (s *SolveContextRuleResponse) GetExtraProperties() map[string]interface{} {
-	if s == nil {
-		return nil
-	}
-	return s.extraProperties
-}
-
-func (s *SolveContextRuleResponse) require(field *big.Int) {
-	if s.explicitFields == nil {
-		s.explicitFields = big.NewInt(0)
-	}
-	s.explicitFields.Or(s.explicitFields, field)
-}
-
-// SetStatus sets the Status field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetStatus(status *SolveContextRuleResponseStatus) {
-	s.Status = status
-	s.require(solveContextRuleResponseFieldStatus)
-}
-
-// SetContext sets the Context field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetContext(context *string) {
-	s.Context = context
-	s.require(solveContextRuleResponseFieldContext)
-}
-
-// SetRule sets the Rule field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetRule(rule *string) {
-	s.Rule = rule
-	s.require(solveContextRuleResponseFieldRule)
-}
-
-// SetResult sets the Result field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetResult(result map[string]any) {
-	s.Result = result
-	s.require(solveContextRuleResponseFieldResult)
-}
-
-// SetWrittenToContext sets the WrittenToContext field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetWrittenToContext(writtenToContext []string) {
-	s.WrittenToContext = writtenToContext
-	s.require(solveContextRuleResponseFieldWrittenToContext)
-}
-
-// SetCascaded sets the Cascaded field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (s *SolveContextRuleResponse) SetCascaded(cascaded []*CascadeResult) {
-	s.Cascaded = cascaded
-	s.require(solveContextRuleResponseFieldCascaded)
-}
-
-func (s *SolveContextRuleResponse) UnmarshalJSON(data []byte) error {
-	type unmarshaler SolveContextRuleResponse
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*s = SolveContextRuleResponse(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *s)
-	if err != nil {
-		return err
-	}
-	s.extraProperties = extraProperties
-	s.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (s *SolveContextRuleResponse) MarshalJSON() ([]byte, error) {
-	type embed SolveContextRuleResponse
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*s),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (s *SolveContextRuleResponse) String() string {
-	if s == nil {
-		return "<nil>"
-	}
-	if len(s.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(s); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", s)
-}
-
-// Whether the rule executed successfully.
-type SolveContextRuleResponseStatus string
-
-const (
-	SolveContextRuleResponseStatusSolved SolveContextRuleResponseStatus = "solved"
-	SolveContextRuleResponseStatusError  SolveContextRuleResponseStatus = "error"
-)
-
-func NewSolveContextRuleResponseStatusFromString(s string) (SolveContextRuleResponseStatus, error) {
-	switch s {
-	case "solved":
-		return SolveContextRuleResponseStatusSolved, nil
-	case "error":
-		return SolveContextRuleResponseStatusError, nil
-	}
-	var t SolveContextRuleResponseStatus
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (s SolveContextRuleResponseStatus) Ptr() *SolveContextRuleResponseStatus {
-	return &s
-}
-
 var (
 	successMessageFieldMessage = big.NewInt(1 << 0)
 )
@@ -12367,10 +12870,20 @@ func (t *TestTestStateEvaluationError) Accept(visitor TestTestStateEvaluationErr
 
 // Response after updating a context.
 var (
-	updateContextResponseFieldID        = big.NewInt(1 << 0)
-	updateContextResponseFieldSlug      = big.NewInt(1 << 1)
-	updateContextResponseFieldName      = big.NewInt(1 << 2)
-	updateContextResponseFieldUpdatedAt = big.NewInt(1 << 3)
+	updateContextResponseFieldID                   = big.NewInt(1 << 0)
+	updateContextResponseFieldSlug                 = big.NewInt(1 << 1)
+	updateContextResponseFieldName                 = big.NewInt(1 << 2)
+	updateContextResponseFieldDescription          = big.NewInt(1 << 3)
+	updateContextResponseFieldSchema               = big.NewInt(1 << 4)
+	updateContextResponseFieldIdentityFact         = big.NewInt(1 << 5)
+	updateContextResponseFieldTTLSeconds           = big.NewInt(1 << 6)
+	updateContextResponseFieldHistoryLimit         = big.NewInt(1 << 7)
+	updateContextResponseFieldOnSchemaMismatch     = big.NewInt(1 << 8)
+	updateContextResponseFieldAutoExecuteDecisions = big.NewInt(1 << 9)
+	updateContextResponseFieldSourceObjects        = big.NewInt(1 << 10)
+	updateContextResponseFieldUserGroups           = big.NewInt(1 << 11)
+	updateContextResponseFieldFolder               = big.NewInt(1 << 12)
+	updateContextResponseFieldUpdatedAt            = big.NewInt(1 << 13)
 )
 
 type UpdateContextResponse struct {
@@ -12379,7 +12892,17 @@ type UpdateContextResponse struct {
 	// The slug of the updated context.
 	Slug *string `json:"slug,omitempty" url:"slug,omitempty"`
 	// The name of the updated context.
-	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	Name                 *string                                `json:"name,omitempty" url:"name,omitempty"`
+	Description          *string                                `json:"description,omitempty" url:"description,omitempty"`
+	Schema               *ContextSchema                         `json:"schema,omitempty" url:"schema,omitempty"`
+	IdentityFact         *string                                `json:"identity_fact,omitempty" url:"identity_fact,omitempty"`
+	TTLSeconds           *int                                   `json:"ttl_seconds,omitempty" url:"ttl_seconds,omitempty"`
+	HistoryLimit         *int                                   `json:"history_limit,omitempty" url:"history_limit,omitempty"`
+	OnSchemaMismatch     *UpdateContextResponseOnSchemaMismatch `json:"on_schema_mismatch,omitempty" url:"on_schema_mismatch,omitempty"`
+	AutoExecuteDecisions *bool                                  `json:"auto_execute_decisions,omitempty" url:"auto_execute_decisions,omitempty"`
+	SourceObjects        []string                               `json:"source_objects,omitempty" url:"source_objects,omitempty"`
+	UserGroups           []string                               `json:"user_groups,omitempty" url:"user_groups,omitempty"`
+	Folder               *string                                `json:"folder,omitempty" url:"folder,omitempty"`
 	// Timestamp of when the context was updated.
 	UpdatedAt *time.Time `json:"updated_at,omitempty" url:"updated_at,omitempty"`
 
@@ -12409,6 +12932,76 @@ func (u *UpdateContextResponse) GetName() *string {
 		return nil
 	}
 	return u.Name
+}
+
+func (u *UpdateContextResponse) GetDescription() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Description
+}
+
+func (u *UpdateContextResponse) GetSchema() *ContextSchema {
+	if u == nil {
+		return nil
+	}
+	return u.Schema
+}
+
+func (u *UpdateContextResponse) GetIdentityFact() *string {
+	if u == nil {
+		return nil
+	}
+	return u.IdentityFact
+}
+
+func (u *UpdateContextResponse) GetTTLSeconds() *int {
+	if u == nil {
+		return nil
+	}
+	return u.TTLSeconds
+}
+
+func (u *UpdateContextResponse) GetHistoryLimit() *int {
+	if u == nil {
+		return nil
+	}
+	return u.HistoryLimit
+}
+
+func (u *UpdateContextResponse) GetOnSchemaMismatch() *UpdateContextResponseOnSchemaMismatch {
+	if u == nil {
+		return nil
+	}
+	return u.OnSchemaMismatch
+}
+
+func (u *UpdateContextResponse) GetAutoExecuteDecisions() *bool {
+	if u == nil {
+		return nil
+	}
+	return u.AutoExecuteDecisions
+}
+
+func (u *UpdateContextResponse) GetSourceObjects() []string {
+	if u == nil {
+		return nil
+	}
+	return u.SourceObjects
+}
+
+func (u *UpdateContextResponse) GetUserGroups() []string {
+	if u == nil {
+		return nil
+	}
+	return u.UserGroups
+}
+
+func (u *UpdateContextResponse) GetFolder() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Folder
 }
 
 func (u *UpdateContextResponse) GetUpdatedAt() *time.Time {
@@ -12451,6 +13044,76 @@ func (u *UpdateContextResponse) SetSlug(slug *string) {
 func (u *UpdateContextResponse) SetName(name *string) {
 	u.Name = name
 	u.require(updateContextResponseFieldName)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetDescription(description *string) {
+	u.Description = description
+	u.require(updateContextResponseFieldDescription)
+}
+
+// SetSchema sets the Schema field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetSchema(schema *ContextSchema) {
+	u.Schema = schema
+	u.require(updateContextResponseFieldSchema)
+}
+
+// SetIdentityFact sets the IdentityFact field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetIdentityFact(identityFact *string) {
+	u.IdentityFact = identityFact
+	u.require(updateContextResponseFieldIdentityFact)
+}
+
+// SetTTLSeconds sets the TTLSeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetTTLSeconds(ttlSeconds *int) {
+	u.TTLSeconds = ttlSeconds
+	u.require(updateContextResponseFieldTTLSeconds)
+}
+
+// SetHistoryLimit sets the HistoryLimit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetHistoryLimit(historyLimit *int) {
+	u.HistoryLimit = historyLimit
+	u.require(updateContextResponseFieldHistoryLimit)
+}
+
+// SetOnSchemaMismatch sets the OnSchemaMismatch field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetOnSchemaMismatch(onSchemaMismatch *UpdateContextResponseOnSchemaMismatch) {
+	u.OnSchemaMismatch = onSchemaMismatch
+	u.require(updateContextResponseFieldOnSchemaMismatch)
+}
+
+// SetAutoExecuteDecisions sets the AutoExecuteDecisions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetAutoExecuteDecisions(autoExecuteDecisions *bool) {
+	u.AutoExecuteDecisions = autoExecuteDecisions
+	u.require(updateContextResponseFieldAutoExecuteDecisions)
+}
+
+// SetSourceObjects sets the SourceObjects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetSourceObjects(sourceObjects []string) {
+	u.SourceObjects = sourceObjects
+	u.require(updateContextResponseFieldSourceObjects)
+}
+
+// SetUserGroups sets the UserGroups field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetUserGroups(userGroups []string) {
+	u.UserGroups = userGroups
+	u.require(updateContextResponseFieldUserGroups)
+}
+
+// SetFolder sets the Folder field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateContextResponse) SetFolder(folder *string) {
+	u.Folder = folder
+	u.require(updateContextResponseFieldFolder)
 }
 
 // SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
@@ -12508,6 +13171,31 @@ func (u *UpdateContextResponse) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", u)
+}
+
+type UpdateContextResponseOnSchemaMismatch string
+
+const (
+	UpdateContextResponseOnSchemaMismatchIgnore UpdateContextResponseOnSchemaMismatch = "ignore"
+	UpdateContextResponseOnSchemaMismatchReject UpdateContextResponseOnSchemaMismatch = "reject"
+	UpdateContextResponseOnSchemaMismatchStore  UpdateContextResponseOnSchemaMismatch = "store"
+)
+
+func NewUpdateContextResponseOnSchemaMismatchFromString(s string) (UpdateContextResponseOnSchemaMismatch, error) {
+	switch s {
+	case "ignore":
+		return UpdateContextResponseOnSchemaMismatchIgnore, nil
+	case "reject":
+		return UpdateContextResponseOnSchemaMismatchReject, nil
+	case "store":
+		return UpdateContextResponseOnSchemaMismatchStore, nil
+	}
+	var t UpdateContextResponseOnSchemaMismatch
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (u UpdateContextResponseOnSchemaMismatch) Ptr() *UpdateContextResponseOnSchemaMismatch {
+	return &u
 }
 
 var (

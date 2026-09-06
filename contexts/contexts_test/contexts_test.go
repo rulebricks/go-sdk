@@ -244,6 +244,69 @@ func TestContextsCascadeWithWireMock(
 	VerifyRequestCount(t, "TestContextsCascadeWithWireMock", "POST", "/contexts/customer/cust-12345/cascade", nil, 1)
 }
 
+func TestContextsSolveRuleWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
+	)
+	request := &sdk.SolveRuleContextsRequest{
+		Slug:     "slug",
+		Instance: "instance",
+		RuleSlug: "ruleSlug",
+		Body: map[string]any{
+			"email": "john@example.com",
+			"score": 85,
+		},
+	}
+	_, invocationErr := client.Contexts.SolveRule(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsSolveRuleWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestContextsSolveRuleWithWireMock", "POST", "/contexts/slug/instance/solve/ruleSlug", nil, 1)
+}
+
+func TestContextsSolveFlowWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithAPIKey("test-value"),
+	)
+	request := &sdk.SolveFlowContextsRequest{
+		Slug:     "slug",
+		Instance: "instance",
+		FlowSlug: "flowSlug",
+		Body: map[string]any{
+			"key": "value",
+		},
+	}
+	_, invocationErr := client.Contexts.SolveFlow(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestContextsSolveFlowWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestContextsSolveFlowWithWireMock", "POST", "/contexts/slug/instance/flows/flowSlug", nil, 1)
+}
+
 func TestContextsBulkIngestWithWireMock(
 	t *testing.T,
 ) {
